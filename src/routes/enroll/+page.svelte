@@ -15,8 +15,8 @@
 
 <div class="flex justify-between items-center mb-3">
   <div class="flex gap-2">
-    <button class="border rounded px-3 py-1 text-sm" on:click={() => (view = "cart")}>장바구니</button>
-    <button class="border rounded px-3 py-1 text-sm" on:click={() => (view = "applications")}>신청내역</button>
+    <button class="border rounded px-3 py-1 text-sm" onclick={() => (view = "cart")}>장바구니</button>
+    <button class="border rounded px-3 py-1 text-sm" onclick={() => (view = "applications")}>신청내역</button>
   </div>
   <div class="text-sm text-neutral-600 dark:text-neutral-400">
     최소 {$metrics.min} / 최대 {$metrics.max} / 신청 {$metrics.current} / 잔여 베팅 {$metrics.budget}
@@ -25,8 +25,8 @@
 
 {#if view === "cart"}
   <div class="flex gap-2 mb-3">
-    <button class="border rounded px-3 py-1 text-sm" on:click={() => (activeTab = "FCFS")}>선착순</button>
-    <button class="border rounded px-3 py-1 text-sm" on:click={() => (activeTab = "BID")}>베팅</button>
+    <button class="border rounded px-3 py-1 text-sm" onclick={() => (activeTab = "FCFS")}>선착순</button>
+    <button class="border rounded px-3 py-1 text-sm" onclick={() => (activeTab = "BID")}>베팅</button>
   </div>
   {#if $cart.length === 0}
     <p class="text-sm text-neutral-500">장바구니가 비었습니다.</p>
@@ -37,9 +37,9 @@
           <div class="text-sm">{item.courseId}-{item.classId} ({item.method})</div>
           <div class="flex gap-2">
             {#if item.method === 'BID'}
-              <button class="border rounded px-2 py-1 text-sm" on:click={() => doApply(item)}>베팅 신청</button>
+              <button class="border rounded px-2 py-1 text-sm" onclick={() => doApply(item)}>베팅 신청</button>
             {:else}
-              <button class="border rounded px-2 py-1 text-sm" on:click={() => doApply(item)}>신청</button>
+              <button class="border rounded px-2 py-1 text-sm" onclick={() => doApply(item)}>신청</button>
             {/if}
           </div>
         </li>

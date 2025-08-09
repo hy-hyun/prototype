@@ -33,7 +33,7 @@
 
 <h2 class="text-lg font-semibold mb-4">강의 검색</h2>
 
-<form class="grid gap-3 md:grid-cols-4 mb-4" on:submit|preventDefault={search}>
+<form class="grid gap-3 md:grid-cols-4 mb-4" onsubmit={(e) => { e.preventDefault(); search(); }}>
   <select class="border rounded p-2" bind:value={filters.term}>
     <option value="">학기</option>
   </select>
@@ -61,8 +61,8 @@
           <div class="text-xs text-neutral-500">{l.credits.lecture}+{l.credits.lab}학점 · {l.method}</div>
         </div>
         <div class="flex gap-2">
-          <button class="border rounded px-2 py-1 text-sm" on:click={() => onAddToCart(l)}>장바구니</button>
-          <button class="border rounded px-2 py-1 text-sm" on:click={() => onApply(l)}>강의신청</button>
+          <button class="border rounded px-2 py-1 text-sm" onclick={() => onAddToCart(l)}>장바구니</button>
+          <button class="border rounded px-2 py-1 text-sm" onclick={() => onApply(l)}>강의신청</button>
         </div>
       </div>
     {/each}

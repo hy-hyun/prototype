@@ -8,7 +8,11 @@ export const scheduleEvents = writable(SCHEDULE_EVENTS);
 export const isLoggedIn = writable(false);
 export const currentUser = writable<{ id: string; name: string } | null>(null);
 
-export const cart = writable<CartItem[]>([]);
+export const cart = writable<CartItem[]>([
+  { courseId: "CSE101", classId: "01", method: "FCFS" },
+  { courseId: "CSE102", classId: "01", method: "FCFS" },
+  { courseId: "MAT101", classId: "01", method: "FCFS" }
+]);
 export const applications = writable<Application[]>([]);
 
 export const metrics = derived(cart, ($c) => {

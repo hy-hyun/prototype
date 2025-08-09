@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { cart, applications, lectures } from "$lib/stores";
+  import { cart, applications, courses } from "$lib/stores";
   type Block = { day: number; start: number; end: number; title: string };
   const blocks = $state<Block[]>([]);
   const days = ["월", "화", "수", "목", "금"];
@@ -10,7 +10,7 @@
   }
   $effect(() => {
     // 장바구니와 신청내역을 기준으로 시간표 블록 구성 (더미)
-    const data = $lectures;
+    const data = $courses;
     const selectedIds = new Set($applications.map((a) => `${a.courseId}-${a.classId}`));
     const cartIds = new Set($cart.map((c) => `${c.courseId}-${c.classId}`));
     const chosen = data.filter((l) => selectedIds.has(`${l.courseId}-${l.classId}`) || cartIds.has(`${l.courseId}-${l.classId}`));

@@ -1,18 +1,30 @@
 <script lang="ts">
   import { cart, applications, metrics, isLoggedIn } from "$lib/stores";
-  import { lectures } from "$lib/stores";
+  import { courses, loadCourses } from "$lib/stores";
   import { applyFcfs, applyBid } from "$lib/stores";
   import { showToast } from "$lib/toast";
   import LoginModal from "$lib/components/LoginModal.svelte";
   import { Tabs, TabsList, TabsTrigger, TabsContent } from "$lib/components/ui/tabs";
   import { Switch } from "$lib/components/ui/switch";
   import { get } from "svelte/store";
+  import { onMount } from "svelte";
   let view: "cart" | "applications" = "cart";
   let showFcfs = true;
   let showBid = true;
   let applying = false;
   let loginOpen = false;
   let statusFilter: "ALL" | "PENDING" | "CONFIRMED" | "FAILED" | "CANCELLED" = "ALL";
+
+  onMount(async () => {
+    try {
+      if (get(courses).length === 0) {
+        await loadCourses();
+      }
+    } catch (e) {
+      console.error(e);
+      showToast("강의 데이터를 불러오지 못했습니다", "error");
+    }
+  });
 
   async function doApply(item: { courseId: string; classId: string; method: "FCFS" | "BID"; bidAmount?: number }) {
     if (!$isLoggedIn) {
@@ -94,7 +106,7 @@
   }
 
   function findLecture(courseId: string, classId: string) {
-    return get(lectures).find((l) => l.courseId === courseId && l.classId === classId);
+    return get(courses).find((l) => l.courseId === courseId && l.classId === classId);
   }
 
   function computeCredits(courseId: string, classId: string) {
@@ -172,7 +184,7 @@
   }
 
   function hasTimeConflict(courseId: string, classId: string): boolean {
-    const allLectures = get(lectures);
+    const allLectures = get(courses);
     const target = findLecture(courseId, classId);
     if (!target) return false;
     const cartItems = get(cart);
@@ -189,7 +201,7 @@
   }
 
   function conflictsWithApplications(courseId: string, classId: string): boolean {
-    const allLectures = get(lectures);
+    const allLectures = get(courses);
     const target = findLecture(courseId, classId);
     if (!target) return false;
     const appItems = get(applications).filter((a) => a.status !== "CANCELLED");

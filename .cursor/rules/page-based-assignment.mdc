@@ -1,0 +1,39 @@
+---
+alwaysApply: false
+description: 페이지별 작업 분배와 독립 개발 원칙. 각 페이지의 파일/체크리스트/Mock 지침
+globs: src/routes/**,src/lib/components/**,src/lib/mock/**
+---
+
+# 📄 페이지별 작업 분배 규칙
+
+상세 내용은 [page-based-assignment.md](mdc:.cursorrules/page-based-assignment.md)를 참조하세요. 이 규칙은 페이지 단위 독립 개발을 촉진하고 파일 구조/모듈 경계를 명확히 합니다.
+
+## 🔑 원칙
+- 페이지 완전 분리, 의존성 최소화, 공통 컴포넌트는 단계적 통합
+- 각 페이지는 Mock 데이터로 단독 개발 가능
+
+## 📁 페이지별 핵심 파일
+- 메인: `src/routes/+page.svelte`, `src/lib/components/{MainCalendar,NoticePreview,QuickActions,WelcomeSection}.svelte`
+- 검색: `src/routes/search/+page.svelte`, `src/lib/components/{SearchHeader,FilterPanel,SearchInput,CourseGrid,CourseCard,CourseDetail,Pagination}.svelte`
+- 수강신청: `src/routes/enroll/+page.svelte`, `src/lib/components/{EnrollTabs,CreditInfo,CartSection,EnrollSection,BettingPanel,EnrollButton}.svelte`
+- 시간표: `src/routes/timetable/+page.svelte`, `src/lib/components/{TimetableGrid,TimetableCell,CourseBlock,TimetableSidebar,TimetableHeader,ConflictWarning}.svelte`
+- 대시보드: `src/routes/dashboard/+page.svelte`, `src/lib/components/{GraduationStatus,RequiredCourses,RecommendedSection,ProgressChart,MajorTabs,AIRecommendation}.svelte`
+- 공지사항: `src/routes/notices/+page.svelte`, `src/lib/components/{NoticeList,NoticeItem,NoticeDetail,NoticeSearch,CategoryFilter}.svelte`
+
+## 🧪 Mock 지침
+- 각 페이지별 `src/lib/mock/*.ts` 파일을 생성하여 독립 개발
+- 예: `mainPageData.ts`, `coursesData.ts`, `enrollData.ts`, `timetableData.ts`, `dashboardData.ts`, `noticesData.ts`
+
+## ✅ 페이지 공통 체크리스트
+- 기본 UI/레이아웃 구현, Mock 연동, 반응형, 로딩/에러 상태, 기본 인터랙션, 네비게이션
+- 통합 준비: 공통 컴포넌트 적용, 상태/라우팅/데이터 흐름 정합성, 실제 API 연동 준비
+
+## 🗂️ 공통 컴포넌트 경로
+`src/lib/components/common/{Button,Modal,Loading,Toast}.svelte`
+
+## 🧭 개발 단계(요약)
+- Phase 1: 메인, 로그인
+- Phase 2: 검색, 수강신청
+- Phase 3: 시간표, 대시보드
+- Phase 4: 공지사항 및 통합
+

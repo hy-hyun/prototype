@@ -109,9 +109,12 @@
 
   function formatSchedule(schedule: any[]) {
     const days = ["", "월", "화", "수", "목", "금", "토", "일"];
-    return schedule.map(s => 
-      `${days[s.day]} ${s.start}~${s.end}교시 (${s.building} ${s.room})`
-    ).join(", ");
+    return schedule
+      .map((s) => {
+        const location = [s.building, s.room].filter(Boolean).join(" ");
+        return `${days[s.day]} ${s.start}~${s.end}시${location ? ` ${location}` : ""}`;
+      })
+      .join(", ");
   }
 
   // 컴포넌트 마운트 시 Firebase에서 강의 데이터 로드

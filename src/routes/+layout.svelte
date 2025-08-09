@@ -4,18 +4,26 @@
   import { toasts } from "$lib/toast";
   import { isLoggedIn, currentUser } from "$lib/stores";
   import LoginModal from "$lib/components/LoginModal.svelte";
-  
+  import { Button } from "$lib/components/ui/button";
+  import {
+    Megaphone,
+    Search as SearchIcon,
+    ClipboardList,
+    CalendarDays,
+    LayoutDashboard
+  } from "@lucide/svelte";
+
   let { children } = $props();
   let showLoginModal = $state(false);
-  
+
   const navItems = [
-    { href: "/notices", label: "공지사항", icon: "📢" },
-    { href: "/search", label: "강의검색", icon: "🔍" },
-    { href: "/enroll", label: "수강신청", icon: "📝" },
-    { href: "/timetable", label: "시간표", icon: "📅" },
-    { href: "/dashboard", label: "대시보드", icon: "📊" }
+    { href: "/notices", label: "공지사항", icon: Megaphone },
+    { href: "/search", label: "강의검색", icon: SearchIcon },
+    { href: "/enroll", label: "수강신청", icon: ClipboardList },
+    { href: "/timetable", label: "시간표", icon: CalendarDays },
+    { href: "/dashboard", label: "대시보드", icon: LayoutDashboard }
   ];
-  
+
   function handleLogout() {
     isLoggedIn.set(false);
     currentUser.set(null);
@@ -32,31 +40,40 @@
       HY-PATH
       <span class="text-sm font-normal hanyang-blue block -mt-1">한양대학교 수강신청 시스템</span>
     </a>
-    <div class="flex items-center gap-8">
+    <div class="flex items-center gap-4 sm:gap-6">
       {#each navItems as item}
-        <a class="flex items-center gap-2 text-sm font-medium text-gray-700 hover:hanyang-navy transition-colors duration-200" href={item.href}>
-          <span class="text-base">{item.icon}</span>
+        {@const Icon = item.icon}
+        <Button
+          variant="ghost"
+          size="sm"
+          class="text-gray-700 hover:text-hanyang-navy"
+          href={item.href}
+          aria-label={item.label}
+        >
+          <Icon class="size-4" />
           <span class="hidden sm:inline">{item.label}</span>
-        </a>
+        </Button>
       {/each}
-      
+
       {#if $isLoggedIn}
         <div class="flex items-center gap-3">
           <span class="text-sm hanyang-dark-gray">안녕하세요, <span class="font-semibold hanyang-navy">{$currentUser?.name}</span>님</span>
-          <button 
+          <Button
+            variant="outline"
+            class="border-red-300 text-red-600 hover:bg-red-50"
             onclick={handleLogout}
-            class="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200 font-medium"
           >
             로그아웃
-          </button>
+          </Button>
         </div>
       {:else}
-        <button 
-          onclick={() => showLoginModal = true}
-          class="rounded-lg bg-hanyang-navy px-4 py-2 text-sm text-white hover:bg-hanyang-blue transition-colors duration-200 font-medium"
+        <Button
+          variant="default"
+          class="bg-hanyang-navy hover:bg-hanyang-blue text-white"
+          onclick={() => (showLoginModal = true)}
         >
           로그인
-        </button>
+        </Button>
       {/if}
     </div>
   </div>

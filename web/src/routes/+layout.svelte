@@ -1,6 +1,7 @@
 <script lang="ts">
   import favicon from "$lib/assets/favicon.svg";
   import "../app.css";
+  import { toasts } from "$lib/toast";
   let { children } = $props();
   const navItems = [
     { href: "/", label: "홈" },
@@ -31,3 +32,12 @@
 <main class="mx-auto max-w-7xl p-4">
   {@render children?.()}
   </main>
+
+<!-- Toasts -->
+<div class="fixed bottom-4 right-4 grid gap-2">
+  {#each $toasts as t}
+    <div class="rounded border px-3 py-2 text-sm shadow bg-white dark:bg-neutral-900">
+      {t.message}
+    </div>
+  {/each}
+  </div>

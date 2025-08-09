@@ -1,6 +1,8 @@
 <script lang="ts">
   import { notices, scheduleEvents, isLoggedIn } from "$lib/stores";
   import { derived } from "svelte/store";
+  import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
   
   const pinnedNotices = derived(notices, ($n) => $n.filter((x) => x.pinned));
   const latestNotices = derived(notices, ($n) => $n.filter((x) => !x.pinned).slice(0, 3));
@@ -18,6 +20,11 @@
       default: return 'bg-hanyang-gray text-hanyang-dark-gray border-gray-200 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700';
     }
   }
+
+  // 개발 단계: 루트 접속 시 수강신청 페이지로 이동
+  onMount(() => {
+    goto("/enroll");
+  });
 </script>
 
 <div class="space-y-8">

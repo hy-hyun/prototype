@@ -1,26 +1,23 @@
 <script lang="ts">
-  import TimetableHeader from "$lib/components/TimetableHeader.svelte";
-  import TimetableGrid from "$lib/components/TimetableGrid.svelte";
-  import TimetableSidebar from "$lib/components/TimetableSidebar.svelte";
-  import TimetableFooter from "$lib/components/TimetableFooter.svelte";
-  import ConsecutiveWarning from "$lib/components/ConsecutiveWarning.svelte";
-  
-  import { cart, applications } from "$lib/stores";
-  
-  // 시간 중복 및 연강 감지를 위한 상태
-  let showConflictWarning = $state(false);
-  let showConsecutiveWarning = $state(false);
-  let conflictDetails = $state<string[]>([]);
-  let consecutiveDetails = $state<string[]>([]);
-  
-  // 시간표 관련 상태 관리
+  import type { Lecture } from "$lib/types";
+  import { cart, applications, courses } from "$lib/stores";
+  type Block = { day: number; start: number; end: number; title: string };
+  const blocks = $state<Block[]>([]);
+  const days = ["월", "화", "수", "목", "금"];
+
+  function hasOverlap(a: Block, b: Block) {
+    return a.day === b.day && Math.max(a.start, b.start) < Math.min(a.end, b.end);
+  }
   $effect(() => {
-    // 장바구니와 신청내역 변경 시 충돌 및 연강 검사
-    const allItems = [...$cart, ...$applications.map(app => ({ courseId: app.courseId, classId: app.classId, method: "FCFS" as const }))];
-    
-    // 여기서 충돌 검사 로직 구현 (추후 TimetableGrid에서 처리)
-    // showConflictWarning = hasTimeConflicts(allItems);
-    // showConsecutiveWarning = hasConsecutiveClasses(allItems);
+    // 장바구니와 신청내역을 기준으로 시간표 블록 구성 (더미)
+    const data = $courses;
+    const selectedIds = new Set($applications.map((a) => `${a.courseId}-${a.classId}`));
+    const cartIds = new Set($cart.map((c) => `${c.courseId}-${c.classId}`));
+    const chosen = data.filter((l) => selectedIds.has(`${l.courseId}-${l.classId}`) || cartIds.has(`${l.courseId}-${l.classId}`));
+    blocks.length = 0;
+    blocks.push(
+      ...chosen.flatMap((l) => l.schedule.map((m) => ({ day: m.day - 1, start: m.start, end: m.end, title: l.title })))
+    );
   });
 </script>
 

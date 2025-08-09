@@ -1,373 +1,26 @@
 import type { Lecture, Notice } from "$lib/types";
 
-export const MOCK_LECTURES: Lecture[] = [
-  // 월요일 강의들
-  {
-    courseId: "CSE101",
-    classId: "01",
-    title: "컴퓨터개론",
-    category: "전공필수",
-    dept: "컴퓨터공학과",
-    instructor: "김교수",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 1, start: 9, end: 11, building: "IT", room: "101" }],
-    capacity: 60,
-    area: "전공핵심",
-    keywords: ["#기초", "#프로그래밍"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CSE102",
-    classId: "01",
-    title: "프로그래밍기초",
-    category: "전공필수",
-    dept: "컴퓨터공학과",
-    instructor: "이교수",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 1, start: 11, end: 13, building: "IT", room: "201" }],
-    capacity: 50,
-    area: "전공핵심",
-    keywords: ["#프로그래밍", "#기초"],
-    method: "FCFS"
-  },
-  {
-    courseId: "MAT101",
-    classId: "01",
-    title: "미적분학",
-    category: "기초교양",
-    dept: "수학과",
-    instructor: "박교수",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 1, start: 13, end: 15, building: "SCI", room: "301" }],
-    capacity: 80,
-    area: "기초교양",
-    keywords: ["#수학", "#기초"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CSE401",
-    classId: "01",
-    title: "인공지능",
-    category: "전공선택",
-    dept: "컴퓨터공학과",
-    instructor: "김지원",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 1, start: 15, end: 17, building: "IT", room: "301" }],
-    capacity: 40,
-    area: "전공심화",
-    keywords: ["#AI", "#머신러닝"],
-    method: "BID"
-  },
-  {
-    courseId: "MAT201",
-    classId: "01",
-    title: "이산수학",
-    category: "교양필수",
-    dept: "수학과",
-    instructor: "정수민",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 1, start: 17, end: 19, building: "SCI", room: "201" }],
-    capacity: 60,
-    area: "기초교양",
-    keywords: ["#수학", "#논리"],
-    method: "FCFS"
-  },
-  
-  // 화요일 강의들
-  {
-    courseId: "ENG201",
-    classId: "01",
-    title: "영어회화",
-    category: "교양필수",
-    dept: "어학부",
-    instructor: "Smith",
-    credits: { lecture: 2, lab: 0 },
-    schedule: [{ day: 2, start: 9, end: 11, building: "HUM", room: "101" }],
-    capacity: 25,
-    area: "기초교양",
-    keywords: ["#영어", "#회화"],
-    method: "FCFS"
-  },
-  {
-    courseId: "PHY101",
-    classId: "01",
-    title: "일반물리학",
-    category: "기초교양",
-    dept: "물리학과",
-    instructor: "최교수",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 2, start: 11, end: 13, building: "SCI", room: "201" }],
-    capacity: 70,
-    area: "기초교양",
-    keywords: ["#물리", "#실험"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CSE202",
-    classId: "01",
-    title: "알고리즘",
-    category: "전공필수",
-    dept: "컴퓨터공학과",
-    instructor: "한상훈",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 2, start: 13, end: 15, building: "IT", room: "301" }],
-    capacity: 50,
-    area: "전공핵심",
-    keywords: ["#알고리즘", "#자료구조"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CSE402",
-    classId: "01",
-    title: "머신러닝",
-    category: "전공선택",
-    dept: "컴퓨터공학과",
-    instructor: "강태호",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 2, start: 15, end: 17, building: "IT", room: "401" }],
-    capacity: 40,
-    area: "전공심화",
-    keywords: ["#AI", "#데이터분석"],
-    method: "BID"
-  },
-  {
-    courseId: "STA101",
-    classId: "01",
-    title: "통계학개론",
-    category: "교양선택",
-    dept: "통계학과",
-    instructor: "조민혁",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 2, start: 17, end: 19, building: "SCI", room: "401" }],
-    capacity: 60,
-    area: "기초교양",
-    keywords: ["#통계", "#데이터"],
-    method: "FCFS"
-  },
-  
-  // 수요일 강의들
-  {
-    courseId: "CSE201",
-    classId: "01",
-    title: "자료구조",
-    category: "전공필수",
-    dept: "컴퓨터공학과",
-    instructor: "정교수",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 3, start: 9, end: 11, building: "IT", room: "102" }],
-    capacity: 50,
-    area: "전공핵심",
-    keywords: ["#자료구조", "#프로그래밍"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CSE203",
-    classId: "01",
-    title: "운영체제",
-    category: "전공필수",
-    dept: "컴퓨터공학과",
-    instructor: "최윤정",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 3, start: 11, end: 13, building: "IT", room: "101" }],
-    capacity: 50,
-    area: "전공핵심",
-    keywords: ["#OS", "#시스템"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CSE303",
-    classId: "01",
-    title: "네트워크",
-    category: "전공선택",
-    dept: "컴퓨터공학과",
-    instructor: "김현우",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 3, start: 13, end: 15, building: "IT", room: "201" }],
-    capacity: 40,
-    area: "전공심화",
-    keywords: ["#네트워크", "#통신"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CSE403",
-    classId: "01",
-    title: "웹프로그래밍",
-    category: "전공선택",
-    dept: "컴퓨터공학과",
-    instructor: "신혜림",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 3, start: 15, end: 17, building: "IT", room: "401" }],
-    capacity: 35,
-    area: "전공심화",
-    keywords: ["#웹", "#프론트엔드"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CHE101",
-    classId: "01",
-    title: "일반화학",
-    category: "기초교양",
-    dept: "화학과",
-    instructor: "홍길동",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 3, start: 17, end: 19, building: "SCI", room: "101" }],
-    capacity: 80,
-    area: "기초교양",
-    keywords: ["#화학", "#실험"],
-    method: "FCFS"
-  },
-  
-  // 목요일 강의들
-  {
-    courseId: "GEN101",
-    classId: "01",
-    title: "철학개론",
-    category: "핵심교양",
-    dept: "철학과",
-    instructor: "윤교수",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 4, start: 9, end: 11, building: "HUM", room: "201" }],
-    capacity: 40,
-    area: "핵심교양",
-    keywords: ["#철학", "#사고"],
-    method: "BID"
-  },
-  {
-    courseId: "BUS101",
-    classId: "01",
-    title: "경영학원론",
-    category: "전공선택",
-    dept: "경영학과",
-    instructor: "조교수",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 4, start: 11, end: 13, building: "BIZ", room: "301" }],
-    capacity: 60,
-    area: "전공심화",
-    keywords: ["#경영", "#비즈니스"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CSE204",
-    classId: "01",
-    title: "컴파일러",
-    category: "전공선택",
-    dept: "컴퓨터공학과",
-    instructor: "문정아",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 4, start: 13, end: 15, building: "IT", room: "301" }],
-    capacity: 40,
-    area: "전공심화",
-    keywords: ["#컴파일러", "#언어"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CSE304",
-    classId: "01",
-    title: "정보보안",
-    category: "전공선택",
-    dept: "컴퓨터공학과",
-    instructor: "송영준",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 4, start: 15, end: 17, building: "IT", room: "401" }],
-    capacity: 35,
-    area: "전공심화",
-    keywords: ["#보안", "#암호"],
-    method: "BID"
-  },
-  {
-    courseId: "PHI101",
-    classId: "01",
-    title: "논리학개론",
-    category: "교양선택",
-    dept: "철학과",
-    instructor: "임철호",
-    credits: { lecture: 2, lab: 0 },
-    schedule: [{ day: 4, start: 17, end: 19, building: "HUM", room: "201" }],
-    capacity: 30,
-    area: "핵심교양",
-    keywords: ["#논리", "#사고"],
-    method: "FCFS"
-  },
-  
-  // 금요일 강의들
-  {
-    courseId: "CSE301",
-    classId: "01",
-    title: "데이터베이스",
-    category: "전공선택",
-    dept: "컴퓨터공학과",
-    instructor: "한교수",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 5, start: 9, end: 11, building: "IT", room: "301" }],
-    capacity: 50,
-    area: "전공심화",
-    keywords: ["#DB", "#데이터"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CSE302",
-    classId: "01",
-    title: "시스템프로그래밍",
-    category: "전공선택",
-    dept: "컴퓨터공학과",
-    instructor: "오교수",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 5, start: 11, end: 13, building: "IT", room: "301" }],
-    capacity: 40,
-    area: "전공심화",
-    keywords: ["#시스템", "#C"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CSE105",
-    classId: "01",
-    title: "모바일프로그래밍",
-    category: "전공선택",
-    dept: "컴퓨터공학과",
-    instructor: "김태영",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 5, start: 13, end: 15, building: "IT", room: "201" }],
-    capacity: 35,
-    area: "전공심화",
-    keywords: ["#모바일", "#앱"],
-    method: "FCFS"
-  },
-  {
-    courseId: "CSE205",
-    classId: "01",
-    title: "게임프로그래밍",
-    category: "전공선택",
-    dept: "컴퓨터공학과",
-    instructor: "유진수",
-    credits: { lecture: 3, lab: 0 },
-    schedule: [{ day: 5, start: 15, end: 17, building: "IT", room: "401" }],
-    capacity: 30,
-    area: "전공심화",
-    keywords: ["#게임", "#그래픽"],
-    method: "BID"
-  },
-  {
-    courseId: "ENG301",
-    classId: "01",
-    title: "영작문",
-    category: "교양선택",
-    dept: "영어영문학과",
-    instructor: "Johnson",
-    credits: { lecture: 2, lab: 0 },
-    schedule: [{ day: 5, start: 17, end: 19, building: "HUM", room: "301" }],
-    capacity: 25,
-    area: "기초교양",
-    keywords: ["#영어", "#작문"],
-    method: "FCFS"
-  }
-];
+// 더미 데이터는 삭제됨 - Firebase에서 실제 데이터를 가져옵니다
 
 export const MOCK_NOTICES: Notice[] = [
-  { id: "n1", title: "🔥 2025-2학기 수강신청 일정 안내", content: "8월 12일(월) 09:00 ~ 8월 16일(금) 18:00", pinned: true, createdAt: "2025-08-01" },
-  { id: "n2", title: "⚠️ 시스템 점검 안내", content: "8/10 02:00-04:00 서비스 일시 중단", pinned: true, createdAt: "2025-08-03" },
+  { id: "n1", title: "2025-2학기 수강신청 일정 안내", content: "8월 12일(월) 09:00 ~ 8월 16일(금) 18:00", pinned: true, createdAt: "2025-08-01" },
+  { id: "n2", title: "시스템 점검 안내", content: "8/10 02:00-04:00 서비스 일시 중단", pinned: true, createdAt: "2025-08-03" },
   { id: "n3", title: "신규 과목 개설 안내", content: "AI와 데이터리터러시 과목 신규 개설", createdAt: "2025-08-05" },
   { id: "n4", title: "수강신청 가이드북 배포", content: "신입생 및 편입생 대상 가이드북 배포", createdAt: "2025-08-04" },
-  { id: "n5", title: "베팅제 도입 안내", content: "핵심교양 과목 베팅제 시범 운영", createdAt: "2025-08-03" }
+  { id: "n5", title: "베팅제 도입 안내", content: "핵심교양 과목 베팅제 시범 운영", createdAt: "2025-08-03" },
+  { id: "n6", title: "2025-1학기 성적 공개", content: "7월 30일부터 포털에서 성적 조회 가능", createdAt: "2025-07-28" },
+  { id: "n7", title: "여름계절학기 종료 안내", content: "8월 2일 여름계절학기 수업 종료 및 시험 일정", createdAt: "2025-07-25" },
+  { id: "n8", title: "장학금 신청 마감 연장", content: "성적우수 장학금 신청 기간 8월 5일까지 연장", createdAt: "2025-07-22" },
+  { id: "n9", title: "도서관 여름방학 운영시간", content: "8월 중 도서관 운영시간: 평일 09:00-18:00", createdAt: "2025-07-20" },
+  { id: "n10", title: "기숙사 입사 신청 안내", content: "2학기 기숙사 입사 신청 7월 15일부터 시작", createdAt: "2025-07-12" },
+  { id: "n11", title: "2025-1학기 재수강 결과", content: "재수강 성적 처리 완료, 포털에서 확인 가능", createdAt: "2025-07-10" },
+  { id: "n12", title: "학과별 전공설명회 개최", content: "신입생 대상 전공설명회 7월 8일-12일 진행", createdAt: "2025-07-05" },
+  { id: "n13", title: "여름휴가 중 학사일정", content: "7월-8월 학사일정 및 업무시간 안내", createdAt: "2025-06-28" },
+  { id: "n14", title: "2025-2학기 등록금 납부", content: "등록금 납부 기간: 8월 20일-30일", createdAt: "2025-06-25" },
+  { id: "n15", title: "1학기 기말고사 종료", content: "6월 21일 기말고사 종료, 성적 입력 기간 안내", createdAt: "2025-06-20" },
+  { id: "n16", title: "하계 인턴십 프로그램", content: "기업 연계 하계 인턴십 프로그램 참가자 발표", createdAt: "2025-06-15" },
+  { id: "n17", title: "캠퍼스 시설 보수공사", content: "여름방학 중 학생회관 리모델링 공사 진행", createdAt: "2025-06-10" },
+
 ];
 
 export const SCHEDULE_EVENTS = [
@@ -377,5 +30,32 @@ export const SCHEDULE_EVENTS = [
   { date: "2025-08-15", title: "4차 수강신청", desc: "1학년 신청 시작", type: "secondary" },
   { date: "2025-08-16", title: "수강신청 마감", desc: "18:00 최종 마감", type: "danger" }
 ];
+
+// 기본 필터 옵션 (학기, 학년은 고정)
+export const STATIC_FILTER_OPTIONS = {
+  terms: [
+    { value: "2025-2", label: "2025-2학기" },
+    { value: "2025-1", label: "2025-1학기" },
+    { value: "2024-2", label: "2024-2학기" }
+  ],
+  grades: [
+    { value: "1", label: "1학년" },
+    { value: "2", label: "2학년" },
+    { value: "3", label: "3학년" },
+    { value: "4", label: "4학년" }
+  ],
+  courseLevels: [
+    { value: "100", label: "100단계 (1학년)" },
+    { value: "200", label: "200단계 (2학년)" },
+    { value: "300", label: "300단계 (3학년)" },
+    { value: "400", label: "400단계 (4학년)" }
+  ],
+  creditHours: [
+    { value: "1", label: "1학점" },
+    { value: "2", label: "2학점" },
+    { value: "3", label: "3학점" },
+    { value: "4", label: "4학점" }
+  ]
+};
 
 

@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { cart, applications, lectures } from "$lib/stores";
-  import html2canvas from "html2canvas";
+  import { cart, applications, courses } from "$lib/stores";
+  import type { Lecture } from "$lib/types";
+  import { browser } from "$app/environment";
   
   // 학기 선택
   let selectedSemester = $state("2024-2학기");
@@ -9,10 +10,10 @@
   // 총 학점 계산 (장바구니 + 신청내역 기준) - Svelte 5 문법
   let totalCredits = $derived.by(() => {
     const allItems = [...$cart, ...$applications.map(app => ({ courseId: app.courseId, classId: app.classId, method: "FCFS" as const }))];
-    const lectureData = $lectures;
+    const lectureData = $courses;
     
     return allItems.reduce((sum, item) => {
-      const lecture = lectureData.find(l => l.courseId === item.courseId && l.classId === item.classId);
+      const lecture = lectureData.find((l: Lecture) => l.courseId === item.courseId && l.classId === item.classId);
       if (lecture) {
         return sum + lecture.credits.lecture + lecture.credits.lab;
       }
@@ -31,7 +32,12 @@
   });
 
   async function downloadPNG() {
+    if (!browser) return;
+    
     try {
+      // html2canvas를 동적으로 import
+      const { default: html2canvas } = await import('html2canvas');
+      
       // 시간표 그리드 요소 찾기
       const timetableElement = document.querySelector('[data-timetable-grid]') as HTMLElement;
       if (!timetableElement) {
@@ -63,6 +69,8 @@
   }
 
   function shareTimetable() {
+    if (!browser) return;
+    
     // 시간표 공유 URL 생성
     const shareData = {
       semester: selectedSemester,

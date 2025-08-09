@@ -1,9 +1,20 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
   import { cart, applications, courses } from "$lib/stores";
+  import TimetableHeader from "$lib/components/TimetableHeader.svelte";
+  import TimetableSidebar from "$lib/components/TimetableSidebar.svelte";
+  import TimetableGrid from "$lib/components/TimetableGrid.svelte";
+  import ConsecutiveWarning from "$lib/components/ConsecutiveWarning.svelte";
+  import TimetableFooter from "$lib/components/TimetableFooter.svelte";
+  
   type Block = { day: number; start: number; end: number; title: string };
   const blocks = $state<Block[]>([]);
   const days = ["월", "화", "수", "목", "금"];
+  
+  // 경고 상태들
+  let showConflictWarning = $state(false);
+  let conflictDetails = $state<string[]>([]);
+  let showConsecutiveWarning = $state(false);
 
   function hasOverlap(a: Block, b: Block) {
     return a.day === b.day && Math.max(a.start, b.start) < Math.min(a.end, b.end);
@@ -14,9 +25,30 @@
     const selectedIds = new Set($applications.map((a) => `${a.courseId}-${a.classId}`));
     const cartIds = new Set($cart.map((c) => `${c.courseId}-${c.classId}`));
     const chosen = data.filter((l) => selectedIds.has(`${l.courseId}-${l.classId}`) || cartIds.has(`${l.courseId}-${l.classId}`));
+    
     blocks.length = 0;
     blocks.push(
       ...chosen.flatMap((l) => l.schedule.map((m) => ({ day: m.day - 1, start: m.start, end: m.end, title: l.title })))
+    );
+    
+    // 시간 중복 검사
+    const conflicts = [];
+    for (let i = 0; i < blocks.length; i++) {
+      for (let j = i + 1; j < blocks.length; j++) {
+        if (hasOverlap(blocks[i], blocks[j])) {
+          conflicts.push(`${blocks[i].title} - ${blocks[j].title}`);
+        }
+      }
+    }
+    
+    showConflictWarning = conflicts.length > 0;
+    conflictDetails = conflicts;
+    
+    // 연강 검사 (간단한 버전)
+    showConsecutiveWarning = blocks.some((block, i) => 
+      blocks.some((other, j) => 
+        i !== j && block.day === other.day && Math.abs(block.end - other.start) === 0
+      )
     );
   });
 </script>

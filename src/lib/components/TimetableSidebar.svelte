@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { cart, lectures } from "$lib/stores";
+  import { cart, courses } from "$lib/stores";
   import type { Lecture } from "$lib/types";
 
 
@@ -9,18 +9,18 @@
 
   // 요일별 강의 개수 계산
   const dayTabs = $derived([
-    { key: "전체", label: "전체", count: $lectures.length },
-    { key: "월", label: "월", count: $lectures.filter(c => c.schedule.some(s => s.day === 1)).length },
-    { key: "화", label: "화", count: $lectures.filter(c => c.schedule.some(s => s.day === 2)).length },
-    { key: "수", label: "수", count: $lectures.filter(c => c.schedule.some(s => s.day === 3)).length },
-    { key: "목", label: "목", count: $lectures.filter(c => c.schedule.some(s => s.day === 4)).length },
-    { key: "금", label: "금", count: $lectures.filter(c => c.schedule.some(s => s.day === 5)).length }
+    { key: "전체", label: "전체", count: $courses.length },
+    { key: "월", label: "월", count: $courses.filter(c => c.schedule.some(s => s.day === 1)).length },
+    { key: "화", label: "화", count: $courses.filter(c => c.schedule.some(s => s.day === 2)).length },
+    { key: "수", label: "수", count: $courses.filter(c => c.schedule.some(s => s.day === 3)).length },
+    { key: "목", label: "목", count: $courses.filter(c => c.schedule.some(s => s.day === 4)).length },
+    { key: "금", label: "금", count: $courses.filter(c => c.schedule.some(s => s.day === 5)).length }
   ]);
 
   // 장바구니 강의 목록
   const cartCourses = $derived(
     $cart.map(cartItem => {
-      const course = $lectures.find(c => 
+      const course = $courses.find(c => 
         c.courseId === cartItem.courseId && c.classId === cartItem.classId
       );
       return course ? { ...course, cartMethod: cartItem.method } : null;
@@ -32,8 +32,8 @@
     console.log("현재 activeTab:", activeTab);
     
     if (activeTab === "전체") {
-      console.log("전체 강의 개수:", $lectures.length);
-      return $lectures;
+      console.log("전체 강의 개수:", $courses.length);
+      return $courses;
     }
     
     const dayMapping: Record<string, number> = {
@@ -46,7 +46,7 @@
       return [];
     }
     
-    const filtered = $lectures.filter(course => 
+    const filtered = $courses.filter(course => 
       course.schedule.some(schedule => schedule.day === targetDay)
     );
     console.log(`${activeTab}요일 강의 개수:`, filtered.length);

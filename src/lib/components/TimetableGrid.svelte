@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { cart, lectures, applications } from "$lib/stores";
+  import { cart, courses, applications } from "$lib/stores";
   
   // 시간표 설정
   const days = ["월", "화", "수", "목", "금"];
@@ -77,7 +77,7 @@
     const colors = ["bg-blue-100 border-blue-300", "bg-green-100 border-green-300", "bg-purple-100 border-purple-300", "bg-orange-100 border-orange-300", "bg-pink-100 border-pink-300"];
     
     allItems.forEach((item, index) => {
-      const lecture = $lectures.find(l => 
+      const lecture = $courses.find(l => 
         l.courseId === item.courseId && l.classId === item.classId
       );
       
@@ -216,7 +216,7 @@
   // 대체 과목 제안
   function suggestAlternatives(conflictBlock: TimetableBlock) {
     // 동일한 강의의 다른 분반 찾기
-    const lectureData = $lectures;
+    const lectureData = $courses;
     const alternatives = lectureData.filter(lecture => 
       lecture.title === conflictBlock.title && 
       lecture.classId !== conflictBlock.classId

@@ -1,9 +1,12 @@
 import { writable, derived } from "svelte/store";
 import type { Application, CartItem, Lecture, Notice } from "$lib/types";
-import { MOCK_LECTURES, MOCK_NOTICES } from "$lib/mock/data";
+import { MOCK_LECTURES, MOCK_NOTICES, SCHEDULE_EVENTS } from "$lib/mock/data";
 
 export const lectures = writable<Lecture[]>(MOCK_LECTURES);
 export const notices = writable<Notice[]>(MOCK_NOTICES);
+export const scheduleEvents = writable(SCHEDULE_EVENTS);
+export const isLoggedIn = writable(false);
+export const currentUser = writable<{ id: string; name: string } | null>(null);
 
 export const cart = writable<CartItem[]>([]);
 export const applications = writable<Application[]>([]);

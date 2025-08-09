@@ -2,9 +2,28 @@
 
 :root {
   color-scheme: light dark;
+  
+  /* 한양대 공식 색상 팔레트 */
+  --hanyang-navy: #003876;
+  --hanyang-blue: #0066CC;
+  --hanyang-light-blue: #E6F2FF;
+  --hanyang-gray: #F8F9FA;
+  --hanyang-dark-gray: #6B7280;
+  --hanyang-accent: #FF6B35;
 }
 
 html, body, #app {
   height: 100%;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 }
+
+/* 한양대 브랜딩을 위한 커스텀 클래스 */
+.hanyang-navy { color: var(--hanyang-navy); }
+.bg-hanyang-navy { background-color: var(--hanyang-navy); }
+.hanyang-blue { color: var(--hanyang-blue); }
+.bg-hanyang-blue { background-color: var(--hanyang-blue); }
+.bg-hanyang-light-blue { background-color: var(--hanyang-light-blue); }
+.bg-hanyang-gray { background-color: var(--hanyang-gray); }
+.border-hanyang-navy { border-color: var(--hanyang-navy); }
+.border-hanyang-blue { border-color: var(--hanyang-blue); }
 

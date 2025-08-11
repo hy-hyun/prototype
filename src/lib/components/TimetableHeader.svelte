@@ -1,104 +1,51 @@
 <script lang="ts">
-  import { cart, applications, courses } from "$lib/stores";
-  import type { Lecture } from "$lib/types";
-  import { browser } from "$app/environment";
+  import { createEventDispatcher } from 'svelte';
   
-  // 학기 선택
-  let selectedSemester = $state("2024-2학기");
-  const semesters = ["2024-2학기", "2024-1학기", "2023-2학기"];
-  
-  // 총 학점 계산 (장바구니 + 신청내역 기준) - Svelte 5 문법
-  let totalCredits = $derived.by(() => {
-    const allItems = [...$cart, ...$applications.map(app => ({ courseId: app.courseId, classId: app.classId, method: "FCFS" as const }))];
-    const lectureData = $courses;
-    
-    return allItems.reduce((sum, item) => {
-      const lecture = lectureData.find((l: Lecture) => l.courseId === item.courseId && l.classId === item.classId);
-      if (lecture) {
-        return sum + lecture.credits.lecture + lecture.credits.lab;
-      }
-      return sum + 3; // 기본값 3학점
-    }, 0);
-  });
-  
-  // 학점 제한 정보
-  const minCredits = 12;
-  const maxCredits = 21;
-  let creditStatus = $derived.by(() => {
-    const current = totalCredits;
-    if (current < minCredits) return { status: "warning", message: `최소 ${minCredits}학점 필요` };
-    if (current > maxCredits) return { status: "error", message: `최대 ${maxCredits}학점 초과` };
-    return { status: "success", message: "적정 학점" };
-  });
+  type CreditStatus = {
+    status: "success" | "warning" | "error";
+    message: string;
+  };
 
-  async function downloadPNG() {
-    if (!browser) return;
-    
-    try {
-      // html2canvas를 동적으로 import
-      const { default: html2canvas } = await import('html2canvas');
-      
-      // 시간표 그리드 요소 찾기
-      const timetableElement = document.querySelector('[data-timetable-grid]') as HTMLElement;
-      if (!timetableElement) {
-        alert("시간표를 찾을 수 없습니다.");
-        return;
-      }
-      
-      // html2canvas로 캡처
-      const canvas = await html2canvas(timetableElement, {
-        scale: 2, // 고해상도
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true
-      });
-      
-      // 다운로드 링크 생성
-      const link = document.createElement('a');
-      link.download = `시간표_${selectedSemester}_${new Date().toISOString().split('T')[0]}.png`;
-      link.href = canvas.toDataURL('image/png');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      console.log("PNG 다운로드 완료");
-    } catch (error) {
-      console.error("PNG 다운로드 실패:", error);
-      alert("PNG 다운로드에 실패했습니다.");
-    }
+  // 부모로부터 모든 데이터를 props로 받습니다.
+  let {
+    selectedSemester = "2024-2학기",
+    semesters = [],
+    totalCredits = 0,
+    creditStatus = { status: "success", message: "적정 학점" },
+    minCredits = 12,
+    maxCredits = 21
+  } = $props<{
+    selectedSemester: string;
+    semesters: string[];
+    totalCredits: number;
+    creditStatus: CreditStatus;
+    minCredits: number;
+    maxCredits: number;
+  }>();
+
+  const dispatch = createEventDispatcher<{
+    semesterChange: string;
+    reset: void;
+    download: void;
+    share: void;
+  }>();
+
+  // 이벤트 핸들러는 이벤트를 dispatch 하기만 합니다.
+  function onSemesterChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    dispatch('semesterChange', target.value);
+  }
+
+  function resetTimetable() {
+    dispatch('reset');
+  }
+
+  function downloadPNG() {
+    dispatch('download');
   }
 
   function shareTimetable() {
-    if (!browser) return;
-    
-    // 시간표 공유 URL 생성
-    const shareData = {
-      semester: selectedSemester,
-      courses: [...$cart, ...$applications.map(app => ({ courseId: app.courseId, classId: app.classId, method: "FCFS" as const }))]
-    };
-    
-    const shareUrl = `${window.location.origin}/timetable?data=${encodeURIComponent(JSON.stringify(shareData))}`;
-    
-    if (navigator.share) {
-      navigator.share({
-        title: `${selectedSemester} 시간표`,
-        text: `내 시간표를 확인해보세요! (총 ${totalCredits}학점)`,
-        url: shareUrl
-      }).catch(console.error);
-    } else {
-      // 클립보드에 URL 복사
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("시간표 공유 링크가 클립보드에 복사되었습니다!");
-      }).catch(() => {
-        alert(`공유 링크: ${shareUrl}`);
-      });
-    }
-  }
-  
-  function resetTimetable() {
-    if (confirm("장바구니의 모든 과목을 삭제하시겠습니까?")) {
-      cart.set([]);
-    }
+    dispatch('share');
   }
 </script>
 
@@ -115,7 +62,8 @@
       <!-- 학기 선택 드롭다운 -->
       <select 
         class="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        bind:value={selectedSemester}
+        value={selectedSemester}
+        onchange={onSemesterChange}
       >
         {#each semesters as semester}
           <option value={semester}>{semester}</option>

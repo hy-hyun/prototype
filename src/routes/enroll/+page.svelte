@@ -15,16 +15,7 @@
   let loginOpen = false;
   let statusFilter: "ALL" | "PENDING" | "CONFIRMED" | "FAILED" | "CANCELLED" = "ALL";
 
-  onMount(async () => {
-    try {
-      if (get(courses).length === 0) {
-        await loadCourses();
-      }
-    } catch (e) {
-      console.error(e);
-      showToast("강의 데이터를 불러오지 못했습니다", "error");
-    }
-  });
+  // 데이터 로딩은 +layout.ts에서 전역으로 처리하므로 이 코드는 제거합니다.
 
   async function doApply(item: { courseId: string; classId: string; method: "FCFS" | "BID"; bidAmount?: number }) {
     if (!$isLoggedIn) {

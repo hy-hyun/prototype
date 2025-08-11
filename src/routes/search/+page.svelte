@@ -117,24 +117,13 @@
       .join(", ");
   }
 
-  // 컴포넌트 마운트 시 Firebase에서 강의 데이터 로드
-  onMount(async () => {
-    console.log('🔥 검색 페이지 마운트, Firebase 연결 테스트 시작');
-    
-    // 먼저 Firebase 연결 테스트
-    const isConnected = await testFirebaseConnection();
-    console.log('🔥 Firebase 연결 테스트 결과:', isConnected);
-    
-    // 그 다음 강의 데이터 로드
-    console.log('🔥 강의 데이터 로딩 시작');
-    await loadCourses();
-    console.log('🔥 강의 데이터 로딩 완료, 현재 courses 상태:', $courses);
-    console.log('🔥 현재 courses 개수:', $courses.length);
-  });
-
+  // 컴포넌트 마운트 시 더 이상 여기서 데이터를 로드하지 않습니다.
+  // 데이터 로딩은 src/routes/+layout.ts에서 전역으로 처리됩니다.
+  
   // 강의 데이터가 로드되면 초기 검색 실행
   $: if ($courses.length > 0 && results.length === 0) {
     console.log('🔍 초기 데이터 로드 완료, 검색 실행');
+    results = $courses; // 초기에는 전체 목록을 보여주도록 변경
     performRealTimeSearch();
   }
 </script>

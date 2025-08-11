@@ -5,6 +5,9 @@
   import { isLoggedIn, currentUser } from "$lib/stores";
   import LoginModal from "$lib/components/LoginModal.svelte";
   import { Button } from "$lib/components/ui/button";
+  import { onMount } from 'svelte';
+  import { auth } from '$lib/firebase';
+  import { onAuthStateChanged } from 'firebase/auth';
   import {
     Megaphone,
     Search as SearchIcon,
@@ -15,6 +18,30 @@
 
   let { children } = $props();
   let showLoginModal = $state(false);
+
+  // 컴포넌트가 마운트될 때 Firebase 인증 상태를 감시합니다.
+  onMount(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // 사용자가 로그인되어 있는 경우
+        isLoggedIn.set(true);
+        currentUser.set({
+          id: user.uid,
+          // user.displayName이 null일 경우를 대비해 기본값을 설정합니다.
+          name: user.displayName || user.email || '사용자', 
+        });
+        console.log('🔒 인증 상태 변경: 로그인됨', user);
+      } else {
+        // 사용자가 로그아웃되어 있는 경우
+        isLoggedIn.set(false);
+        currentUser.set(null);
+        console.log('🔒 인증 상태 변경: 로그아웃됨');
+      }
+    });
+
+    // 컴포넌트가 파괴될 때 감시를 중단하여 메모리 누수를 방지합니다.
+    return () => unsubscribe();
+  });
 
   const navItems = [
     { href: "/notices", label: "공지사항", icon: Megaphone },

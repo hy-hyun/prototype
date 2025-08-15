@@ -111,9 +111,9 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   /* Hanyang custom brand colors for utilities like bg-hanyang-blue, text-hanyang-navy, etc. */
-  --color-hanyang-blue: #2563eb;          /* Tailwind blue-600 */
-  --color-hanyang-light-blue: #dbeafe;    /* Tailwind blue-100 */
-  --color-hanyang-navy: #1e3a8a;          /* Tailwind blue-800 */
+  --color-hanyang-blue: #0E4A84;          /* 한양대학교 공식 브랜드 색상 */
+  --color-hanyang-light-blue: #E8F1FA;    /* 한양 블루 연한 버전 */
+  --color-hanyang-navy: #0A3A6B;          /* 한양 블루 진한 버전 */
   --color-hanyang-gray: #f3f4f6;          /* Tailwind gray-100 */
   --color-hanyang-dark-gray: #6b7280;     /* Tailwind gray-500 */
 }

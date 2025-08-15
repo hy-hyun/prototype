@@ -1,5 +1,6 @@
 <script lang="ts">
   import { notices, scheduleEvents, isLoggedIn, getCacheInfo, getCacheStats, cleanupExpiredCache } from "$lib/stores";
+  import { Button } from "$lib/components/ui/button";
   
   // Svelte 5 룬모드 사용
   let cacheInfo = $state<ReturnType<typeof getCacheInfo> | null>(null);
@@ -54,78 +55,54 @@
 
 <div class="space-y-8">
 
-  <!-- 캐시 상태 표시 (개발용) -->
-  {#if cacheInfo}
-    <div class="fixed bottom-4 right-4 z-50">
-      <button 
-        onclick={() => showCacheInfo = !showCacheInfo}
-        class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-colors"
-        title="캐시 상태 보기"
-      >
-        💾
-      </button>
+  <!-- 메인 배너 -->
+  <section class="relative overflow-hidden bg-gradient-to-r from-hanyang-blue via-blue-300 via-50% to-hanyang-blue dark:from-blue-900 dark:via-blue-500 dark:via-50% dark:to-blue-900 rounded-2xl shadow-xl">
+    <!-- 배경 패턴 -->
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute top-0 left-0 w-32 h-32 bg-white rounded-full -translate-x-16 -translate-y-16"></div>
+      <div class="absolute top-20 right-10 w-24 h-24 bg-white rounded-full"></div>
+      <div class="absolute bottom-0 right-0 w-40 h-40 bg-white rounded-full translate-x-20 translate-y-20"></div>
+      <div class="absolute bottom-10 left-20 w-16 h-16 bg-white rounded-full"></div>
+    </div>
+    
+    <!-- 메인 콘텐츠 -->
+    <div class="relative px-6 py-10 md:px-10 md:py-12">
+      <div class="max-w-xl">
+        <div class="space-y-2 mb-6">
+          <p class="text-white/90 text-lg font-bold tracking-wide">더 편리한</p>
+          <p class="text-white/90 text-lg font-bold tracking-wide">수강신청을 위해</p>
+          <h1 class="text-5xl md:text-6xl font-black text-white tracking-tight">
+            HY-PATH
+          </h1>
+        </div>
+      </div>
       
-      {#if showCacheInfo}
-        <div class="absolute bottom-12 right-0 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-4 shadow-xl min-w-80 max-w-96">
-          <div class="flex justify-between items-center mb-3">
-            <h3 class="font-bold text-sm">캐시 상태</h3>
-            <button 
-              onclick={() => cleanupExpiredCache()}
-              class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded transition-colors"
-              title="만료된 캐시 정리"
-            >
-              정리
-            </button>
+      <!-- 우측 장식 요소 -->
+      <div class="absolute top-1/2 right-8 -translate-y-1/2 hidden lg:block">
+        <div class="relative">
+          <!-- 캘린더 아이콘 -->
+          <div class="w-20 h-20 bg-hanyang-light-blue/30 dark:bg-blue-700/30 rounded-2xl backdrop-blur-sm flex items-center justify-center mb-4 transform rotate-12 shadow-md">
+            <svg class="w-10 h-10 text-gray-100" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+            </svg>
           </div>
-          
-          {#if cacheStats}
-            <div class="mb-3 p-2 bg-gray-50 dark:bg-neutral-700 rounded text-xs">
-              <div class="flex justify-between">
-                <span>총 캐시:</span>
-                <span>{cacheStats.totalItems}개</span>
-              </div>
-              <div class="flex justify-between">
-                <span>만료된 캐시:</span>
-                <span class="text-red-500">{cacheStats.expiredItems}개</span>
-              </div>
-              <div class="flex justify-between">
-                <span>캐시 크기:</span>
-                <span>{cacheStats.sizeFormatted}</span>
-              </div>
-            </div>
-          {/if}
-          
-          <div class="space-y-2 text-xs max-h-60 overflow-y-auto">
-            {#each Object.entries(cacheInfo) as [key, info]}
-              <div class="flex justify-between items-center">
-                <span class="font-medium">{key}:</span>
-                {#if info}
-                  <div class="text-right">
-                    <div class="text-green-600 dark:text-green-400">
-                      ✓ {formatCacheTime(info.timestamp)}
-                    </div>
-                    <div class="text-gray-500 text-xs">
-                      만료: {info.expiry.toLocaleTimeString()}
-                    </div>
-                    {#if info.isExpired}
-                      <div class="text-red-500 text-xs">만료됨</div>
-                    {/if}
-                  </div>
-                {:else}
-                  <span class="text-red-500">없음</span>
-                {/if}
-              </div>
-            {/each}
+          <!-- 검색 아이콘 -->
+          <div class="w-16 h-16 bg-hanyang-light-blue/30 dark:bg-blue-700/30 rounded-xl backdrop-blur-sm flex items-center justify-center ml-8 transform -rotate-6 shadow-md">
+            <svg class="w-8 h-8 text-gray-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
           </div>
         </div>
-      {/if}
+      </div>
     </div>
-  {/if}
+  </section>
+
+
 
   <!-- 수강신청 일정 캘린더 -->
   <section>
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-3xl font-bold hanyang-navy dark:text-neutral-100 flex items-center gap-3">
+      <h2 class="text-3xl font-bold text-black dark:text-neutral-100 flex items-center gap-3">
         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
           <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
         </svg>
@@ -164,29 +141,29 @@
         <div class="text-center py-3">10</div>
         <div class="text-center py-3">11</div>
         
-        <!-- 수강신청 기간 날짜들 -->
-        <div class="text-center py-3 relative">
-          <div class="font-bold mb-1">12</div>
-          <div class="h-5 bg-hanyang-blue rounded-l -mr-px"></div>
-        </div>
-        <div class="text-center py-3 relative">
-          <div class="font-bold mb-1">13</div>
-          <div class="h-5 bg-hanyang-blue -mr-px -ml-px"></div>
-        </div>
-        <div class="text-center py-3 relative">
-          <div class="font-bold mb-1">14</div>
-          <div class="h-5 bg-hanyang-blue flex items-center justify-center -mr-px -ml-px">
-            <span class="text-xs text-white font-medium">2025-2학기 수강신청 기간</span>
-          </div>
-        </div>
-        <div class="text-center py-3 relative">
-          <div class="font-bold mb-1">15</div>
-          <div class="h-5 bg-hanyang-blue -mr-px -ml-px"></div>
-        </div>
-        <div class="text-center py-3 relative">
-          <div class="font-bold mb-1">16</div>
-          <div class="h-5 bg-hanyang-blue rounded-r -ml-px"></div>
-        </div>
+                 <!-- 수강신청 기간 날짜들 -->
+         <div class="text-center py-3 relative">
+           <div class="font-bold mb-1">12</div>
+           <div class="h-5 bg-hanyang-blue rounded-l -mr-px"></div>
+         </div>
+         <div class="text-center py-3 relative">
+           <div class="font-bold mb-1">13</div>
+           <div class="h-5 bg-hanyang-blue -mr-px -ml-px"></div>
+         </div>
+         <div class="text-center py-3 relative">
+           <div class="font-bold mb-1">14</div>
+           <div class="h-5 bg-hanyang-blue flex items-center justify-center -mr-px -ml-px">
+             <span class="text-xs text-white font-bold">2025-2학기 수강신청 기간</span>
+           </div>
+         </div>
+         <div class="text-center py-3 relative">
+           <div class="font-bold mb-1">15</div>
+           <div class="h-5 bg-hanyang-blue -mr-px -ml-px"></div>
+         </div>
+         <div class="text-center py-3 relative">
+           <div class="font-bold mb-1">16</div>
+           <div class="h-5 bg-hanyang-blue rounded-r -ml-px"></div>
+         </div>
         
         <div class="text-center py-3">17</div>
         <div class="text-center py-3">18</div>
@@ -210,15 +187,15 @@
   <!-- 최신 공지사항 -->
   <section>
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-3xl font-bold hanyang-navy dark:text-neutral-100 flex items-center gap-3">
+      <h2 class="text-3xl font-bold text-black dark:text-neutral-100 flex items-center gap-3">
         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
         </svg>
         공지사항
       </h2>
-      <a href="/notices" class="w-6 h-6 border-2 border-black hover:border-black hover:bg-black rounded-full flex items-center justify-center transition-all duration-200 group -ml-4">
-        <span class="text-black group-hover:text-white font-bold text-sm">+</span>
-      </a>
+      <Button variant="outline" size="sm" href="/notices">
+        더보기
+      </Button>
     </div>
     
     <div class="space-y-2">

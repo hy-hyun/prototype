@@ -66,7 +66,7 @@
   <div class="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
     <a class="text-2xl font-bold hanyang-navy hover:hanyang-blue transition-colors duration-200" href="/">
       HY-PATH
-      <span class="text-sm font-normal hanyang-blue block -mt-1">한양대학교 수강신청 시스템</span>
+      <span class="text-sm font-normal hanyang-blue block -mt-1">수강신청 시스템</span>
     </a>
     <div class="flex items-center gap-4 sm:gap-6">
       {#each navItems as item}

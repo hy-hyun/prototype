@@ -22,4 +22,16 @@ export type Notice = { id: string; title: string; content: string; pinned?: bool
 export type CartItem = { courseId: string; classId: string; method: "FCFS" | "BID"; bidAmount?: number };
 export type Application = { courseId: string; classId: string; status: "PENDING" | "CONFIRMED" | "CANCELLED" };
 
+// Toast 시스템 타입
+export type ToastType = 'success' | 'error' | 'replace';
+
+export type ToastMessage = {
+  id: string;
+  type: ToastType;
+  message: string;
+  duration: number;
+  existingLecture?: Lecture;
+  newLecture?: Lecture;
+};
+
 

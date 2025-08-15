@@ -1,10 +1,13 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { cart, applications, courses } from "$lib/stores";
+  import { cart, applications, courses, addLectureToCart } from "$lib/stores";
   import { browser } from "$app/environment";
   import TimetableHeader from "$lib/components/TimetableHeader.svelte";
   import TimetableSidebar from "$lib/components/TimetableSidebar.svelte";
   import TimetableGrid from "$lib/components/TimetableGrid.svelte";
+  import ToastContainer from "$lib/components/ToastContainer.svelte";
+
+
   
   // --- 상태 관리 ---
   let activeTab = $state("전체");
@@ -166,11 +169,16 @@
       return sum;
     }, 0);
     
-    let creditStatus = { status: "success" as const, message: "적정 학점" };
-    if (totalCredits < minCredits) creditStatus = { status: "warning" as const, message: `최소 ${minCredits}학점 필요` };
-    if (totalCredits > maxCredits) creditStatus = { status: "error" as const, message: `최대 ${maxCredits}학점 초과` };
+    let creditStatus: { status: "success" | "warning" | "error", message: string } = { status: "success", message: "적정 학점" };
+    if (totalCredits < minCredits) creditStatus = { status: "warning", message: `최소 ${minCredits}학점 필요` };
+    if (totalCredits > maxCredits) creditStatus = { status: "error", message: `최대 ${maxCredits}학점 초과` };
     
     return { totalCredits, creditStatus };
+  });
+
+  // 연강 간격 계산 (현재 비활성화)
+  let lectureGaps = $derived.by(() => {
+    return [];
   });
 
   // --- 이벤트 핸들러 ---
@@ -211,12 +219,8 @@
 
   function handleAddToCart(event: CustomEvent<Lecture>) {
     const course = event.detail;
-    cart.update(items => {
-      if (items.some(item => item.courseId === course.courseId && item.classId === course.classId)) {
-        return items;
-      }
-      return [...items, { courseId: course.courseId, classId: course.classId, method: "FCFS" }];
-    });
+    // 시간 중복 검사를 포함한 강의 추가
+    addLectureToCart(course);
   }
 
   function handleRemoveFromCart(event: CustomEvent<Lecture>) {
@@ -298,3 +302,8 @@
     </main>
   </div>
 </div>
+
+<!-- Toast 컨테이너 -->
+<ToastContainer />
+
+

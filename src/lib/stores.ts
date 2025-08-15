@@ -1,5 +1,5 @@
-import { writable, derived } from "svelte/store";
-import type { Application, CartItem, Lecture, Notice } from "$lib/types";
+import { writable, derived, get } from "svelte/store";
+import type { Application, CartItem, Lecture, Notice, ToastMessage } from "$lib/types";
 import { MOCK_NOTICES, SCHEDULE_EVENTS } from "$lib/mock/data";
 import { collection, getDocs, doc, getDoc, setDoc, query, limit, orderBy } from 'firebase/firestore';
 import { db } from '$lib/firebase';
@@ -347,6 +347,9 @@ export const currentUser = writable<{ id: string; name: string } | null>(null);
 export const cart = writable<CartItem[]>([]);
 export const applications = writable<Application[]>([]);
 
+// Toast 관련 store
+export const toastMessages = writable<ToastMessage[]>([]);
+
 // 현재 사용자 ID가 변경될 때마다 데이터를 저장합니다.
 let currentUid: string | null = null;
 currentUser.subscribe($user => {
@@ -459,7 +462,132 @@ if (typeof window !== 'undefined') {
   // 10분마다 만료된 캐시 정리
   setInterval(() => {
     LocalStorageCache.cleanupExpired();
-  }, 10 * 60 * 1000);
+      }, 10 * 60 * 1000);
+  }
+
+// === Toast 시스템 함수들 ===
+export function showToast(type: 'success' | 'error', message: string, duration: number = 3000) {
+  const id = Date.now().toString() + Math.random().toString(36).substring(2);
+  const toast: ToastMessage = { id, type, message, duration };
+  
+  toastMessages.update(messages => [...messages, toast]);
+  
+  if (duration > 0) {
+    setTimeout(() => removeToast(id), duration);
+  }
+}
+
+export function showReplaceToast(existingLecture: Lecture, newLecture: Lecture) {
+  const id = Date.now().toString() + Math.random().toString(36).substring(2);
+  
+  // 강의 위치 정보 포맷팅
+  const existingLocation = formatLectureLocation(existingLecture);
+  const newLocation = formatLectureLocation(newLecture);
+  
+  const toast: ToastMessage = {
+    id,
+    type: 'replace',
+    message: `"${existingLecture.title}"을(를) "${newLecture.title}"로(으) 교체하시겠습니까?`,
+    duration: 0,
+    existingLecture,
+    newLecture
+  };
+  
+  toastMessages.update(messages => [...messages, toast]);
+}
+
+export function removeToast(id: string) {
+  toastMessages.update(messages => messages.filter(toast => toast.id !== id));
+}
+
+export function confirmReplace(toastId: string, existingLecture: Lecture, newLecture: Lecture) {
+  // 기존 강의를 장바구니에서 제거
+  cart.update(items => items.filter(item => 
+    !(item.courseId === existingLecture.courseId && item.classId === existingLecture.classId)
+  ));
+  
+  // 새 강의를 장바구니에 추가
+  cart.update(items => [...items, { 
+    courseId: newLecture.courseId, 
+    classId: newLecture.classId, 
+    method: newLecture.method || "FCFS" 
+  }]);
+  
+  removeToast(toastId);
+  showToast('success', `"${existingLecture.title}"이(가) "${newLecture.title}"로(으) 교체되었습니다!`);
+}
+
+// 강의 중복 검사 함수
+export function hasTimeConflict(lecture1: Lecture, lecture2: Lecture): boolean {
+  if (!lecture1.schedule || !lecture2.schedule) return false;
+  
+  for (const meeting1 of lecture1.schedule) {
+    for (const meeting2 of lecture2.schedule) {
+      // 같은 요일인지 확인
+      if (meeting1.day === meeting2.day) {
+        // 시간 겹침 확인
+        const conflict = (
+          (meeting2.start >= meeting1.start && meeting2.start < meeting1.end) ||
+          (meeting2.end > meeting1.start && meeting2.end <= meeting1.end) ||
+          (meeting2.start <= meeting1.start && meeting2.end >= meeting1.end)
+        );
+        
+        if (conflict) return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+// 시간 중복 검사를 포함한 강의 추가 함수
+export function addLectureToCart(lecture: Lecture) {
+  const cartItems = get(cart);
+  const allCourses = get(courses);
+  
+  // 이미 장바구니에 있는지 확인
+  const isAlreadyInCart = cartItems.some(item => 
+    item.courseId === lecture.courseId && item.classId === lecture.classId
+  );
+  
+  if (isAlreadyInCart) {
+    showToast('error', '이미 장바구니에 있는 강의입니다.');
+    return;
+  }
+  
+  // 시간 중복 강의 찾기
+  for (const cartItem of cartItems) {
+    const existingLecture = allCourses.find(course => 
+      course.courseId === cartItem.courseId && course.classId === cartItem.classId
+    );
+    
+    if (existingLecture && hasTimeConflict(existingLecture, lecture)) {
+      // 교체 Toast 표시
+      showReplaceToast(existingLecture, lecture);
+      return;
+    }
+  }
+  
+  // 정상 추가
+  const newItem: CartItem = {
+    courseId: lecture.courseId,
+    classId: lecture.classId,
+    method: lecture.method || "FCFS"
+  };
+  
+  cart.update(items => [...items, newItem]);
+  showToast('success', `"${lecture.title}" 강의가 추가되었습니다!`);
+}
+
+// 강의 위치 정보 포맷팅 함수
+function formatLectureLocation(lecture: Lecture): string {
+  if (!lecture.schedule || lecture.schedule.length === 0) return '위치 정보 없음';
+  
+  const locations = lecture.schedule
+    .map(meeting => `${meeting.building || ''} ${meeting.room || ''}`.trim())
+    .filter((v, i, a) => v && a.indexOf(v) === i);
+    
+  return locations.join(', ') || '위치 정보 없음';
 }
 
 

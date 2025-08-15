@@ -1,11 +1,25 @@
 <script lang="ts">
-  import { notices, scheduleEvents, isLoggedIn } from "$lib/stores";
-  import { derived } from "svelte/store";
+  import { notices, scheduleEvents, isLoggedIn, getCacheInfo, getCacheStats, cleanupExpiredCache } from "$lib/stores";
   
-  const allNotices = derived(notices, ($n) => {
-    const pinned = $n.filter((x) => x.pinned);
-    const latest = $n.filter((x) => !x.pinned).slice(0, 5);
+  // Svelte 5 룬모드 사용
+  let cacheInfo = $state<ReturnType<typeof getCacheInfo> | null>(null);
+  let cacheStats = $state<ReturnType<typeof getCacheStats> | null>(null);
+  let showCacheInfo = $state(false);
+  
+  // 파생 상태로 공지사항 필터링
+  const allNotices = $derived(() => {
+    const noticesValue = $notices;
+    const pinned = noticesValue.filter((x) => x.pinned);
+    const latest = noticesValue.filter((x) => !x.pinned).slice(0, 5);
     return [...pinned, ...latest];
+  });
+  
+  // 캐시 정보 로드 효과
+  $effect(() => {
+    cacheInfo = getCacheInfo();
+    cacheStats = getCacheStats();
+    console.log('💾 메인 페이지 캐시 상태:', cacheInfo);
+    console.log('💾 메인 페이지 캐시 통계:', cacheStats);
   });
   
   function formatDate(dateStr: string) {
@@ -21,11 +35,92 @@
       default: return 'bg-hanyang-gray text-hanyang-dark-gray border-gray-200 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700';
     }
   }
+  
+  function formatCacheTime(timestamp: Date) {
+    const now = new Date();
+    const diff = now.getTime() - timestamp.getTime();
+    const minutes = Math.floor(diff / (1000 * 60));
+    
+    if (minutes < 1) return '방금 전';
+    if (minutes < 60) return `${minutes}분 전`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}시간 전`;
+    const days = Math.floor(hours / 24);
+    return `${days}일 전`;
+  }
 
   // 메인 페이지에 머물도록 리다이렉트 제거
 </script>
 
 <div class="space-y-8">
+
+  <!-- 캐시 상태 표시 (개발용) -->
+  {#if cacheInfo}
+    <div class="fixed bottom-4 right-4 z-50">
+      <button 
+        onclick={() => showCacheInfo = !showCacheInfo}
+        class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-colors"
+        title="캐시 상태 보기"
+      >
+        💾
+      </button>
+      
+      {#if showCacheInfo}
+        <div class="absolute bottom-12 right-0 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-4 shadow-xl min-w-80 max-w-96">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-sm">캐시 상태</h3>
+            <button 
+              onclick={() => cleanupExpiredCache()}
+              class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded transition-colors"
+              title="만료된 캐시 정리"
+            >
+              정리
+            </button>
+          </div>
+          
+          {#if cacheStats}
+            <div class="mb-3 p-2 bg-gray-50 dark:bg-neutral-700 rounded text-xs">
+              <div class="flex justify-between">
+                <span>총 캐시:</span>
+                <span>{cacheStats.totalItems}개</span>
+              </div>
+              <div class="flex justify-between">
+                <span>만료된 캐시:</span>
+                <span class="text-red-500">{cacheStats.expiredItems}개</span>
+              </div>
+              <div class="flex justify-between">
+                <span>캐시 크기:</span>
+                <span>{cacheStats.sizeFormatted}</span>
+              </div>
+            </div>
+          {/if}
+          
+          <div class="space-y-2 text-xs max-h-60 overflow-y-auto">
+            {#each Object.entries(cacheInfo) as [key, info]}
+              <div class="flex justify-between items-center">
+                <span class="font-medium">{key}:</span>
+                {#if info}
+                  <div class="text-right">
+                    <div class="text-green-600 dark:text-green-400">
+                      ✓ {formatCacheTime(info.timestamp)}
+                    </div>
+                    <div class="text-gray-500 text-xs">
+                      만료: {info.expiry.toLocaleTimeString()}
+                    </div>
+                    {#if info.isExpired}
+                      <div class="text-red-500 text-xs">만료됨</div>
+                    {/if}
+                  </div>
+                {:else}
+                  <span class="text-red-500">없음</span>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </div>
+  {/if}
 
   <!-- 수강신청 일정 캘린더 -->
   <section>
@@ -127,7 +222,7 @@
     </div>
     
     <div class="space-y-2">
-      {#each $allNotices as notice}
+      {#each allNotices() as notice (notice.id)}
         <div class="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-lg p-3 hover:shadow-md hover:border-hanyang-blue/30 dark:hover:border-blue-600 transition-all duration-200">
           <div class="flex items-start justify-between">
             <div class="flex-1">

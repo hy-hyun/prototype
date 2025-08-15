@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { cart, applications, metrics, isLoggedIn } from "$lib/stores";
+  import { cart, applications, metrics, isLoggedIn, userDataLoading } from "$lib/stores";
   import { courses, loadCourses } from "$lib/stores";
   import { applyFcfs, applyBid } from "$lib/stores";
+  import Skeleton from "$lib/components/Skeleton.svelte";
   import { showToast } from "$lib/toast";
   import LoginModal from "$lib/components/LoginModal.svelte";
   import { Tabs, TabsList, TabsTrigger, TabsContent } from "$lib/components/ui/tabs";
@@ -23,15 +24,25 @@
       showToast("로그인이 필요합니다", "error");
       return;
     }
+    
+    // 중복 신청 방지 - 이미 신청된 과목인지 확인
+    if (isApplied(item.courseId, item.classId)) {
+      showToast("이미 신청된 강의입니다", "error");
+      return;
+    }
+    
     // 신청내역과 시간 충돌 시 차단
     if (conflictsWithApplications(item.courseId, item.classId)) {
       showToast("이미 신청된 강의와 시간이 겹쳐 신청할 수 없습니다", "error");
       return;
     }
+    
     if (item.method === "FCFS") {
       await applyFcfs(item.courseId, item.classId);
+      showToast("선착순 신청이 완료되었습니다", "success");
       return;
     }
+    
     const amount = item.bidAmount ?? 0;
     if (amount <= 0) {
       showToast("베팅 금액을 입력하세요", "error");
@@ -42,6 +53,7 @@
       return;
     }
     await applyBid(item.courseId, item.classId, amount);
+    showToast("베팅 신청이 완료되었습니다", "success");
   }
 
   async function applyCurrentTabAll() {
@@ -53,26 +65,47 @@
     const items = get(cart).filter(
       (x) => (showFcfs && x.method === "FCFS") || (showBid && x.method === "BID")
     );
+    
+    // 이미 신청된 과목 제거
+    const notApplied = items.filter((x) => !isApplied(x.courseId, x.classId));
+    
     // 동일 과목 중복 베팅 제거(규칙상 금지)
     const seenCourse = new Set<string>();
-    const deduped = items.filter((x) => {
+    const deduped = notApplied.filter((x) => {
       if (x.method !== "BID") return true;
       if (seenCourse.has(x.courseId)) return false;
       seenCourse.add(x.courseId);
       return true;
     });
-    const invalid = items.filter((x) => x.method === "BID" && (!x.bidAmount || x.bidAmount <= 0));
+    
+    const invalid = notApplied.filter((x) => x.method === "BID" && (!x.bidAmount || x.bidAmount <= 0));
     const valid = deduped.filter((x) => !invalid.includes(x));
+    
     if (valid.length === 0) {
-      showToast("신청할 항목이 없습니다", "info");
+      const alreadyApplied = items.length - notApplied.length;
+      if (alreadyApplied > 0) {
+        showToast(`${alreadyApplied}개 항목은 이미 신청되어 건너뜀`, "info");
+      } else {
+        showToast("신청할 항목이 없습니다", "info");
+      }
       return;
     }
+    
     applying = true;
     try {
       await applyMany(valid);
-      const skipped = invalid.length + (items.length - deduped.length);
-      if (skipped > 0) showToast(`${skipped}개 항목은 규칙 위반/금액 없음으로 건너뜀`, "error");
-      else showToast("신청을 완료했습니다", "success");
+      const alreadyApplied = items.length - notApplied.length;
+      const skipped = invalid.length + (notApplied.length - deduped.length);
+      let message = "신청을 완료했습니다";
+      
+      if (alreadyApplied > 0 || skipped > 0) {
+        const skipMessages = [];
+        if (alreadyApplied > 0) skipMessages.push(`${alreadyApplied}개 이미 신청됨`);
+        if (skipped > 0) skipMessages.push(`${skipped}개 규칙 위반/금액 없음`);
+        message = `신청 완료 (건너뜀: ${skipMessages.join(', ')})`;
+      }
+      
+      showToast(message, "success");
     } finally {
       applying = false;
     }
@@ -242,7 +275,25 @@
         표시 항목 전체 신청
       </button>
     </div>
-    {#if $cart.length === 0}
+    {#if $userDataLoading}
+      <!-- 로딩 스켈레톤 -->
+      <div class="grid gap-2">
+        {#each Array(3) as _}
+          <div class="rounded border p-3">
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-sm flex-1">
+                <Skeleton width="w-3/4" height="h-4" rounded="rounded" />
+                <Skeleton width="w-1/2" height="h-3" rounded="rounded" />
+              </div>
+              <div class="flex gap-2">
+                <Skeleton width="w-16" height="h-8" rounded="rounded" />
+                <Skeleton width="w-20" height="h-8" rounded="rounded" />
+              </div>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {:else if $cart.length === 0}
       <p class="text-sm text-neutral-500">장바구니가 비었습니다.</p>
     {:else}
       <ul class="grid gap-2">
@@ -278,9 +329,13 @@
                   </div>
                 </div>
                 <input class="border rounded px-2 py-1 w-24 text-sm" type="number" min="1" step="1" placeholder="베팅" value={item.bidAmount ?? ''} on:input={(e) => handleBidInput(e, item)} />
-                <button class="border rounded px-2 py-1 text-sm disabled:opacity-50" on:click={() => doApply(item)} disabled={!item.bidAmount || item.bidAmount <= 0 || countBidSameCourse(item.courseId) > 1}>
-                  베팅 신청
-                </button>
+                {#if isApplied(item.courseId, item.classId)}
+                  <button class="border rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>신청 완료</button>
+                {:else}
+                  <button class="border rounded px-2 py-1 text-sm disabled:opacity-50" on:click={() => doApply(item)} disabled={!item.bidAmount || item.bidAmount <= 0 || countBidSameCourse(item.courseId) > 1}>
+                    베팅 신청
+                  </button>
+                {/if}
               </div>
             {:else}
               {#if isApplied(item.courseId, item.classId)}
@@ -306,7 +361,25 @@
         <option value="CANCELLED">취소</option>
       </select>
     </div>
-    {#if $applications.length === 0}
+    {#if $userDataLoading}
+      <!-- 로딩 스켈레톤 -->
+      <div class="grid gap-2">
+        {#each Array(2) as _}
+          <div class="rounded border p-3">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <Skeleton width="w-3/4" height="h-4" rounded="rounded" />
+                <Skeleton width="w-1/2" height="h-3" rounded="rounded" />
+              </div>
+              <div class="flex gap-2">
+                <Skeleton width="w-16" height="h-6" rounded="rounded-full" />
+                <Skeleton width="w-16" height="h-6" rounded="rounded" />
+              </div>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {:else if $applications.length === 0}
       <p class="text-sm text-neutral-500">신청내역이 없습니다.</p>
     {:else}
       <ul class="grid gap-2">

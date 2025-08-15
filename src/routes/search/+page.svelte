@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { courses, addToCart, applyFcfs, applyBid, loadCourses, filterOptions } from "$lib/stores";
+  import { courses, addToCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading } from "$lib/stores";
   import { showToast } from "$lib/toast";
+  import Loading from "$lib/components/Loading.svelte";
+  import Skeleton from "$lib/components/Skeleton.svelte";
   import { STATIC_FILTER_OPTIONS } from "$lib/mock/data";
   import { testFirebaseConnection } from "$lib/firebase-test";
   import { get } from "svelte/store";
@@ -236,7 +238,29 @@
 
 <!-- 강의 목록 섹션 -->
 <section class="grid gap-4">
-  {#if results.length === 0}
+  {#if $coursesLoading}
+    <!-- 로딩 스켈레톤 -->
+    <div class="grid gap-4">
+      {#each Array(5) as _}
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="flex justify-between items-start mb-3">
+            <div class="flex-1">
+              <Skeleton width="w-3/4" height="h-5" rounded="rounded" />
+              <Skeleton width="w-1/2" height="h-4" rounded="rounded" />
+            </div>
+            <Skeleton width="w-16" height="h-8" rounded="rounded" />
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm mb-3">
+            <Skeleton width="w-full" height="h-4" rounded="rounded" count={4} />
+          </div>
+          <div class="flex gap-2">
+            <Skeleton width="w-20" height="h-8" rounded="rounded" />
+            <Skeleton width="w-20" height="h-8" rounded="rounded" />
+          </div>
+        </div>
+      {/each}
+    </div>
+  {:else if results.length === 0}
     <div class="text-center py-12">
       <div class="text-gray-400 text-5xl mb-4">📚</div>
       <p class="text-gray-500 text-lg">검색 결과가 없습니다</p>

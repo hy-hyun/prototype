@@ -1,39 +1,76 @@
 import { writable, derived } from "svelte/store";
 import type { Application, CartItem, Lecture, Notice } from "$lib/types";
 import { MOCK_NOTICES, SCHEDULE_EVENTS } from "$lib/mock/data";
-import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc, query, limit, orderBy } from 'firebase/firestore';
 import { db } from '$lib/firebase';
+import { LocalStorageCache, CACHE_KEYS } from '$lib/utils';
+
+// 로딩 상태 관리
+export const isLoading = writable(false);
+export const loadingText = writable('로딩 중...');
+export const coursesLoading = writable(false);
+export const userDataLoading = writable(false);
+
+// 전역 로딩 상태 (coursesLoading 또는 userDataLoading이 true이면 true)
+export const globalLoading = derived(
+  [coursesLoading, userDataLoading],
+  ([$coursesLoading, $userDataLoading]) => $coursesLoading || $userDataLoading
+);
 
 let isUserDataLoaded = false; // 사용자 데이터 로딩 상태 플래그
 
-// Firestore에서 사용자 데이터를 로드하는 함수
+// Firestore에서 사용자 데이터를 로드하는 함수 (캐싱 적용)
 export async function loadUserData(userId: string) {
   if (isUserDataLoaded) return; // 이미 로드되었으면 중복 실행 방지
-  console.log(`👤 ${userId} 사용자 데이터 로딩 시작...`);
+  
+  // 캐시에서 먼저 확인
+  const cacheKey = CACHE_KEYS.USER_DATA(userId);
+  const cachedData = LocalStorageCache.get<{ cart: CartItem[], applications: Application[] }>(cacheKey);
+  
+  if (cachedData) {
+    console.log(`👤 ${userId} 사용자 데이터 캐시에서 로드`);
+    cart.set(cachedData.cart || []);
+    applications.set(cachedData.applications || []);
+    isUserDataLoaded = true;
+    return;
+  }
+  
+  userDataLoading.set(true);
+  loadingText.set('사용자 데이터 로딩 중...');
+  console.log(`👤 ${userId} 사용자 데이터 Firebase에서 로딩 시작...`);
 
   try {
     const userDocRef = doc(db, 'users', userId);
     const userDocSnap = await getDoc(userDocRef);
 
+    let userData: { cart: CartItem[], applications: Application[] };
+
     if (userDocSnap.exists()) {
-      const userData = userDocSnap.data();
+      userData = userDocSnap.data() as { cart: CartItem[], applications: Application[] };
       console.log('👤 사용자 데이터 발견:', userData);
-      cart.set(userData.cart || []);
-      applications.set(userData.applications || []);
     } else {
       console.log('👤 새 사용자, 기본 데이터로 초기화합니다.');
+      userData = { cart: [], applications: [] };
       // 새 사용자인 경우, Firestore에 기본 문서 구조를 만들어줍니다.
-      await setDoc(userDocRef, { cart: [], applications: [] });
-      cart.set([]);
-      applications.set([]);
+      await setDoc(userDocRef, userData);
     }
+
+    // 데이터를 스토어에 설정
+    cart.set(userData.cart || []);
+    applications.set(userData.applications || []);
+    
+    // 캐시에 저장 (짧은 만료 시간 - 사용자 데이터는 자주 변경될 수 있음)
+    LocalStorageCache.set(cacheKey, userData, LocalStorageCache.EXPIRY_TIMES.SHORT);
+    
     isUserDataLoaded = true; // 로딩 완료 플래그 설정
   } catch (error) {
     console.error('👤 사용자 데이터 로딩 실패:', error);
+  } finally {
+    userDataLoading.set(false);
   }
 }
 
-// Firestore에 사용자 데이터를 저장하는 함수
+// Firestore에 사용자 데이터를 저장하는 함수 (캐싱 업데이트 포함)
 async function saveUserData(userId: string, data: { cart?: CartItem[], applications?: Application[] }) {
   if (!userId) return;
   console.log(`💾 ${userId} 사용자 데이터 저장...`, data);
@@ -41,6 +78,15 @@ async function saveUserData(userId: string, data: { cart?: CartItem[], applicati
     const userDocRef = doc(db, 'users', userId);
     // setDoc에 merge: true 옵션을 주어 기존 문서를 덮어쓰지 않고 병합합니다.
     await setDoc(userDocRef, data, { merge: true });
+    
+    // 캐시도 업데이트
+    const cacheKey = CACHE_KEYS.USER_DATA(userId);
+    const cachedData = LocalStorageCache.get<{ cart: CartItem[], applications: Application[] }>(cacheKey);
+    if (cachedData) {
+      const updatedData = { ...cachedData, ...data };
+      LocalStorageCache.set(cacheKey, updatedData, LocalStorageCache.EXPIRY_TIMES.SHORT);
+      console.log(`💾 ${userId} 캐시 업데이트 완료`);
+    }
   } catch (error) {
     console.error('💾 사용자 데이터 저장 실패:', error);
   }
@@ -56,16 +102,35 @@ export const filterOptions = writable({
   courseLevels: [] as { value: string; label: string }[]
 });
 
-// Firebase에서 강의 데이터 로드
-export async function loadCourses() {
+// Firebase에서 강의 데이터 로드 (캐싱 적용)
+export async function loadCourses(limitCount: number = 100) {
+  // 캐시에서 먼저 확인
+  const cachedCourses = LocalStorageCache.get<Lecture[]>(CACHE_KEYS.COURSES);
+  const cachedFilterOptions = LocalStorageCache.get<typeof filterOptions>(CACHE_KEYS.FILTER_OPTIONS);
+  
+  if (cachedCourses && cachedFilterOptions) {
+    console.log('🔥 강의 데이터 캐시에서 로드 (개수:', cachedCourses.length, ')');
+    courses.set(cachedCourses);
+    filterOptions.set(cachedFilterOptions);
+    return;
+  }
+
+  coursesLoading.set(true);
+  loadingText.set('강의 데이터 로딩 중...');
   console.log('🔥 Firebase에서 강의 데이터 로딩 시작...');
   console.log('🔥 DB 인스턴스:', db);
 
   try {
+    // 쿼리 최적화: limit과 orderBy 적용
     const coursesRef = collection(db, 'courses');
-    console.log('🔥 Firestore 컬렉션 참조 생성 완료:', coursesRef);
+    const coursesQuery = query(
+      coursesRef,
+      orderBy('subjectName'), // 과목명으로 정렬
+      limit(limitCount) // 제한된 개수만 로드
+    );
+    console.log('🔥 Firestore 컬렉션 참조 생성 완료 (limit:', limitCount, ')');
 
-    const querySnapshot = await getDocs(coursesRef);
+    const querySnapshot = await getDocs(coursesQuery);
     console.log('🔥 Firestore 쿼리 실행 완료, 문서 개수:', querySnapshot.size);
 
     const rawCourseData: any[] = [];
@@ -110,7 +175,16 @@ export async function loadCourses() {
 
     // 원본 Firebase 데이터에서 필터 옵션 동적 생성
     generateFilterOptions(rawCourseData);
-    console.log('🔥 강의 데이터 로딩 완료');
+    
+    // 캐시에 저장 (긴 만료 시간 - 강의 데이터는 안정적)
+    LocalStorageCache.set(CACHE_KEYS.COURSES, uniqueLectures, LocalStorageCache.EXPIRY_TIMES.LONG);
+    
+    // 필터 옵션도 캐시에 저장 (긴 만료 시간)
+    filterOptions.subscribe(($filterOptions) => {
+      LocalStorageCache.set(CACHE_KEYS.FILTER_OPTIONS, $filterOptions, LocalStorageCache.EXPIRY_TIMES.LONG);
+    });
+    
+    console.log('🔥 강의 데이터 로딩 및 캐싱 완료');
 
   } catch (error: any) {
     console.error('🔥 Firebase 연결 실패:', error);
@@ -139,6 +213,8 @@ export async function loadCourses() {
       instructors: [],
       courseLevels: []
     });
+  } finally {
+    coursesLoading.set(false);
   }
 }
 
@@ -236,8 +312,35 @@ function calculateCapacity(enrollmentCapByYear: any): number {
     return 30;
   }
 }
-export const notices = writable<Notice[]>(MOCK_NOTICES);
-export const scheduleEvents = writable(SCHEDULE_EVENTS);
+// 공지사항과 일정 데이터 (캐싱 적용)
+function initializeNoticesWithCache() {
+  const cachedNotices = LocalStorageCache.get<Notice[]>(CACHE_KEYS.NOTICES);
+  if (cachedNotices) {
+    console.log('📢 공지사항 캐시에서 로드 (개수:', cachedNotices.length, ')');
+    return cachedNotices;
+  }
+  
+  // 캐시에 저장 (중간 만료 시간)
+  LocalStorageCache.set(CACHE_KEYS.NOTICES, MOCK_NOTICES, LocalStorageCache.EXPIRY_TIMES.MEDIUM);
+  console.log('📢 공지사항 캐시에 저장');
+  return MOCK_NOTICES;
+}
+
+function initializeScheduleEventsWithCache() {
+  const cachedEvents = LocalStorageCache.get<typeof SCHEDULE_EVENTS>(CACHE_KEYS.SCHEDULE_EVENTS);
+  if (cachedEvents) {
+    console.log('📅 일정 데이터 캐시에서 로드');
+    return cachedEvents;
+  }
+  
+  // 캐시에 저장 (매우 긴 만료 시간 - 일정은 거의 변경되지 않음)
+  LocalStorageCache.set(CACHE_KEYS.SCHEDULE_EVENTS, SCHEDULE_EVENTS, LocalStorageCache.EXPIRY_TIMES.VERY_LONG);
+  console.log('📅 일정 데이터 캐시에 저장');
+  return SCHEDULE_EVENTS;
+}
+
+export const notices = writable<Notice[]>(initializeNoticesWithCache());
+export const scheduleEvents = writable(initializeScheduleEventsWithCache());
 export const isLoggedIn = writable(false);
 export const currentUser = writable<{ id: string; name: string } | null>(null);
 
@@ -280,14 +383,83 @@ export function addToCart(item: CartItem) {
 }
 
 export function applyFcfs(courseId: string, classId: string) {
-  applications.update((a) => [{ courseId, classId, status: "PENDING" }, ...a]);
+  applications.update((a) => {
+    // 중복 신청 방지
+    const exists = a.find((x) => x.courseId === courseId && x.classId === classId);
+    if (exists) {
+      console.warn(`이미 신청된 강의입니다: ${courseId}-${classId}`);
+      return a;
+    }
+    return [{ courseId, classId, status: "PENDING" }, ...a];
+  });
 }
 
 export function applyBid(courseId: string, classId: string, bidAmount: number) {
   cart.update((c) =>
     c.map((x) => (x.courseId === courseId && x.classId === classId ? { ...x, bidAmount } : x))
   );
-  applications.update((a) => [{ courseId, classId, status: "PENDING" }, ...a]);
+  applications.update((a) => {
+    // 중복 신청 방지
+    const exists = a.find((x) => x.courseId === courseId && x.classId === classId);
+    if (exists) {
+      console.warn(`이미 신청된 강의입니다: ${courseId}-${classId}`);
+      return a;
+    }
+    return [{ courseId, classId, status: "PENDING" }, ...a];
+  });
+}
+
+// 캐시 관리 함수들
+export function clearAllCache() {
+  LocalStorageCache.clear();
+  console.log('💾 모든 캐시 삭제 완료');
+}
+
+export function clearUserCache(userId: string) {
+  LocalStorageCache.remove(CACHE_KEYS.USER_DATA(userId));
+  console.log(`💾 ${userId} 사용자 캐시 삭제 완료`);
+}
+
+export function refreshCourseData() {
+  LocalStorageCache.remove(CACHE_KEYS.COURSES);
+  LocalStorageCache.remove(CACHE_KEYS.FILTER_OPTIONS);
+  console.log('💾 강의 데이터 캐시 삭제 완료');
+  return loadCourses(); // 새로 로드
+}
+
+export function refreshNotices() {
+  LocalStorageCache.remove(CACHE_KEYS.NOTICES);
+  notices.set(MOCK_NOTICES);
+  LocalStorageCache.set(CACHE_KEYS.NOTICES, MOCK_NOTICES, LocalStorageCache.EXPIRY_TIMES.MEDIUM);
+  console.log('💾 공지사항 캐시 갱신 완료');
+}
+
+export function getCacheInfo() {
+  return {
+    courses: LocalStorageCache.getInfo(CACHE_KEYS.COURSES),
+    filterOptions: LocalStorageCache.getInfo(CACHE_KEYS.FILTER_OPTIONS),
+    notices: LocalStorageCache.getInfo(CACHE_KEYS.NOTICES),
+    scheduleEvents: LocalStorageCache.getInfo(CACHE_KEYS.SCHEDULE_EVENTS),
+  };
+}
+
+export function getCacheStats() {
+  return LocalStorageCache.getStats();
+}
+
+export function cleanupExpiredCache() {
+  LocalStorageCache.cleanupExpired();
+}
+
+// 앱 시작 시 만료된 캐시 자동 정리
+if (typeof window !== 'undefined') {
+  // 페이지 로드 시 만료된 캐시 정리
+  LocalStorageCache.cleanupExpired();
+  
+  // 10분마다 만료된 캐시 정리
+  setInterval(() => {
+    LocalStorageCache.cleanupExpired();
+  }, 10 * 60 * 1000);
 }
 
 

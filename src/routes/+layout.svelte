@@ -2,8 +2,9 @@
   import favicon from "$lib/assets/favicon.svg";
   import "../app.css";
   import { toasts } from "$lib/toast";
-  import { isLoggedIn, currentUser } from "$lib/stores";
+  import { isLoggedIn, currentUser, globalLoading, loadingText } from "$lib/stores";
   import LoginModal from "$lib/components/LoginModal.svelte";
+  import Loading from "$lib/components/Loading.svelte";
   import { Button } from "$lib/components/ui/button";
   import { onMount } from 'svelte';
   import { auth } from '$lib/firebase';
@@ -108,7 +109,11 @@
 
 <main class="mx-auto max-w-7xl p-6 bg-hanyang-gray/30 min-h-screen">
   <div class="bg-white rounded-2xl p-8 shadow-sm border border-hanyang-blue/10">
-    {@render children?.()}
+    {#if $globalLoading}
+      <Loading fullscreen={false} text={$loadingText} size="lg" />
+    {:else}
+      {@render children?.()}
+    {/if}
   </div>
 </main>
 

@@ -181,7 +181,7 @@
   }
   
   .hour-start {
-    border-top: 2px dashed #d1d5db !important;
+    border-top: 2px solid #d1d5db !important;
   }
   
   .lecture-block {

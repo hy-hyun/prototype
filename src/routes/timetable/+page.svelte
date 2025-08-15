@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { cart, applications, courses, addLectureToCart } from "$lib/stores";
+  import { cart, applications, courses, addLectureToCart, findLectureGaps } from "$lib/stores";
   import { browser } from "$app/environment";
   import TimetableHeader from "$lib/components/TimetableHeader.svelte";
   import TimetableSidebar from "$lib/components/TimetableSidebar.svelte";
@@ -176,9 +176,26 @@
     return { totalCredits, creditStatus };
   });
 
-  // 연강 간격 계산 (현재 비활성화)
+  // 연강 간격 계산 - 실제 Firebase 데이터 기반
   let lectureGaps = $derived.by(() => {
-    return [];
+    console.log('🎯 시간표 페이지 - 장바구니 아이템:', $cart);
+    console.log('🎯 시간표 페이지 - 전체 강의 수:', $courses.length);
+    
+    const cartLectures = $cart.map(cartItem => {
+      const found = $courses.find(course => 
+        course.courseId === cartItem.courseId && course.classId === cartItem.classId
+      );
+      console.log(`🎯 찾기: ${cartItem.courseId}-${cartItem.classId} →`, found ? found.title : 'NOT FOUND');
+      return found;
+    }).filter(Boolean) as Lecture[];
+    
+    console.log('🎯 시간표 페이지 - 장바구니 강의들:', cartLectures.map(l => l.title));
+    
+    // 실제 Firebase 데이터에서 연강 감지
+    const gaps = findLectureGaps(cartLectures);
+    console.log('🎯 시간표 페이지 - 실제 계산된 연강 경고:', gaps);
+    
+    return gaps;
   });
 
   // --- 이벤트 핸들러 ---
@@ -291,14 +308,15 @@
       on:share={handleShare}
     />
     <main class="flex-1 overflow-y-auto">
-      <TimetableGrid 
-        blocks={processedTimetable.blocks}
-        conflictPairs={processedTimetable.conflicts}
-        consecutiveWarnings={processedTimetable.consecutives}
-        displayedDays={displayedDays}
-        on:remove={handleRemoveFromGrid}
-        on:suggest={handleSuggestFromGrid}
-      />
+              <TimetableGrid
+          blocks={processedTimetable.blocks}
+          conflictPairs={processedTimetable.conflicts}
+          consecutiveWarnings={processedTimetable.consecutives}
+          gaps={lectureGaps}
+          displayedDays={displayedDays}
+          on:remove={handleRemoveFromGrid}
+          on:suggest={handleSuggestFromGrid}
+        />
     </main>
   </div>
 </div>

@@ -8,7 +8,7 @@ export const load = async () => {
   if (get(courses).length === 0) {
     try {
       console.log('🌍 전역 레이아웃: 강의 데이터 로딩 시작...');
-      await loadCourses();
+      await loadCourses(200); // 더 많은 데이터를 로드
       console.log('🌍 전역 레이아웃: 강의 데이터 로딩 완료.');
     } catch (error) {
       console.error('🌍 전역 레이아웃: 데이터 로딩 실패', error);

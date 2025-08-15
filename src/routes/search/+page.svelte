@@ -5,12 +5,9 @@
   import Loading from "$lib/components/Loading.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
   import { STATIC_FILTER_OPTIONS } from "$lib/mock/data";
-  import { testFirebaseConnection } from "$lib/firebase-test";
-  import { get } from "svelte/store";
-  import { onMount } from "svelte";
-
-  let keyword = "";
-  let filters = { 
+  // Svelte 5 룬모드 상태 변수들
+  let keyword = $state("");
+  let filters = $state({ 
     term: "", 
     grade: "", 
     dept: "", 
@@ -20,17 +17,17 @@
     instructor: "",
     courseLevel: "",
     creditHours: ""
-  };
-  let results: Lecture[] = [];
-  let selectedLecture: Lecture | null = null;
-  let showDetail = false;
+  });
+  let results = $state<Lecture[]>([]);
+  let selectedLecture = $state<Lecture | null>(null);
+  let showDetail = $state(false);
 
   function search() {
     console.log('🔍 검색 실행:', { keyword, filters });
     
     const kw = keyword.trim().toLowerCase();
     const hasTag = kw.startsWith("#") ? kw.slice(1) : "";
-    const data = get(courses);
+    const data = $courses;
     
     console.log('🔍 검색 데이터:', { keyword: kw, hasTag, dataLength: data.length });
     
@@ -122,19 +119,21 @@
   // 컴포넌트 마운트 시 더 이상 여기서 데이터를 로드하지 않습니다.
   // 데이터 로딩은 src/routes/+layout.ts에서 전역으로 처리됩니다.
   
-  // 강의 데이터가 로드되면 초기 검색 실행
-  $: if ($courses.length > 0 && results.length === 0) {
-    console.log('🔍 초기 데이터 로드 완료, 검색 실행');
-    results = $courses; // 초기에는 전체 목록을 보여주도록 변경
-    performRealTimeSearch();
-  }
+  // Svelte 5 룬모드: 강의 데이터가 로드되면 초기 검색 실행
+  $effect(() => {
+    if ($courses.length > 0 && results.length === 0) {
+      console.log('🔍 초기 데이터 로드 완료, 검색 실행');
+      results = $courses; // 초기에는 전체 목록을 보여주도록 변경
+      performRealTimeSearch();
+    }
+  });
 </script>
 
 <h2 class="text-lg font-semibold mb-4">강의 검색</h2>
 
 <!-- 검색 필터 섹션 -->
 <div class="bg-gray-50 p-4 rounded-lg mb-6">
-  <form class="grid gap-3 mb-4" on:submit|preventDefault={search}>
+  <form class="grid gap-3 mb-4" onsubmit={(e) => { e.preventDefault(); search(); }}>
     <!-- 첫 번째 행: 학기, 학년, 검색어 -->
     <div class="grid gap-3 md:grid-cols-3">
       <select class="border rounded p-2 bg-white" bind:value={filters.term}>
@@ -156,8 +155,8 @@
           class="border rounded p-2 flex-1" 
           placeholder="강의명, 교수명 또는 #키워드 (실시간 검색)" 
           bind:value={keyword}
-          on:input={performRealTimeSearch}
-          on:keypress={handleKeyPress}
+          oninput={() => performRealTimeSearch()}
+          onkeypress={(e) => handleKeyPress(e)}
         />
         <button type="submit" class="bg-blue-500 text-white rounded px-4 py-2 whitespace-nowrap hover:bg-blue-600">
           검색
@@ -167,28 +166,28 @@
     
     <!-- 두 번째 행: 동적 필터들 -->
     <div class="grid gap-3 md:grid-cols-4">
-      <select class="border rounded p-2 bg-white" bind:value={filters.category} on:change={performRealTimeSearch}>
+      <select class="border rounded p-2 bg-white" bind:value={filters.category} onchange={() => performRealTimeSearch()}>
         <option value="">전체 구분</option>
         {#each $filterOptions.categories as category}
           <option value={category.value}>{category.label}</option>
         {/each}
       </select>
       
-      <select class="border rounded p-2 bg-white" bind:value={filters.dept} on:change={performRealTimeSearch}>
+      <select class="border rounded p-2 bg-white" bind:value={filters.dept} onchange={() => performRealTimeSearch()}>
         <option value="">전체 학과</option>
         {#each $filterOptions.departments as dept}
           <option value={dept.value}>{dept.label}</option>
         {/each}
       </select>
       
-      <select class="border rounded p-2 bg-white" bind:value={filters.liberalArtsArea} on:change={performRealTimeSearch}>
+      <select class="border rounded p-2 bg-white" bind:value={filters.liberalArtsArea} onchange={() => performRealTimeSearch()}>
         <option value="">전체 교양영역</option>
         {#each $filterOptions.liberalArtsAreas as area}
           <option value={area.value}>{area.label}</option>
         {/each}
       </select>
       
-      <select class="border rounded p-2 bg-white" bind:value={filters.instructor} on:change={performRealTimeSearch}>
+      <select class="border rounded p-2 bg-white" bind:value={filters.instructor} onchange={() => performRealTimeSearch()}>
         <option value="">전체 교수</option>
         {#each $filterOptions.instructors as instructor}
           <option value={instructor.value}>{instructor.label}</option>
@@ -198,21 +197,21 @@
     
     <!-- 세 번째 행: 추가 필터들 -->
     <div class="grid gap-3 md:grid-cols-3">
-      <select class="border rounded p-2 bg-white" bind:value={filters.creditHours} on:change={performRealTimeSearch}>
+      <select class="border rounded p-2 bg-white" bind:value={filters.creditHours} onchange={() => performRealTimeSearch()}>
         <option value="">전체 학점</option>
         {#each STATIC_FILTER_OPTIONS.creditHours as credit}
           <option value={credit.value}>{credit.label}</option>
         {/each}
       </select>
       
-      <select class="border rounded p-2 bg-white" bind:value={filters.courseLevel} on:change={performRealTimeSearch}>
+      <select class="border rounded p-2 bg-white" bind:value={filters.courseLevel} onchange={() => performRealTimeSearch()}>
         <option value="">전체 단계</option>
         {#each $filterOptions.courseLevels as level}
           <option value={level.value}>{level.label}</option>
         {/each}
       </select>
       
-      <select class="border rounded p-2 bg-white" bind:value={filters.courseType} on:change={performRealTimeSearch}>
+      <select class="border rounded p-2 bg-white" bind:value={filters.courseType} onchange={() => performRealTimeSearch()}>
         <option value="">전체 유형</option>
         {#each $filterOptions.courseTypes as type}
           <option value={type.value}>{type.label}</option>
@@ -229,7 +228,7 @@
     <button 
       type="button"
       class="text-sm text-gray-500 hover:text-gray-700"
-      on:click={resetFilters}
+      onclick={resetFilters}
     >
       필터 초기화
     </button>
@@ -329,19 +328,19 @@
           <div class="flex flex-col gap-2 ml-4">
             <button 
               class="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded px-3 py-1 text-sm transition-colors"
-              on:click={() => showLectureDetail(l)}
+              onclick={() => showLectureDetail(l)}
             >
               상세보기
             </button>
             <button 
               class="border border-blue-500 text-blue-500 hover:bg-blue-50 rounded px-3 py-1 text-sm transition-colors"
-              on:click={() => onAddToCart(l)}
+              onclick={() => onAddToCart(l)}
             >
               장바구니
             </button>
             <button 
               class="bg-blue-500 hover:bg-blue-600 text-white rounded px-3 py-1 text-sm transition-colors"
-              on:click={() => onApply(l)}
+              onclick={() => onApply(l)}
             >
               강의신청
             </button>
@@ -365,7 +364,7 @@
           </div>
           <button 
             class="text-gray-400 hover:text-gray-600"
-            on:click={() => showDetail = false}
+            onclick={() => showDetail = false}
             aria-label="모달 닫기"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -436,13 +435,13 @@
         <div class="flex gap-3 mt-6 pt-4 border-t">
           <button 
             class="flex-1 border border-blue-500 text-blue-500 hover:bg-blue-50 rounded py-2 transition-colors"
-            on:click={() => selectedLecture && onAddToCart(selectedLecture)}
+            onclick={() => selectedLecture && onAddToCart(selectedLecture)}
           >
             장바구니 담기
           </button>
           <button 
             class="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded py-2 transition-colors"
-            on:click={() => selectedLecture && onApply(selectedLecture)}
+            onclick={() => selectedLecture && onApply(selectedLecture)}
           >
             강의신청
           </button>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { HTMLInputAttributes, HTMLInputTypeAttribute } from "svelte/elements";
+	import { createEventDispatcher } from "svelte";
 	import { cn, type WithElementRef } from "$lib/utils.js";
 
 	type InputType = Exclude<HTMLInputTypeAttribute, "file">;
@@ -17,6 +18,8 @@
 		class: className,
 		...restProps
 	}: Props = $props();
+
+	const dispatch = createEventDispatcher();
 </script>
 
 {#if type === "file"}
@@ -32,6 +35,10 @@
 		type="file"
 		bind:files
 		bind:value
+		on:input={(e) => dispatch("input", e)}
+		on:change={(e) => dispatch("change", e)}
+		on:keydown={(e) => dispatch("keydown", e)}
+		on:keypress={(e) => dispatch("keypress", e)}
 		{...restProps}
 	/>
 {:else}
@@ -46,6 +53,10 @@
 		)}
 		{type}
 		bind:value
+		on:input={(e) => dispatch("input", e)}
+		on:change={(e) => dispatch("change", e)}
+		on:keydown={(e) => dispatch("keydown", e)}
+		on:keypress={(e) => dispatch("keypress", e)}
 		{...restProps}
 	/>
 {/if}

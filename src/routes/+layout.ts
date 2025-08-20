@@ -3,6 +3,12 @@ import { get } from 'svelte/store';
 
 // 앱의 모든 페이지가 로드되기 전에 실행됩니다.
 export const load = async () => {
+  // 서버 사이드 렌더링 단계에서는 Firebase(Web SDK) 사용을 건너뜁니다.
+  if (typeof window === 'undefined') {
+    console.log('🌍 전역 레이아웃: SSR 단계 - Firebase 로딩 건너뜀');
+    return {};
+  }
+
   // 스토어가 비어 있을 때만 (앱 첫 로딩 시) Firebase에서 데이터를 가져옵니다.
   // 페이지 이동 시마다 불필요하게 데이터를 다시 로드하는 것을 방지합니다.
   if (get(courses).length === 0) {

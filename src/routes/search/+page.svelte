@@ -1,19 +1,19 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { courses, addToCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading } from "$lib/stores";
+  import { courses, addToCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading, coursesError } from "$lib/stores";
   import { showToast } from "$lib/toast";
   import Loading from "$lib/components/Loading.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
+  import { Input } from "$lib/components/ui/input";
   import { STATIC_FILTER_OPTIONS } from "$lib/mock/data";
   // Svelte 5 룬모드 상태 변수들
   let keyword = $state("");
   let filters = $state({ 
     term: "", 
     grade: "", 
-    dept: "", 
-    category: "", 
-    liberalArtsArea: "", 
-    courseType: "",
+    dept: "",
+    category: "",
+    liberalArtsArea: "",
     instructor: "",
     courseLevel: "",
     creditHours: ""
@@ -23,51 +23,49 @@
   let showDetail = $state(false);
 
   function search() {
-    console.log('🔍 검색 실행:', { keyword, filters });
+    const searchTerm = keyword.trim().toLowerCase();
+    const allCourses = $courses;
     
-    const kw = keyword.trim().toLowerCase();
-    const hasTag = kw.startsWith("#") ? kw.slice(1) : "";
-    const data = $courses;
+    if (allCourses.length === 0) {
+      results = [];
+      return;
+    }
     
-    console.log('🔍 검색 데이터:', { keyword: kw, hasTag, dataLength: data.length });
+    // 검색어가 없으면 전체 강의 표시
+    if (!searchTerm) {
+      results = allCourses;
+      return;
+    }
     
-    results = data.filter((l) => {
-      // 텍스트 매칭
-      const textMatch = !kw || l.title.toLowerCase().includes(kw) || 
-                       l.instructor.toLowerCase().includes(kw);
+    // 검색 실행: 과목명 또는 키워드에서 찾기
+    results = allCourses.filter((course) => {
+      // 과목명에서 검색
+      const titleMatch = course.title.toLowerCase().includes(searchTerm);
       
-      // 키워드 태그 매칭  
-      const tagMatch = !hasTag || l.keywords?.some((k) => k.toLowerCase().includes(hasTag));
+      // 키워드에서 검색 (# 태그 검색)
+      let keywordMatch = false;
+      if (searchTerm.startsWith('#')) {
+        const tag = searchTerm.slice(1); // # 제거
+        keywordMatch = !!(course.keywords && course.keywords.some(k => k.toLowerCase().includes(tag)));
+      } else {
+        // 일반 검색에서도 키워드 배열 확인
+        keywordMatch = !!(course.keywords && course.keywords.some(k => k.toLowerCase().includes(searchTerm)));
+      }
       
-      // 필터 적용
-      const termMatch = !filters.term || true; // 학기는 현재 모든 데이터가 동일하다고 가정
-      const gradeMatch = !filters.grade || true; // 학년별 필터는 추후 구현
-      const deptMatch = !filters.dept || l.dept === filters.dept;
-      const categoryMatch = !filters.category || l.category === filters.category;
-      const liberalArtsAreaMatch = !filters.liberalArtsArea || l.area === filters.liberalArtsArea;
-      const instructorMatch = !filters.instructor || l.instructor === filters.instructor;
-      const creditHoursMatch = !filters.creditHours || l.credits.lecture.toString() === filters.creditHours;
-      
-      return (textMatch || tagMatch) && termMatch && gradeMatch && deptMatch && categoryMatch && liberalArtsAreaMatch && instructorMatch && creditHoursMatch;
+      return titleMatch || keywordMatch;
     });
-    
-    console.log('🔍 검색 결과:', results.length, '개');
   }
 
   // 실시간 검색 함수
   function performRealTimeSearch() {
-    if (keyword.length >= 1 || Object.values(filters).some(f => f !== "")) {
-      search();
-    } else {
-      // 검색어와 필터가 모두 비어있으면 전체 목록 표시
-      results = $courses;
-    }
+    search();
   }
 
-  // 엔터키 검색 핸들러
-  function handleKeyPress(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
+  // 엔터키 검색 핸들러 (컴포넌트 재디스패치 이벤트 호환)
+  function handleKeyPress(event: any) {
+    const e: KeyboardEvent = event?.key ? event : event?.detail;
+    if (e?.key === 'Enter') {
+      e.preventDefault();
       search();
     }
   }
@@ -77,17 +75,14 @@
     filters = { 
       term: "", 
       grade: "", 
-      dept: "", 
-      category: "", 
-      liberalArtsArea: "", 
-      courseType: "",
+      dept: "",
+      category: "",
+      liberalArtsArea: "",
       instructor: "",
       courseLevel: "",
       creditHours: ""
     };
-    // 필터 초기화 후 전체 목록 표시
-    results = $courses;
-    console.log('🔍 필터 초기화, 전체 목록 표시:', results.length, '개');
+    search(); // 검색 함수 호출로 전체 목록 표시
   }
 
   function onAddToCart(l: Lecture) {
@@ -119,12 +114,11 @@
   // 컴포넌트 마운트 시 더 이상 여기서 데이터를 로드하지 않습니다.
   // 데이터 로딩은 src/routes/+layout.ts에서 전역으로 처리됩니다.
   
-  // Svelte 5 룬모드: 강의 데이터가 로드되면 초기 검색 실행
+  // 강의 데이터가 로드되면 초기 검색 실행
   $effect(() => {
-    if ($courses.length > 0 && results.length === 0) {
-      console.log('🔍 초기 데이터 로드 완료, 검색 실행');
-      results = $courses; // 초기에는 전체 목록을 보여주도록 변경
-      performRealTimeSearch();
+    if ($courses.length > 0 && results.length === 0 && !keyword) {
+      console.log('🔍 초기 데이터 로드 완료 - 전체 목록 표시');
+      results = $courses; // 직접 할당으로 무한 루프 방지
     }
   });
 </script>
@@ -134,89 +128,105 @@
 <!-- 검색 필터 섹션 -->
 <div class="bg-gray-50 p-4 rounded-lg mb-6">
   <form class="grid gap-3 mb-4" onsubmit={(e) => { e.preventDefault(); search(); }}>
-    <!-- 첫 번째 행: 학기, 학년, 검색어 -->
-    <div class="grid gap-3 md:grid-cols-3">
-      <select class="border rounded p-2 bg-white" bind:value={filters.term}>
-        <option value="">전체 학기</option>
-        {#each STATIC_FILTER_OPTIONS.terms as term}
-          <option value={term.value}>{term.label}</option>
-        {/each}
-      </select>
-      
-      <select class="border rounded p-2 bg-white" bind:value={filters.grade}>
-        <option value="">전체 학년</option>
-        {#each STATIC_FILTER_OPTIONS.grades as grade}
-          <option value={grade.value}>{grade.label}</option>
-        {/each}
-      </select>
-      
-      <div class="flex gap-2">
-        <input 
-          class="border rounded p-2 flex-1" 
-          placeholder="강의명, 교수명 또는 #키워드 (실시간 검색)" 
-          bind:value={keyword}
-          oninput={() => performRealTimeSearch()}
-          onkeypress={(e) => handleKeyPress(e)}
-        />
-        <button type="submit" class="bg-blue-500 text-white rounded px-4 py-2 whitespace-nowrap hover:bg-blue-600">
-          검색
-        </button>
+    <!-- 첫 번째 행: 검색어 입력 (풀폭) -->
+    <div class="flex gap-2">
+      <input 
+        class="flex-1 border rounded p-2 bg-white"
+        type="search"
+        placeholder="강의명 또는 #키워드" 
+        enterkeyhint="search"
+        bind:value={keyword}
+        oninput={() => performRealTimeSearch()}
+        onkeydown={(e) => handleKeyPress(e)}
+      />
+      <button type="submit" class="bg-blue-500 text-white rounded px-4 py-2 whitespace-nowrap hover:bg-blue-600">
+        검색
+      </button>
+    </div>
+    
+    <!-- 첫 번째 필터 행: 학기, 학년, 이수구분, 학과 -->
+    <div class="grid gap-3 md:grid-cols-4">
+      <div>
+        <p class="text-xs text-gray-500 mb-2">학기</p>
+        <select class="border rounded p-2 bg-white w-full" bind:value={filters.term} onchange={() => performRealTimeSearch()}>
+          <option value="">전체 학기</option>
+          {#each STATIC_FILTER_OPTIONS.terms as term}
+            <option value={term.value}>{term.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div>
+        <p class="text-xs text-gray-500 mb-2">학년</p>
+        <select class="border rounded p-2 bg-white w-full" bind:value={filters.grade} onchange={() => performRealTimeSearch()}>
+          <option value="">전체 학년</option>
+          {#each STATIC_FILTER_OPTIONS.grades as grade}
+            <option value={grade.value}>{grade.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div>
+        <p class="text-xs text-gray-500 mb-2">이수구분</p>
+        <select class="border rounded p-2 bg-white w-full" bind:value={filters.category} onchange={() => performRealTimeSearch()}>
+          <option value="">전체 구분</option>
+          {#each $filterOptions.categories as category}
+            <option value={category.value}>{category.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div>
+        <p class="text-xs text-gray-500 mb-2">학과</p>
+        <select class="border rounded p-2 bg-white w-full" bind:value={filters.dept} onchange={() => performRealTimeSearch()}>
+          <option value="">전체 학과</option>
+          {#each $filterOptions.departments as dept}
+            <option value={dept.value}>{dept.label}</option>
+          {/each}
+        </select>
       </div>
     </div>
-    
-    <!-- 두 번째 행: 동적 필터들 -->
+
+    <!-- 두 번째 필터 행: 교양영역, 교수, 학점, 단계 -->
     <div class="grid gap-3 md:grid-cols-4">
-      <select class="border rounded p-2 bg-white" bind:value={filters.category} onchange={() => performRealTimeSearch()}>
-        <option value="">전체 구분</option>
-        {#each $filterOptions.categories as category}
-          <option value={category.value}>{category.label}</option>
-        {/each}
-      </select>
-      
-      <select class="border rounded p-2 bg-white" bind:value={filters.dept} onchange={() => performRealTimeSearch()}>
-        <option value="">전체 학과</option>
-        {#each $filterOptions.departments as dept}
-          <option value={dept.value}>{dept.label}</option>
-        {/each}
-      </select>
-      
-      <select class="border rounded p-2 bg-white" bind:value={filters.liberalArtsArea} onchange={() => performRealTimeSearch()}>
-        <option value="">전체 교양영역</option>
-        {#each $filterOptions.liberalArtsAreas as area}
-          <option value={area.value}>{area.label}</option>
-        {/each}
-      </select>
-      
-      <select class="border rounded p-2 bg-white" bind:value={filters.instructor} onchange={() => performRealTimeSearch()}>
-        <option value="">전체 교수</option>
-        {#each $filterOptions.instructors as instructor}
-          <option value={instructor.value}>{instructor.label}</option>
-        {/each}
-      </select>
-    </div>
-    
-    <!-- 세 번째 행: 추가 필터들 -->
-    <div class="grid gap-3 md:grid-cols-3">
-      <select class="border rounded p-2 bg-white" bind:value={filters.creditHours} onchange={() => performRealTimeSearch()}>
-        <option value="">전체 학점</option>
-        {#each STATIC_FILTER_OPTIONS.creditHours as credit}
-          <option value={credit.value}>{credit.label}</option>
-        {/each}
-      </select>
-      
-      <select class="border rounded p-2 bg-white" bind:value={filters.courseLevel} onchange={() => performRealTimeSearch()}>
-        <option value="">전체 단계</option>
-        {#each $filterOptions.courseLevels as level}
-          <option value={level.value}>{level.label}</option>
-        {/each}
-      </select>
-      
-      <select class="border rounded p-2 bg-white" bind:value={filters.courseType} onchange={() => performRealTimeSearch()}>
-        <option value="">전체 유형</option>
-        {#each $filterOptions.courseTypes as type}
-          <option value={type.value}>{type.label}</option>
-        {/each}
-      </select>
+      <div>
+        <p class="text-xs text-gray-500 mb-2">교양영역</p>
+        <select class="border rounded p-2 bg-white w-full" bind:value={filters.liberalArtsArea} onchange={() => performRealTimeSearch()}>
+          <option value="">전체 교양영역</option>
+          {#each $filterOptions.liberalArtsAreas as area}
+            <option value={area.value}>{area.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div>
+        <p class="text-xs text-gray-500 mb-2">교수</p>
+        <Input 
+          placeholder="교수명 검색"
+          bind:value={filters.instructor}
+          on:input={() => performRealTimeSearch()}
+        />
+      </div>
+
+      <div>
+        <p class="text-xs text-gray-500 mb-2">학점</p>
+        <select class="border rounded p-2 bg-white w-full" bind:value={filters.creditHours} onchange={() => performRealTimeSearch()}>
+          <option value="">전체 학점</option>
+          {#each STATIC_FILTER_OPTIONS.creditHours as credit}
+            <option value={credit.value}>{credit.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div>
+        <p class="text-xs text-gray-500 mb-2">단계</p>
+        <select class="border rounded p-2 bg-white w-full" bind:value={filters.courseLevel} onchange={() => performRealTimeSearch()}>
+          <option value="">전체 단계</option>
+          {#each $filterOptions.courseLevels as level}
+            <option value={level.value}>{level.label}</option>
+          {/each}
+        </select>
+      </div>
     </div>
   </form>
   
@@ -260,11 +270,19 @@
       {/each}
     </div>
   {:else if results.length === 0}
-    <div class="text-center py-12">
-      <div class="text-gray-400 text-5xl mb-4">📚</div>
-      <p class="text-gray-500 text-lg">검색 결과가 없습니다</p>
-      <p class="text-gray-400 text-sm mt-2">다른 키워드로 검색해보세요</p>
-    </div>
+    {#if $coursesError}
+      <div class="text-center py-12">
+        <div class="text-red-400 text-5xl mb-4">⚠️</div>
+        <p class="text-red-500 text-lg">강의 데이터를 불러오지 못했습니다</p>
+        <p class="text-red-400 text-sm mt-2">{$coursesError}</p>
+      </div>
+    {:else}
+      <div class="text-center py-12">
+        <div class="text-gray-400 text-5xl mb-4">📚</div>
+        <p class="text-gray-500 text-lg">검색 결과가 없습니다</p>
+        <p class="text-gray-400 text-sm mt-2">다른 키워드로 검색해보세요</p>
+      </div>
+    {/if}
   {:else}
     {#each results as l}
       <div class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
@@ -450,5 +468,6 @@
     </div>
   </div>
 {/if}
+
 
 

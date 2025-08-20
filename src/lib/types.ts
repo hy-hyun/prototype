@@ -15,6 +15,8 @@ export type Lecture = {
   limit?: string;
   keywords?: string[];
   method?: "FCFS" | "BID";
+  courseType?: string;
+  courseLevel?: string; // 100, 200, 300 등 레벨 단위 문자열
 };
 
 export type Notice = { id: string; title: string; content: string; pinned?: boolean; createdAt: string };

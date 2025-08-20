@@ -44,9 +44,10 @@ export class LocalStorageCache {
         expiry
       };
       localStorage.setItem(key, JSON.stringify(cacheItem));
-      console.log(`💾 캐시 저장: ${key} (만료: ${new Date(Date.now() + expiry).toLocaleString()})`);
     } catch (error) {
-      console.warn('💾 캐시 저장 실패:', key, error);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('캐시 저장 실패:', key, error);
+      }
     }
   }
 
@@ -65,15 +66,15 @@ export class LocalStorageCache {
       
       // 만료 시간 체크
       if (now - cacheItem.timestamp > cacheItem.expiry) {
-        console.log(`💾 캐시 만료: ${key}`);
         this.remove(key);
         return null;
       }
 
-      console.log(`💾 캐시 히트: ${key} (${Math.round((cacheItem.expiry - (now - cacheItem.timestamp)) / 1000 / 60)}분 남음)`);
       return cacheItem.data;
     } catch (error) {
-      console.warn('💾 캐시 읽기 실패:', key, error);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('캐시 읽기 실패:', key, error);
+      }
       this.remove(key);
       return null;
     }
@@ -86,9 +87,10 @@ export class LocalStorageCache {
   static remove(key: string): void {
     try {
       localStorage.removeItem(key);
-      console.log(`💾 캐시 삭제: ${key}`);
     } catch (error) {
-      console.warn('💾 캐시 삭제 실패:', key, error);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('캐시 삭제 실패:', key, error);
+      }
     }
   }
 
@@ -101,9 +103,10 @@ export class LocalStorageCache {
       const hyPathKeys = keys.filter(key => key.startsWith('hy-path-'));
       
       hyPathKeys.forEach(key => localStorage.removeItem(key));
-      console.log(`💾 모든 캐시 삭제 완료 (${hyPathKeys.length}개)`);
     } catch (error) {
-      console.warn('💾 캐시 전체 삭제 실패:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('캐시 전체 삭제 실패:', error);
+      }
     }
   }
 
@@ -142,15 +145,12 @@ export class LocalStorageCache {
         if (info && info.isExpired) {
           localStorage.removeItem(key);
           cleanedCount++;
-          console.log(`💾 만료된 캐시 삭제: ${key}`);
         }
       });
-      
-      if (cleanedCount > 0) {
-        console.log(`💾 만료된 캐시 정리 완료 (${cleanedCount}개 삭제)`);
-      }
     } catch (error) {
-      console.warn('💾 캐시 정리 실패:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('캐시 정리 실패:', error);
+      }
     }
   }
 

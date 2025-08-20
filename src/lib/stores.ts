@@ -24,19 +24,15 @@ let isUserDataLoaded = false; // 사용자 데이터 로딩 상태 플래그
 export async function loadUserData(userId: string) {
   if (isUserDataLoaded) return; // 이미 로드되었으면 중복 실행 방지
   
-  console.log(`👤 ${userId} 사용자 데이터 로컬 캐시에서만 로드`);
-  
   // 캐시에서만 확인 (Firebase 접근 금지)
   const cacheKey = CACHE_KEYS.USER_DATA(userId);
   const cachedData = LocalStorageCache.get<{ cart: CartItem[], applications: Application[] }>(cacheKey);
   
   if (cachedData) {
-    console.log(`👤 ${userId} 사용자 데이터 캐시에서 로드`);
     cart.set(cachedData.cart || []);
     applications.set(cachedData.applications || []);
   } else {
     // 캐시가 없으면 빈 데이터로 초기화
-    console.log('👤 캐시 없음, 빈 데이터로 초기화');
     cart.set([]);
     applications.set([]);
   }
@@ -47,7 +43,6 @@ export async function loadUserData(userId: string) {
 // 사용자 데이터는 로컬 캐시에만 저장 (Firebase 쓰기 금지)
 async function saveUserData(userId: string, data: { cart?: CartItem[], applications?: Application[] }) {
   if (!userId) return;
-  console.log(`💾 ${userId} 사용자 데이터 로컬 캐시에만 저장...`, data);
   
   // Firebase 쓰기 작업 제거 - 로컬 캐시에만 저장
   const cacheKey = CACHE_KEYS.USER_DATA(userId);
@@ -56,12 +51,10 @@ async function saveUserData(userId: string, data: { cart?: CartItem[], applicati
   if (cachedData) {
     const updatedData = { ...cachedData, ...data };
     LocalStorageCache.set(cacheKey, updatedData, LocalStorageCache.EXPIRY_TIMES.SHORT);
-    console.log(`💾 ${userId} 로컬 캐시 업데이트 완료`);
   } else {
     // 새로운 캐시 생성
     const newData = { cart: [], applications: [], ...data };
     LocalStorageCache.set(cacheKey, newData, LocalStorageCache.EXPIRY_TIMES.SHORT);
-    console.log(`💾 ${userId} 새 로컬 캐시 생성 완료`);
   }
 }
 
@@ -90,7 +83,6 @@ export async function loadCourses(limitCount: number = 1000) {
   }>(CACHE_KEYS.FILTER_OPTIONS);
   
   if (cachedCourses && cachedFilterOptions) {
-    console.log('🔥 강의 데이터 캐시에서 로드 (개수:', cachedCourses.length, ')');
     courses.set(cachedCourses);
     filterOptions.set(cachedFilterOptions);
     return;
@@ -98,8 +90,6 @@ export async function loadCourses(limitCount: number = 1000) {
 
   coursesLoading.set(true);
   loadingText.set('강의 데이터 로딩 중...');
-  console.log('🔥 Firebase에서 강의 데이터 로딩 시작...');
-  console.log('🔥 DB 인스턴스:', db);
 
   try {
     // 쿼리 최적화: limit과 orderBy 적용
@@ -109,10 +99,8 @@ export async function loadCourses(limitCount: number = 1000) {
       orderBy('subjectName') // 과목명으로 정렬
       // limit 제거 - 모든 데이터 로드
     );
-    console.log('🔥 Firestore 컬렉션 참조 생성 완료 (모든 데이터 로드)');
 
     const querySnapshot = await getDocs(coursesQuery);
-    console.log('🔥 Firestore 쿼리 실행 완료, 문서 개수:', querySnapshot.size);
 
     const rawCourseData: any[] = [];
     const lectureData: Lecture[] = [];
@@ -135,12 +123,7 @@ export async function loadCourses(limitCount: number = 1000) {
           lecture: data.creditHours || 3,
           lab: 0
         },
-        schedule: (() => {
-          console.log(`📋 "${data.subjectName}" 원시 스케줄:`, data.schedule);
-          const parsed = parseSchedule(data.schedule || '');
-          console.log(`📋 "${data.subjectName}" 파싱된 스케줄:`, parsed);
-          return parsed;
-        })(),
+        schedule: parseSchedule(data.schedule || ''),
         capacity: calculateCapacity(data.enrollmentCapByYear),
         area: data.liberalArtsArea || data.category || '',
         limit: data.restrictions || '',
@@ -154,14 +137,11 @@ export async function loadCourses(limitCount: number = 1000) {
       lectureData.push(mappedLecture);
     });
 
-    console.log('🔥 강의 데이터 로딩 완료:', lectureData.length, '개');
-    
     // 스토어에 데이터를 설정하기 전에 중복을 제거합니다.
     const uniqueLectures = Array.from(new Map(lectureData.map(l => [`${l.courseId}-${l.classId}`, l])).values());
     
     courses.set(uniqueLectures);
     coursesError.set(null);
-    console.log('🔥 중복 제거 후 최종 강의 데이터 개수:', uniqueLectures.length);
 
     // 원본 Firebase 데이터에서 필터 옵션 동적 생성
     generateFilterOptions(rawCourseData);
@@ -179,24 +159,11 @@ export async function loadCourses(limitCount: number = 1000) {
       courseLevels: Array.from(new Set(rawCourseData.map(c => c.courseLevel ? Math.floor(c.courseLevel / 100) * 100 : null).filter((level): level is number => level !== null))).sort().map(level => ({ value: level.toString(), label: `${level}단계` }))
     };
     LocalStorageCache.set(CACHE_KEYS.FILTER_OPTIONS, currentFilterOptions, LocalStorageCache.EXPIRY_TIMES.LONG);
-    
-    console.log('🔥 강의 데이터 로딩 및 캐싱 완료');
 
   } catch (error: any) {
-    console.error('🔥 Firebase 연결 실패:', error);
-    console.error('🔥 오류 상세:', error?.message);
-    console.error('🔥 오류 코드:', error?.code);
-    console.error('🔥 오류 타입:', typeof error);
-    console.error('🔥 전체 오류 객체:', error);
-
-    // 구체적인 오류 메시지 표시
-    if (error?.code === 'permission-denied') {
-      console.error('🚨 Firestore 보안 규칙 문제: 읽기 권한이 없습니다.');
-      console.error('🚨 Firebase Console → Firestore Database → Rules에서 읽기 권한을 허용해주세요.');
-    } else if (error?.code === 'unavailable') {
-      console.error('🚨 네트워크 연결 문제: Firebase 서버에 연결할 수 없습니다.');
-    } else if (error?.message?.includes('fetch')) {
-      console.error('🚨 네트워크 오류: 인터넷 연결을 확인해주세요.');
+    // 에러 로깅은 개발 환경에서만
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Firebase 연결 실패:', error?.message || error);
     }
 
     // Firebase 연결 실패 시 빈 배열로 설정 (더미데이터 사용 안함)

@@ -1,6 +1,6 @@
 import type { Lecture, Notice } from "$lib/types";
 
-// 더미 데이터는 삭제됨 - Firebase에서 실제 데이터를 가져옵니다
+
 
 export const MOCK_NOTICES: Notice[] = [
   { id: "n1", title: "2025-2학기 수강신청 일정 안내", content: "8월 12일(월) 09:00 ~ 8월 16일(금) 18:00", pinned: true, createdAt: "2025-08-01" },

@@ -1,10 +1,13 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { cart, applications, courses } from "$lib/stores";
+  import { cart, applications, courses, addLectureToCart, findLectureGaps } from "$lib/stores";
   import { browser } from "$app/environment";
   import TimetableHeader from "$lib/components/TimetableHeader.svelte";
   import TimetableSidebar from "$lib/components/TimetableSidebar.svelte";
   import TimetableGrid from "$lib/components/TimetableGrid.svelte";
+  import ToastContainer from "$lib/components/ToastContainer.svelte";
+
+
   
   // --- 상태 관리 ---
   let activeTab = $state("전체");
@@ -166,11 +169,33 @@
       return sum;
     }, 0);
     
-    let creditStatus = { status: "success" as const, message: "적정 학점" };
-    if (totalCredits < minCredits) creditStatus = { status: "warning" as const, message: `최소 ${minCredits}학점 필요` };
-    if (totalCredits > maxCredits) creditStatus = { status: "error" as const, message: `최대 ${maxCredits}학점 초과` };
+    let creditStatus: { status: "success" | "warning" | "error", message: string } = { status: "success", message: "적정 학점" };
+    if (totalCredits < minCredits) creditStatus = { status: "warning", message: `최소 ${minCredits}학점 필요` };
+    if (totalCredits > maxCredits) creditStatus = { status: "error", message: `최대 ${maxCredits}학점 초과` };
     
     return { totalCredits, creditStatus };
+  });
+
+  // 연강 간격 계산 - 실제 Firebase 데이터 기반
+  let lectureGaps = $derived.by(() => {
+    console.log('🎯 시간표 페이지 - 장바구니 아이템:', $cart);
+    console.log('🎯 시간표 페이지 - 전체 강의 수:', $courses.length);
+    
+    const cartLectures = $cart.map(cartItem => {
+      const found = $courses.find(course => 
+        course.courseId === cartItem.courseId && course.classId === cartItem.classId
+      );
+      console.log(`🎯 찾기: ${cartItem.courseId}-${cartItem.classId} →`, found ? found.title : 'NOT FOUND');
+      return found;
+    }).filter(Boolean) as Lecture[];
+    
+    console.log('🎯 시간표 페이지 - 장바구니 강의들:', cartLectures.map(l => l.title));
+    
+    // 실제 Firebase 데이터에서 연강 감지
+    const gaps = findLectureGaps(cartLectures);
+    console.log('🎯 시간표 페이지 - 실제 계산된 연강 경고:', gaps);
+    
+    return gaps;
   });
 
   // --- 이벤트 핸들러 ---
@@ -211,12 +236,8 @@
 
   function handleAddToCart(event: CustomEvent<Lecture>) {
     const course = event.detail;
-    cart.update(items => {
-      if (items.some(item => item.courseId === course.courseId && item.classId === course.classId)) {
-        return items;
-      }
-      return [...items, { courseId: course.courseId, classId: course.classId, method: "FCFS" }];
-    });
+    // 시간 중복 검사를 포함한 강의 추가
+    addLectureToCart(course);
   }
 
   function handleRemoveFromCart(event: CustomEvent<Lecture>) {
@@ -287,14 +308,20 @@
       on:share={handleShare}
     />
     <main class="flex-1 overflow-y-auto">
-      <TimetableGrid 
-        blocks={processedTimetable.blocks}
-        conflictPairs={processedTimetable.conflicts}
-        consecutiveWarnings={processedTimetable.consecutives}
-        displayedDays={displayedDays}
-        on:remove={handleRemoveFromGrid}
-        on:suggest={handleSuggestFromGrid}
-      />
+              <TimetableGrid
+          blocks={processedTimetable.blocks}
+          conflictPairs={processedTimetable.conflicts}
+          consecutiveWarnings={processedTimetable.consecutives}
+          gaps={lectureGaps}
+          displayedDays={displayedDays}
+          on:remove={handleRemoveFromGrid}
+          on:suggest={handleSuggestFromGrid}
+        />
     </main>
   </div>
 </div>
+
+<!-- Toast 컨테이너 -->
+<ToastContainer />
+
+

@@ -1,77 +1,134 @@
 <script lang="ts">
-  import { cart, applications } from "$lib/stores";
-  
-  // 통계 계산 - Svelte 5 문법
-  let totalCourses = $derived($cart.length + $applications.length);
-  let enrolledCourses = $derived($applications.length);
-  let cartCourses = $derived($cart.length);
-  
-  // 시간 통계 (임시) - Svelte 5 문법
-  let totalHours = $derived(totalCourses * 3); // 임시로 3시간씩 계산
-  let busyDays = $derived(Math.min(5, totalCourses)); // 최대 5일
+  import { createEventDispatcher } from 'svelte';
+
+  const dispatch = createEventDispatcher<{
+    download: void;
+    share: void;
+  }>();
+
+  function handleDownload() {
+    dispatch('download');
+  }
+
+  function handleShare() {
+    dispatch('share');
+  }
 </script>
 
-<!-- 푸터 컨테이너 -->
-<div class="bg-white border-t border-gray-200 px-6 py-3">
-  <div class="flex items-center justify-between">
-    <!-- 좌측: 통계 정보 -->
-    <div class="flex items-center gap-6 text-sm">
-      <!-- 추가된 강의 수 -->
-      <div class="flex items-center gap-2">
-        <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-        <span class="text-gray-600">
-          현재 추가된 강의: <span class="font-semibold text-blue-600">{totalCourses}개</span>
-        </span>
-      </div>
-      
-      <!-- 신청 완료 vs 장바구니 -->
-      <div class="text-gray-500">
-        신청완료 {enrolledCourses}개 · 장바구니 {cartCourses}개
-      </div>
-      
-      <!-- 총 시간 -->
-      <div class="text-gray-500">
-        주간 {totalHours}시간 · {busyDays}일 활용
-      </div>
+<!-- 시간표 하단 액션 버튼들 -->
+<div class="bg-white border-t border-gray-200 px-6 py-4 rounded-b-2xl shadow-sm">
+  <div class="flex items-center justify-end gap-4">
+    <!-- PNG 다운로드 버튼 -->
+    <div class="relative group">
+      <button 
+        class="footer-icon-btn download"
+        onclick={handleDownload}
+        aria-label="PNG 저장"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </button>
+      <div class="footer-tooltip">PNG 저장</div>
     </div>
 
-    <!-- 우측: 빠른 액션 -->
-    <div class="flex items-center gap-3">
-      <!-- 강의 검색 바로가기 -->
-      <a 
-        href="/search" 
-        class="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
-        강의 검색
-      </a>
-      
-      <!-- 구분선 -->
-      <div class="w-px h-4 bg-gray-300"></div>
-      
-      <!-- 수강신청 바로가기 -->
-      <a 
-        href="/enroll" 
-        class="text-sm text-green-600 hover:text-green-800 flex items-center gap-1"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-        </svg>
-        수강신청
-      </a>
-      
-      <!-- 새로고침 버튼 -->
+    <!-- 공유 버튼 -->
+    <div class="relative group">
       <button 
-        class="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-        onclick={() => window.location.reload()}
+        class="footer-icon-btn share"
+        onclick={handleShare}
+        aria-label="공유하기"
       >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"/>
         </svg>
-        새로고침
       </button>
+      <div class="footer-tooltip">공유하기</div>
     </div>
   </div>
 </div>
+
+<style>
+  .footer-icon-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    border: 1px solid;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .footer-icon-btn.download {
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #3b82f6;
+  }
+
+  .footer-icon-btn.download:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: #3b82f6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  }
+
+  .footer-icon-btn.share {
+    border-color: rgba(147, 51, 234, 0.3);
+    color: #9333ea;
+    background: linear-gradient(135deg, rgba(147, 51, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+  }
+
+  .footer-icon-btn.share:hover {
+    background: linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-color: #9333ea;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.2);
+  }
+
+  /* 풋터 툴팁 */
+  .footer-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 50;
+  }
+
+  .footer-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.8);
+  }
+
+  .group:hover .footer-tooltip {
+    opacity: 1;
+  }
+
+  /* 모바일 최적화 */
+  @media (max-width: 640px) {
+    .footer-icon-btn {
+      width: 44px;
+      height: 44px;
+    }
+  }
+</style>

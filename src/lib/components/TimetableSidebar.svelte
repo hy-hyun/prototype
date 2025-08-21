@@ -42,7 +42,7 @@
 </script>
 
 <!-- 사이드바 전체 컨테이너 -->
-<div class="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
+<div class="w-60 bg-white border-r border-gray-200 flex flex-col h-full">
   <!-- 헤더 -->
   <div class="p-4 border-b border-gray-100">
     <div class="flex items-center justify-between">
@@ -83,67 +83,75 @@
         </div>
       {:else}
         {#each courses as course (course.courseId + course.classId)}
-          <div class="mb-3 p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors {
+          <div class="mb-2 p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors {
             course.isInCart ? 'bg-green-50 border-green-200' : ''
           }">
             <!-- 과목 기본 정보 -->
-            <div class="flex items-start justify-between mb-2">
-              <div class="flex-1">
-                <div class="font-medium text-gray-800 text-sm flex items-center gap-2">
+            <div class="flex items-start mb-2">
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-gray-800 text-sm flex items-center gap-1 truncate">
                   {#if course.isInCart}
-                    <span class="text-green-500">✓</span>
+                    <span class="text-green-500 flex-shrink-0">✓</span>
                   {/if}
-                  {course.title}
+                  <span class="truncate">{course.title}</span>
                 </div>
-                <div class="text-xs text-gray-500 mt-1 flex items-center gap-2">
-                  <span>{course.courseId}</span>
-                  <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{course.category}</span>
-                  <span class="text-orange-600">{course.credits.lecture + (course.credits.lab || 0)}학점</span>
+                <div class="text-xs text-gray-500 mt-1 flex items-center gap-1 flex-wrap">
+                  <span class="truncate">{course.courseId}</span>
+                  <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs flex-shrink-0">{course.category}</span>
+                  <span class="text-sky-400 flex-shrink-0">{course.credits.lecture + (course.credits.lab || 0)}학점</span>
                 </div>
               </div>
-              
-              <!-- 추가/삭제 버튼 -->
-              {#if course.isInCart}
-                <button 
-                  type="button"
-                  class="ml-2 px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors"
-                  onclick={() => removeFromCart(course)}
-                  title="장바구니에서 제거"
-                >
-                  제거
-                </button>
-              {:else}
-                <button 
-                  type="button"
-                  class="ml-2 px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition-colors"
-                  onclick={() => addToCart(course)}
-                  title="장바구니에 추가"
-                >
-                  추가
-                </button>
-              {/if}
             </div>
             
             <!-- 상세 정보 -->
-            <div class="text-xs text-gray-600 space-y-1">
+            <div class="text-xs text-gray-600 space-y-0.5 mb-2">
               <div class="flex items-center gap-1">
-                <span>👨‍🏫</span>
-                <span>{course.instructor}</span>
+                <span class="flex-shrink-0">👨‍🏫</span>
+                <span class="truncate">{course.instructor}</span>
               </div>
               <div class="flex items-center gap-1">
-                <span>🕐</span>
-                <span>
-                  {course.schedule?.map(s => 
+                <span class="flex-shrink-0">🕐</span>
+                <span class="truncate">
+                  {course.schedule?.map((s: any) => 
                     `${["일","월","화","수","목","금","토"][s.day % 7]} ${formatTime(s.start)}-${formatTime(s.end)}`
                   ).join(", ")}
                 </span>
               </div>
               <div class="flex items-center gap-1">
-                <span>🏠</span>
-                <span>
-                  {course.schedule?.map(s => `${s.building || ''} ${s.room || ''}`).filter((v, i, a) => a.indexOf(v) === i && v.trim() !== '').join(', ')}
+                <span class="flex-shrink-0">🏠</span>
+                <span class="truncate">
+                  {course.schedule?.map((s: any) => `${s.building || ''} ${s.room || ''}`).filter((v: any, i: any, a: any) => a.indexOf(v) === i && v.trim() !== '').join(', ')}
                 </span>
               </div>
+            </div>
+
+            <!-- 추가/삭제 버튼 (왼쪽 정렬, 최소 너비) -->
+            <div class="flex justify-start">
+              {#if course.isInCart}
+                <button 
+                  type="button"
+                  class="cart-btn remove"
+                  onclick={() => removeFromCart(course)}
+                  title="장바구니에서 제거"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                  </svg>
+                  제거
+                </button>
+              {:else}
+                <button 
+                  type="button"
+                  class="cart-btn add"
+                  onclick={() => addToCart(course)}
+                  title="장바구니에 추가"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                  추가
+                </button>
+              {/if}
             </div>
           </div>
         {/each}
@@ -151,3 +159,44 @@
     </div>
   </div>
 </div>
+
+<style>
+  .cart-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid;
+    white-space: nowrap;
+    min-width: fit-content;
+  }
+
+  .cart-btn.add {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border-color: #2563eb;
+  }
+
+  .cart-btn.add:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  }
+
+  .cart-btn.remove {
+    background: linear-gradient(135deg, #f8b4cb 0%, #fce7f3 100%);
+    color: #be185d;
+    border-color: #f9a8d4;
+  }
+
+  .cart-btn.remove:hover {
+    background: linear-gradient(135deg, #f472b6 0%, #f8b4cb 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(244, 114, 182, 0.3);
+  }
+</style>

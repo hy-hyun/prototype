@@ -33,6 +33,7 @@
 	"dependencies": {
 		"chart.js": "^4.5.0",
 		"firebase": "^12.1.0",
-		"html2canvas": "^1.4.1"
+		"html2canvas": "^1.4.1",
+		"tailwindcss-animate": "^1.0.7"
 	}
 }

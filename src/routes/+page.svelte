@@ -1,11 +1,15 @@
 <script lang="ts">
   import { notices, scheduleEvents, isLoggedIn, getCacheInfo, getCacheStats, cleanupExpiredCache } from "$lib/stores";
   import { Button } from "$lib/components/ui/button";
+  import SimpleAccordion from "$lib/components/SimpleAccordion.svelte";
   
   // Svelte 5 룬모드 사용
   let cacheInfo = $state<ReturnType<typeof getCacheInfo> | null>(null);
   let cacheStats = $state<ReturnType<typeof getCacheStats> | null>(null);
   let showCacheInfo = $state(false);
+
+  
+
   
   // 파생 상태로 공지사항 필터링
   const allNotices = $derived(() => {
@@ -14,13 +18,37 @@
     const latest = noticesValue.filter((x) => !x.pinned).slice(0, 5);
     return [...pinned, ...latest];
   });
+
+  // SimpleAccordion용 데이터 변환
+  const accordionItems = $derived(() => {
+    return allNotices().map(notice => ({
+      id: notice.id,
+      title: notice.title,
+      date: formatDate(notice.createdAt),
+      isPinned: notice.pinned,
+      content: `
+        ${notice.content}
+        
+        📅 공지일: ${formatDate(notice.createdAt)}
+        ${notice.pinned ? '📌 고정 공지' : ''}
+        
+        ${notice.id === 'n1' ? '💡 안내: 수강신청 시 학점 제한과 베팅제를 확인하세요.' : ''}
+        ${notice.id === 'n2' ? '✅ 참고: 시스템 점검 시간에는 접속이 제한됩니다.' : ''}
+        ${notice.id === 'n3' ? '🆕 신규: AI 관련 과목들이 새롭게 개설되었습니다.' : ''}
+        ${notice.id === 'n4' ? '📚 가이드: 가이드북을 통해 성공적인 수강신청을 준비하세요.' : ''}
+        ${notice.id === 'n5' ? '🎯 베팅제: 포인트 사용 전략을 신중히 세우세요.' : ''}
+      `.trim()
+    }));
+  });
   
-  // 캐시 정보 로드 효과
+  // 캐시 정보 로드 (한 번만 실행)
   $effect(() => {
-    cacheInfo = getCacheInfo();
-    cacheStats = getCacheStats();
-    console.log('💾 메인 페이지 캐시 상태:', cacheInfo);
-    console.log('💾 메인 페이지 캐시 통계:', cacheStats);
+    if (!cacheInfo) {
+      cacheInfo = getCacheInfo();
+    }
+    if (!cacheStats) {
+      cacheStats = getCacheStats();
+    }
   });
   
   function formatDate(dateStr: string) {
@@ -49,6 +77,8 @@
     const days = Math.floor(hours / 24);
     return `${days}일 전`;
   }
+  
+
 
   // 메인 페이지에 머물도록 리다이렉트 제거
 </script>
@@ -188,7 +218,7 @@
   <section>
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-3xl font-bold text-black dark:text-neutral-100 flex items-center gap-3">
-        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+        <svg class="w-8 h-8 text-sky-500" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
         </svg>
         공지사항
@@ -198,24 +228,13 @@
       </Button>
     </div>
     
-    <div class="space-y-2">
-      {#each allNotices() as notice (notice.id)}
-        <div class="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-lg p-3 hover:shadow-md hover:border-hanyang-blue/30 dark:hover:border-blue-600 transition-all duration-200">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                {#if notice.pinned}
-                  <span class="text-yellow-500 dark:text-yellow-400">📌</span>
-                {/if}
-                <h4 class="font-semibold hanyang-navy dark:text-neutral-200 text-base">{notice.title}</h4>
-              </div>
-              <p class="text-sm hanyang-dark-gray dark:text-neutral-400 leading-snug">{notice.content}</p>
-            </div>
-            <span class="text-xs hanyang-dark-gray dark:text-neutral-400 bg-hanyang-gray dark:bg-neutral-800 px-2 py-1 rounded-full ml-4 font-medium">{formatDate(notice.createdAt)}</span>
-          </div>
-        </div>
-      {/each}
-    </div>
+    <SimpleAccordion 
+      items={accordionItems()} 
+      multipleOpen={false} 
+      class="space-y-2"
+    />
   </section>
+
+
 
 </div>

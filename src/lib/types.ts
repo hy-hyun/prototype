@@ -19,7 +19,7 @@ export type Lecture = {
   courseLevel?: string; // 100, 200, 300 등 레벨 단위 문자열
 };
 
-export type Notice = { id: string; title: string; content: string; pinned?: boolean; createdAt: string };
+export type Notice = { id: string; title: string; content: string; pinned?: boolean; createdAt: string; author?: string; views?: number };
 
 export type CartItem = { courseId: string; classId: string; method: "FCFS" | "BID"; bidAmount?: number };
 export type Application = { courseId: string; classId: string; status: "PENDING" | "CONFIRMED" | "CANCELLED" };

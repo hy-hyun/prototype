@@ -146,6 +146,25 @@
     border-radius: 8px;
     overflow: hidden;
   }
+
+  /* 모바일 최적화 */
+  @media (max-width: 1024px) {
+    .timetable-grid {
+      grid-template-columns: 60px repeat(5, 1fr);
+      grid-template-rows: 40px repeat(20, 20px);
+      margin: 8px;
+      font-size: 0.75rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .timetable-grid {
+      grid-template-columns: 50px repeat(5, 1fr);
+      grid-template-rows: 36px repeat(20, 18px);
+      margin: 4px;
+      font-size: 0.7rem;
+    }
+  }
   
   .grid-header {
     background-color: #f9fafb;

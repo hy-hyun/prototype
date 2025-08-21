@@ -5,6 +5,7 @@
   import TimetableHeader from "$lib/components/TimetableHeader.svelte";
   import TimetableSidebar from "$lib/components/TimetableSidebar.svelte";
   import TimetableGrid from "$lib/components/TimetableGrid.svelte";
+  import TimetableFooter from "$lib/components/TimetableFooter.svelte";
   import ToastContainer from "$lib/components/ToastContainer.svelte";
 
 
@@ -278,13 +279,14 @@
   }
 
   function handleReset() {
-    if (confirm("장바구니의 모든 과목을 삭제하시겠습니까?")) {
+    if (confirm("시간표를 초기화하시겠습니까?")) {
       cart.set([]);
     }
   }
 </script>
 
-<div class="flex h-screen bg-gray-50">
+<!-- 데스크톱 레이아웃 (lg 이상) -->
+<div class="hidden lg:flex h-screen bg-gray-50">
   <TimetableSidebar
     courses={sidebarData.filteredCourses}
     cartCourses={sidebarData.cartCourses}
@@ -308,20 +310,205 @@
       on:share={handleShare}
     />
     <main class="flex-1 overflow-y-auto">
-              <TimetableGrid
-          blocks={processedTimetable.blocks}
-          conflictPairs={processedTimetable.conflicts}
-          consecutiveWarnings={processedTimetable.consecutives}
-          gaps={lectureGaps}
-          displayedDays={displayedDays}
-          on:remove={handleRemoveFromGrid}
-          on:suggest={handleSuggestFromGrid}
-        />
+      <TimetableGrid
+        blocks={processedTimetable.blocks}
+        conflictPairs={processedTimetable.conflicts}
+        consecutiveWarnings={processedTimetable.consecutives}
+        gaps={lectureGaps}
+        displayedDays={displayedDays}
+        on:remove={handleRemoveFromGrid}
+        on:suggest={handleSuggestFromGrid}
+      />
+      <TimetableFooter
+        on:download={handleDownload}
+        on:share={handleShare}
+      />
     </main>
   </div>
 </div>
 
+<!-- 모바일 레이아웃 (lg 미만) -->
+<div class="lg:hidden flex flex-col h-screen bg-gray-50">
+  <!-- 모바일 헤더 -->
+  <TimetableHeader 
+    selectedSemester={selectedSemester}
+    semesters={semesters}
+    totalCredits={headerData.totalCredits}
+    creditStatus={headerData.creditStatus}
+    minCredits={minCredits}
+    maxCredits={maxCredits}
+    on:semesterChange={(e) => selectedSemester = e.detail}
+    on:reset={handleReset}
+    on:download={handleDownload}
+    on:share={handleShare}
+  />
+  
+  <!-- 모바일 장바구니 요약 (2-3개 과목만) -->
+  <div class="bg-white border-b border-gray-200 px-4 py-3">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+        <span class="text-blue-500">📚</span>
+        장바구니 ({sidebarData.cartCourses.length}개)
+      </h3>
+      <button 
+        class="text-sm text-blue-600 font-medium"
+        onclick={() => {
+          // 전체 사이드바 토글 로직 추가 가능
+          alert('전체 과목 보기 기능 추가 예정');
+        }}
+      >
+        전체보기
+      </button>
+    </div>
+    
+    <!-- 장바구니 과목 가로 스크롤 -->
+    <div class="flex gap-3 overflow-x-auto pb-2">
+      {#each sidebarData.cartCourses.slice(0, 4) as course}
+        <div class="mobile-cart-card">
+          <div class="font-medium text-xs text-gray-800 truncate mb-1">{course.title}</div>
+          <div class="text-xs text-gray-500 mb-2">
+            <div class="truncate">{course.courseId}</div>
+            <div class="text-orange-600">{course.credits.lecture + (course.credits.lab || 0)}학점</div>
+          </div>
+          <button 
+            class="mobile-remove-btn"
+            onclick={() => handleRemoveFromCart({ detail: course } as any)}
+            aria-label="장바구니에서 제거"
+          >
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+            </svg>
+            <span class="sr-only">제거</span>
+          </button>
+        </div>
+      {/each}
+      
+      {#if sidebarData.cartCourses.length > 4}
+        <button 
+          class="mobile-more-btn"
+          onclick={() => {
+            // 전체 사이드바 토글 로직 추가 가능
+            alert('전체 과목 보기 기능 추가 예정');
+          }}
+        >
+          <div class="text-xs font-medium text-blue-600 mb-1">더보기</div>
+          <div class="text-xs text-gray-500">+{sidebarData.cartCourses.length - 4}</div>
+        </button>
+      {/if}
+      
+      {#if sidebarData.cartCourses.length === 0}
+        <div class="flex-1 text-center text-gray-500 py-4 text-sm">
+          <div class="text-2xl mb-2">📝</div>
+          <div>장바구니에 과목을 추가해보세요</div>
+        </div>
+      {/if}
+    </div>
+  </div>
+  
+  <!-- 모바일 시간표 -->
+  <main class="flex-1 overflow-y-auto">
+    <TimetableGrid
+      blocks={processedTimetable.blocks}
+      conflictPairs={processedTimetable.conflicts}
+      consecutiveWarnings={processedTimetable.consecutives}
+      gaps={lectureGaps}
+      displayedDays={displayedDays}
+      on:remove={handleRemoveFromGrid}
+      on:suggest={handleSuggestFromGrid}
+    />
+    <TimetableFooter
+      on:download={handleDownload}
+      on:share={handleShare}
+    />
+  </main>
+</div>
+
 <!-- Toast 컨테이너 -->
 <ToastContainer />
+
+<style>
+  /* 모바일 장바구니 카드 */
+  .mobile-cart-card {
+    flex: 0 0 auto;
+    width: 140px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 12px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .mobile-cart-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+  }
+
+  /* 모바일 제거 버튼 */
+  .mobile-remove-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #f8b4cb 0%, #fce7f3 100%);
+    color: #be185d;
+    border: 1px solid #f9a8d4;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .mobile-remove-btn:hover {
+    background: linear-gradient(135deg, #f472b6 0%, #f8b4cb 100%);
+    transform: scale(1.1);
+  }
+
+  /* 더보기 버튼 */
+  .mobile-more-btn {
+    flex: 0 0 auto;
+    width: 80px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .mobile-more-btn:hover {
+    background: rgba(59, 130, 246, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  }
+
+  /* 스크롤바 스타일링 */
+  .overflow-x-auto {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 2px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.5);
+  }
+</style>
 
 

@@ -309,7 +309,7 @@
       on:download={handleDownload}
       on:share={handleShare}
     />
-    <main class="flex-1 overflow-y-auto">
+    <main class="flex-1 overflow-hidden">
       <TimetableGrid
         blocks={processedTimetable.blocks}
         conflictPairs={processedTimetable.conflicts}

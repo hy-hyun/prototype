@@ -66,7 +66,7 @@
 <div class="relative">
   <!-- 헤더 배경 -->
   <div class="glass-header backdrop-blur-xl bg-white/80 border-b border-white/20 shadow-lg">
-    <div class="container mx-auto px-6 py-2">
+    <div class="px-6 py-2 max-w-7xl mx-auto">
       <div class="flex items-center justify-between flex-wrap gap-4">
         <!-- 1. 총학점 게이지 -->
         <div class="flex items-center gap-4">
@@ -126,7 +126,7 @@
         </div>
 
         <!-- 2. 주간 시간표 제목 (중앙) -->
-        <div class="flex items-center justify-center flex-1">
+        <div class="flex items-center justify-center flex-1 max-w-4xl mx-auto">
           <h1 class="font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-blue-700 flex items-center gap-3" style="font-family: 'Poppins', 'Nunito', 'Roboto', system-ui, sans-serif; letter-spacing: -0.03em; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>

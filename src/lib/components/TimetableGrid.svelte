@@ -139,30 +139,33 @@
   .timetable-grid {
     display: grid;
     grid-template-columns: 80px repeat(5, 1fr);
-    grid-template-rows: 48px repeat(20, 24px);
+    grid-template-rows: 48px repeat(20, 29px);
     gap: 1px;
     background-color: #e5e7eb;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     overflow: hidden;
+    min-height: calc(100vh - 310px);
   }
 
   /* 모바일 최적화 */
   @media (max-width: 1024px) {
     .timetable-grid {
       grid-template-columns: 60px repeat(5, 1fr);
-      grid-template-rows: 40px repeat(20, 20px);
+      grid-template-rows: 40px repeat(20, 24px);
       margin: 8px;
       font-size: 0.75rem;
+      min-height: calc(100vh - 260px);
     }
   }
 
   @media (max-width: 640px) {
     .timetable-grid {
       grid-template-columns: 50px repeat(5, 1fr);
-      grid-template-rows: 36px repeat(20, 18px);
+      grid-template-rows: 36px repeat(20, 21px);
       margin: 4px;
       font-size: 0.7rem;
+      min-height: calc(100vh - 230px);
     }
   }
   

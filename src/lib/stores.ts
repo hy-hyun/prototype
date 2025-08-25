@@ -349,11 +349,18 @@ applications.subscribe($applications => {
 });
 
 export const metrics = derived(cart, ($c) => {
-  const min = 12;
-  const max = 21;
-  const current = 0; // 강의 크레딧 합산은 추후 구현
-  const budget = 100; // 베팅 예산 더미
-  return { min, max, current, budget };
+  const basicCredits = 6; // 기본 수업 학점
+  const maxCredits = 21; // 최대 학점
+  const enrolledCourses = 0; // 신청 과목 수 (추후 구현)
+  // 잔여 베팅 포인트 = (최대 학점 - 기본 수업 학점) * 10
+  const remainingBettingPoints = (maxCredits - basicCredits) * 10;
+  
+  return { 
+    basicCredits, 
+    maxCredits, 
+    enrolledCourses, 
+    remainingBettingPoints 
+  };
 });
 
 export function addToCart(item: CartItem) {
@@ -372,7 +379,7 @@ export function applyFcfs(courseId: string, classId: string) {
       console.warn(`이미 신청된 강의입니다: ${courseId}-${classId}`);
       return a;
     }
-    return [{ courseId, classId, status: "PENDING" }, ...a];
+    return [{ courseId, classId, status: "CONFIRMED", method: "FCFS" }, ...a];
   });
 }
 
@@ -387,7 +394,41 @@ export function applyBid(courseId: string, classId: string, bidAmount: number) {
       console.warn(`이미 신청된 강의입니다: ${courseId}-${classId}`);
       return a;
     }
-    return [{ courseId, classId, status: "PENDING" }, ...a];
+    
+    // 전년도 최저값 계산 (getBidStats와 동일한 로직)
+    function hashString(input: string): number {
+      let hash = 0;
+      for (let i = 0; i < input.length; i++) {
+        hash = (hash * 31 + input.charCodeAt(i)) | 0;
+      }
+      return Math.abs(hash);
+    }
+    
+    function seededInt(seed: string, min: number, max: number): number {
+      const base = hashString(seed) % 10000;
+      const r = base / 10000;
+      return Math.floor(min + r * (max - min + 1));
+    }
+    
+    const key = `${courseId}-${classId}`;
+    const minWin = seededInt(key + ":min", 15, 25);
+    
+    // 베팅 결과 결정: 최저값-1까지 당첨, 최저값-2부터 탈락
+    let bidResult: "WAITING" | "WON" | "LOST";
+    if (bidAmount >= minWin - 1) {
+      bidResult = "WON";
+    } else {
+      bidResult = "LOST";
+    }
+    
+    return [{ 
+      courseId, 
+      classId, 
+      status: bidResult === "WON" ? "CONFIRMED" : "FAILED", 
+      method: "BID", 
+      bidAmount, 
+      bidResult
+    }, ...a];
   });
 }
 

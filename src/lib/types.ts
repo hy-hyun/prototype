@@ -22,7 +22,14 @@ export type Lecture = {
 export type Notice = { id: string; title: string; content: string; pinned?: boolean; createdAt: string; author?: string; views?: number };
 
 export type CartItem = { courseId: string; classId: string; method: "FCFS" | "BID"; bidAmount?: number };
-export type Application = { courseId: string; classId: string; status: "PENDING" | "CONFIRMED" | "CANCELLED" };
+export type Application = { 
+  courseId: string; 
+  classId: string; 
+  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "FAILED";
+  method?: "FCFS" | "BID";
+  bidAmount?: number;
+  bidResult?: "WAITING" | "WON" | "LOST";
+};
 
 // Toast 시스템 타입
 export type ToastType = 'success' | 'error' | 'replace';

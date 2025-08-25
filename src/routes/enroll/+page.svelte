@@ -6,12 +6,11 @@
   import { showToast } from "$lib/toast";
   import LoginModal from "$lib/components/LoginModal.svelte";
   import { Tabs, TabsList, TabsTrigger, TabsContent } from "$lib/components/ui/tabs";
-  import { Switch } from "$lib/components/ui/switch";
+
   import { get } from "svelte/store";
   import { onMount } from "svelte";
   let view: "cart" | "applications" = "cart";
-  let showFcfs = true;
-  let showBid = true;
+  let cartView: "fcfs" | "bid" | "results" = "fcfs";
   let applying = false;
   let loginOpen = false;
   let statusFilter: "ALL" | "PENDING" | "CONFIRMED" | "FAILED" | "CANCELLED" = "ALL";
@@ -48,8 +47,15 @@
       showToast("베팅 금액을 입력하세요", "error");
       return;
     }
-    if ($metrics.budget < 0) {
-      showToast("베팅 예산을 초과했습니다", "error");
+    if (amount > 100) {
+      showToast("한 강의당 최대 100p까지 베팅 가능합니다", "error");
+      return;
+    }
+    // 현재 아이템을 제외한 다른 베팅들의 합계 계산
+    const otherBetsTotal = otherBidSpent(item.courseId, item.classId);
+    const totalRequired = otherBetsTotal + amount;
+    if (totalRequired > $metrics.remainingBettingPoints) {
+      showToast("베팅 포인트가 부족합니다", "error");
       return;
     }
     await applyBid(item.courseId, item.classId, amount);
@@ -62,9 +68,7 @@
       showToast("로그인이 필요합니다", "error");
       return;
     }
-    const items = get(cart).filter(
-      (x) => (showFcfs && x.method === "FCFS") || (showBid && x.method === "BID")
-    );
+    const items = filteredCartItems;
     
     // 이미 신청된 과목 제거
     const notApplied = items.filter((x) => !isApplied(x.courseId, x.classId));
@@ -173,12 +177,14 @@
     return Math.floor(min + r * (max - min + 1));
   }
 
-  function getBidStats(courseId: string, classId: string): { minWin: number; medianWin: number } {
+  function getBidStats(courseId: string, classId: string): { minWin: number; q25: number; q75: number } {
     const key = `${courseId}-${classId}`;
-    const minWin = seededInt(key + ":min", 8, 18);
-    const medianBase = seededInt(key + ":med", 12, 28);
-    const medianWin = Math.max(minWin, medianBase);
-    return { minWin, medianWin };
+    const minWin = seededInt(key + ":min", 15, 25); // 5-15에서 15-25로 10p 상승
+    const q25Base = seededInt(key + ":q25", 18, 30); // 8-20에서 18-30으로 10p 상승
+    const q75Base = seededInt(key + ":q75", 25, 45); // 15-35에서 25-45로 10p 상승
+    const q25 = Math.max(minWin, q25Base);
+    const q75 = Math.max(q25 + 5, q75Base); // q75는 q25보다 최소 5p 높게
+    return { minWin, q25, q75 };
   }
 
   function handleBidInput(e: Event, item: { courseId: string; classId: string }) {
@@ -186,12 +192,22 @@
     let val = parseInt(target.value || "0", 10);
     if (isNaN(val)) val = 0;
     val = Math.max(0, val);
+    
+    // 한 강의당 최대 100p 제한
+    const maxPerCourse = 100;
+    if (val > maxPerCourse) {
+      val = maxPerCourse;
+      showToast("한 강의당 최대 100p까지 베팅 가능합니다", "error");
+    }
+    
+    // 전체 베팅 포인트 한도 체크
     const spentOthers = otherBidSpent(item.courseId, item.classId);
-    const maxAllowed = Math.max(0, 100 - spentOthers);
+    const maxAllowed = Math.max(0, $metrics.remainingBettingPoints - spentOthers);
     if (val > maxAllowed) {
       val = maxAllowed;
-      showToast("예산 한도를 초과할 수 없습니다", "error");
+      showToast("베팅 포인트 한도를 초과할 수 없습니다", "error");
     }
+    
     setBidAmount(item.courseId, item.classId, val);
   }
 
@@ -237,13 +253,26 @@
     );
   }
 
-  // 로컬 베팅 예산 잔액 표시용
+  // 로컬 베팅 포인트 계산
   $: bidSpent = $cart.filter(x => x.method === 'BID').reduce((sum, x) => sum + (x.bidAmount ?? 0), 0);
-  $: bidBudget = Math.max(0, 100 - bidSpent);
+  $: availableBettingPoints = Math.max(0, $metrics.remainingBettingPoints - bidSpent);
 
   function isApplied(courseId: string, classId: string): boolean {
     return get(applications).some((a) => a.courseId === courseId && a.classId === classId);
   }
+
+  // 현재 선택된 뷰에 따라 필터링된 장바구니 아이템 (반응형)
+  $: filteredCartItems = (() => {
+    if (cartView === 'fcfs') {
+      return $cart.filter(x => x.method === 'FCFS');
+    } else if (cartView === 'bid') {
+      return $cart.filter(x => x.method === 'BID');
+    }
+    return [];
+  })();
+
+  // 베팅결과 (반응형)
+  $: bettingResults = $applications.filter(a => a.method === 'BID');
 </script>
 
 <h2 class="text-lg font-semibold mb-4">수강신청</h2>
@@ -255,23 +284,51 @@
       <TabsTrigger value="applications">신청내역</TabsTrigger>
     </TabsList>
     <div class="text-sm text-neutral-600 dark:text-neutral-400">
-      최소 {$metrics.min} / 최대 {$metrics.max} / 신청 {$metrics.current} / 잔여 베팅 {bidBudget}
+      기본 수업 학점 {$metrics.basicCredits} / 최대 학점 {$metrics.maxCredits} / 신청 과목 수 {$metrics.enrolledCourses} / 잔여 베팅 포인트 {$metrics.remainingBettingPoints}
     </div>
   </div>
 
   <TabsContent value="cart">
     <div class="flex justify-between items-center gap-2 mb-3">
-      <div class="flex items-center gap-4">
-        <label class="flex items-center gap-2 text-sm">
-          <Switch bind:checked={showFcfs} />
-          <span>선착순</span>
-        </label>
-        <label class="flex items-center gap-2 text-sm">
-          <Switch bind:checked={showBid} />
-          <span>베팅</span>
-        </label>
+      <div class="flex items-center border rounded-lg p-1 bg-neutral-50 dark:bg-neutral-800">
+        <button 
+          class="px-3 py-1 text-sm rounded-md transition-colors"
+          class:bg-white={cartView === 'fcfs'}
+          class:shadow-sm={cartView === 'fcfs'}
+          class:text-neutral-900={cartView === 'fcfs'}
+          class:text-neutral-600={cartView !== 'fcfs'}
+          class:dark:bg-neutral-700={cartView === 'fcfs'}
+          class:dark:text-white={cartView === 'fcfs'}
+          onclick={() => cartView = 'fcfs'}
+        >
+          선착순
+        </button>
+        <button 
+          class="px-3 py-1 text-sm rounded-md transition-colors"
+          class:bg-white={cartView === 'bid'}
+          class:shadow-sm={cartView === 'bid'}
+          class:text-neutral-900={cartView === 'bid'}
+          class:text-neutral-600={cartView !== 'bid'}
+          class:dark:bg-neutral-700={cartView === 'bid'}
+          class:dark:text-white={cartView === 'bid'}
+          onclick={() => cartView = 'bid'}
+        >
+          베팅
+        </button>
+        <button 
+          class="px-3 py-1 text-sm rounded-md transition-colors"
+          class:bg-white={cartView === 'results'}
+          class:shadow-sm={cartView === 'results'}
+          class:text-neutral-900={cartView === 'results'}
+          class:text-neutral-600={cartView !== 'results'}
+          class:dark:bg-neutral-700={cartView === 'results'}
+          class:dark:text-white={cartView === 'results'}
+          onclick={() => cartView = 'results'}
+        >
+          베팅결과
+        </button>
       </div>
-      <button class="border rounded px-3 py-1 text-sm disabled:opacity-50" disabled={applying || $cart.filter(x => (showFcfs && x.method==='FCFS') || (showBid && x.method==='BID')).length === 0} on:click={applyCurrentTabAll}>
+      <button class="border rounded px-3 py-1 text-sm disabled:opacity-50" disabled={applying || filteredCartItems.length === 0} onclick={applyCurrentTabAll}>
         표시 항목 전체 신청
       </button>
     </div>
@@ -293,11 +350,55 @@
           </div>
         {/each}
       </div>
-    {:else if $cart.length === 0}
-      <p class="text-sm text-neutral-500">장바구니가 비었습니다.</p>
+    {:else if cartView === 'results'}
+      <!-- 베팅결과 뷰 -->
+      {#if bettingResults.length === 0}
+        <p class="text-sm text-neutral-500">베팅 결과가 없습니다.</p>
+      {:else}
+        <ul class="grid gap-2">
+          {#each bettingResults as item}
+            <li class="rounded border p-3 flex items-center justify-between gap-3">
+              <div class="text-sm flex-1">
+                <div class="font-medium">
+                  {#if findLecture(item.courseId, item.classId)}
+                    {findLecture(item.courseId, item.classId)?.title}
+                  {:else}
+                    {item.courseId}-{item.classId}
+                  {/if}
+                </div>
+                <div class="text-xs text-neutral-500">
+                  {computeCredits(item.courseId, item.classId)}학점 · {formatSchedule(item.courseId, item.classId)}
+                </div>
+                {#if item.bidAmount}
+                  <div class="text-xs text-blue-600">베팅 금액: {item.bidAmount}p</div>
+                {/if}
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs px-2 py-1 rounded border"
+                  class:bg-yellow-50={item.bidResult === 'WAITING'}
+                  class:text-yellow-700={item.bidResult === 'WAITING'}
+                  class:border-yellow-200={item.bidResult === 'WAITING'}
+                  class:bg-green-50={item.bidResult === 'WON'}
+                  class:text-green-700={item.bidResult === 'WON'}
+                  class:border-green-200={item.bidResult === 'WON'}
+                  class:bg-red-50={item.bidResult === 'LOST'}
+                  class:text-red-700={item.bidResult === 'LOST'}
+                  class:border-red-200={item.bidResult === 'LOST'}
+                >
+                  {item.bidResult === 'WAITING' ? '대기중' : item.bidResult === 'WON' ? '당첨' : '탈락'}
+                </span>
+              </div>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    {:else if filteredCartItems.length === 0}
+      <p class="text-sm text-neutral-500">
+        {cartView === 'fcfs' ? '선착순 장바구니가' : '베팅 장바구니가'} 비었습니다.
+      </p>
     {:else}
       <ul class="grid gap-2">
-        {#each $cart.filter(x => (showFcfs && x.method === 'FCFS') || (showBid && x.method === 'BID')) as item}
+        {#each filteredCartItems as item}
           <li class="rounded border p-3 flex items-center justify-between gap-3">
             <div class="text-sm flex-1">
               <div class="font-medium">
@@ -322,17 +423,18 @@
             {#if item.method === 'BID'}
               <div class="flex items-center gap-2">
                 <div class="relative group text-[11px] text-neutral-500 whitespace-nowrap">
-                  작년 컷: 최저 {getBidStats(item.courseId, item.classId).minWin} · 중위 {getBidStats(item.courseId, item.classId).medianWin}
+                  전년도 정보: 최저 {getBidStats(item.courseId, item.classId).minWin}p · 하위 25-75% {getBidStats(item.courseId, item.classId).q25}~{getBidStats(item.courseId, item.classId).q75}p
                   <button type="button" class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full border border-neutral-300 text-neutral-500 bg-white select-none cursor-help" aria-label="설명">i</button>
-                  <div role="tooltip" class="absolute z-10 left-1/2 -translate-x-1/2 mt-1 w-64 p-2 text-[11px] leading-snug bg-neutral-800 text-white rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-                    전년도 배팅 당첨자의 참고 통계입니다.
+                  <div role="tooltip" class="absolute z-10 left-1/2 -translate-x-1/2 mt-1 w-64 p-3 text-[11px] leading-relaxed bg-neutral-800 text-white rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                    <div>전년도 베팅 당첨 통계입니다.</div>
+                    <div>최저: 최소 당첨 포인트 / 하위 25-75%: 중간 50% 구간 범위</div>
                   </div>
                 </div>
-                <input class="border rounded px-2 py-1 w-24 text-sm" type="number" min="1" step="1" placeholder="베팅" value={item.bidAmount ?? ''} on:input={(e) => handleBidInput(e, item)} />
+                <input class="border rounded px-2 py-1 w-24 text-sm" type="number" min="1" max="100" step="1" placeholder="최대 100p" value={item.bidAmount ?? ''} oninput={(e) => handleBidInput(e, item)} />
                 {#if isApplied(item.courseId, item.classId)}
                   <button class="border rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>신청 완료</button>
                 {:else}
-                  <button class="border rounded px-2 py-1 text-sm disabled:opacity-50" on:click={() => doApply(item)} disabled={!item.bidAmount || item.bidAmount <= 0 || countBidSameCourse(item.courseId) > 1}>
+                  <button class="border rounded px-2 py-1 text-sm disabled:opacity-50" onclick={() => doApply(item)} disabled={!item.bidAmount || item.bidAmount <= 0 || countBidSameCourse(item.courseId) > 1}>
                     베팅 신청
                   </button>
                 {/if}
@@ -341,10 +443,10 @@
               {#if isApplied(item.courseId, item.classId)}
                 <button class="border rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>신청 완료</button>
               {:else}
-                <button class="border rounded px-2 py-1 text-sm" on:click={() => doApply(item)}>신청</button>
+                <button class="border rounded px-2 py-1 text-sm" onclick={() => doApply(item)}>신청</button>
               {/if}
             {/if}
-            <button class="border rounded px-2 py-1 text-sm" on:click={() => removeFromCart(item.courseId, item.classId)}>장바구니 해제</button>
+            <button class="border rounded px-2 py-1 text-sm" onclick={() => removeFromCart(item.courseId, item.classId)}>장바구니 해제</button>
           </li>
         {/each}
       </ul>
@@ -358,6 +460,7 @@
         <option value="ALL">전체</option>
         <option value="PENDING">대기</option>
         <option value="CONFIRMED">확정</option>
+        <option value="FAILED">실패/탈락</option>
         <option value="CANCELLED">취소</option>
       </select>
     </div>
@@ -385,9 +488,12 @@
       <ul class="grid gap-2">
         {#each $applications.filter(a => statusFilter === 'ALL' ? true : a.status === statusFilter) as a}
           <li class="rounded border p-3 text-sm flex items-center justify-between">
-            <div>
+            <div class="flex-1">
               <div class="font-medium">{findLecture(a.courseId, a.classId)?.title || `${a.courseId}-${a.classId}`}</div>
               <div class="text-xs text-neutral-500">{a.courseId}-{a.classId} · {formatSchedule(a.courseId, a.classId)}</div>
+              {#if a.method === 'BID' && a.bidAmount}
+                <div class="text-xs text-blue-600 mt-1">베팅 금액: {a.bidAmount}p</div>
+              {/if}
             </div>
             <div class="flex items-center gap-2">
               <span class="text-xs px-2 py-1 rounded border"
@@ -397,11 +503,26 @@
                 class:bg-yellow-50={a.status==='PENDING'}
                 class:text-yellow-700={a.status==='PENDING'}
                 class:border-yellow-200={a.status==='PENDING'}
+                class:bg-red-50={a.status==='FAILED'}
+                class:text-red-700={a.status==='FAILED'}
+                class:border-red-200={a.status==='FAILED'}
                 class:bg-neutral-100={a.status==='CANCELLED'}
                 class:text-neutral-600={a.status==='CANCELLED'}
                 class:border-neutral-300={a.status==='CANCELLED'}
-              >{a.status}</span>
-              <button class="border rounded px-2 py-1 text-xs" on:click={() => cancelApp(a)}>수강 취소</button>
+              >
+                {#if a.status === 'CONFIRMED'}
+                  {a.method === 'FCFS' ? '신청 완료' : '베팅 당첨'}
+                {:else if a.status === 'PENDING'}
+                  {a.method === 'FCFS' ? '신청 대기' : '베팅 대기'}
+                {:else if a.status === 'FAILED'}
+                  {a.method === 'FCFS' ? '신청 실패' : '베팅 탈락'}
+                {:else if a.status === 'CANCELLED'}
+                  취소됨
+                {:else}
+                  {a.status}
+                {/if}
+              </span>
+              <button class="border rounded px-2 py-1 text-xs" onclick={() => cancelApp(a)}>수강 취소</button>
             </div>
           </li>
         {/each}

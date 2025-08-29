@@ -85,8 +85,8 @@
 
 <div class="space-y-8">
 
-  <!-- 메인 배너 -->
-  <section class="relative overflow-hidden bg-gradient-to-r from-hanyang-blue via-blue-300 via-50% to-hanyang-blue dark:from-blue-900 dark:via-blue-500 dark:via-50% dark:to-blue-900 rounded-2xl shadow-xl">
+  <!-- 메인 배너 - 한양대학교 스타일 -->
+  <section class="relative overflow-hidden bg-gradient-to-br from-hanyang-blue via-blue-400 to-hanyang-navy rounded-2xl shadow-2xl">
     <!-- 배경 패턴 -->
     <div class="absolute inset-0 opacity-10">
       <div class="absolute top-0 left-0 w-32 h-32 bg-white rounded-full -translate-x-16 -translate-y-16"></div>
@@ -95,31 +95,89 @@
       <div class="absolute bottom-10 left-20 w-16 h-16 bg-white rounded-full"></div>
     </div>
     
-    <!-- 메인 콘텐츠 -->
-    <div class="relative px-6 py-10 md:px-10 md:py-12">
-      <div class="max-w-xl">
-        <div class="space-y-2 mb-6">
-          <p class="text-white/90 text-lg font-bold tracking-wide">더 편리한</p>
-          <p class="text-white/90 text-lg font-bold tracking-wide">수강신청을 위해</p>
-          <h1 class="text-5xl md:text-6xl font-black text-white tracking-tight">
-            HY-PATH
-          </h1>
+    <div class="grid lg:grid-cols-2 gap-8 items-center min-h-[400px]">
+      <!-- 왼쪽 콘텐츠 -->
+      <div class="relative px-6 py-10 md:px-10 md:py-12">
+        <div class="space-y-6">
+          <!-- 특별 이벤트 라벨 -->
+          <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+            <span class="text-white text-sm font-semibold tracking-wide">SPECIAL EVENT</span>
+          </div>
+          
+          <!-- 메인 타이틀 -->
+          <div class="space-y-3">
+            <h1 class="text-4xl md:text-5xl font-black text-white leading-tight">
+              스마트 수강신청<br/>
+              <span class="text-white/90">시스템</span>
+            </h1>
+            <p class="text-white/80 text-lg font-medium">
+              스마트한 AI 추천 기능과 함께
+            </p>
+          </div>
+          
+          <!-- CTA 버튼 -->
+          <div class="pt-4">
+            <button class="bg-white text-hanyang-navy font-bold px-8 py-3 rounded-full hover:bg-hanyang-navy hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 border-2 border-white/20">
+              지금 시작하기
+            </button>
+          </div>
         </div>
       </div>
       
-      <!-- 우측 장식 요소 -->
-      <div class="absolute top-1/2 right-8 -translate-y-1/2 hidden lg:block">
+      <!-- 오른쪽 일러스트 섹션 -->
+      <div class="relative px-6 py-10 hidden lg:block">
         <div class="relative">
-          <!-- 캘린더 아이콘 -->
-          <div class="w-20 h-20 bg-hanyang-light-blue/30 dark:bg-blue-700/30 rounded-2xl backdrop-blur-sm flex items-center justify-center mb-4 transform rotate-12 shadow-md">
-            <svg class="w-10 h-10 text-gray-100" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+          <!-- 메인 시간표 일러스트 -->
+          <div class="relative bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-2xl transform rotate-2 hover:rotate-1 transition-transform duration-300">
+            <!-- 시간표 헤더 -->
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-hanyang-navy font-bold text-lg">나의 시간표</h3>
+              <div class="w-3 h-3 bg-hanyang-blue rounded-full animate-pulse"></div>
+            </div>
+            
+            <!-- 시간표 그리드 -->
+            <div class="grid grid-cols-5 gap-1 text-xs">
+              <div class="text-center font-semibold text-gray-600 py-2">월</div>
+              <div class="text-center font-semibold text-gray-600 py-2">화</div>
+              <div class="text-center font-semibold text-gray-600 py-2">수</div>
+              <div class="text-center font-semibold text-gray-600 py-2">목</div>
+              <div class="text-center font-semibold text-gray-600 py-2">금</div>
+              
+              <!-- 시간표 블록들 -->
+              <div class="bg-blue-100 text-blue-800 rounded p-2 font-medium">
+                프로그래밍
+              </div>
+              <div class="bg-green-100 text-green-800 rounded p-2 font-medium">
+                수학
+              </div>
+              <div class="bg-purple-100 text-purple-800 rounded p-2 font-medium">
+                영어
+              </div>
+              <div class="bg-orange-100 text-orange-800 rounded p-2 font-medium">
+                물리학
+              </div>
+              <div class="bg-pink-100 text-pink-800 rounded p-2 font-medium">
+                화학
+              </div>
+            </div>
+          </div>
+          
+          <!-- 떠다니는 아이콘들 -->
+          <div class="absolute -top-4 -right-4 w-12 h-12 bg-yellow-200 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+            <svg class="w-6 h-6 text-yellow-700" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
           </div>
-          <!-- 검색 아이콘 -->
-          <div class="w-16 h-16 bg-hanyang-light-blue/30 dark:bg-blue-700/30 rounded-xl backdrop-blur-sm flex items-center justify-center ml-8 transform -rotate-6 shadow-md">
-            <svg class="w-8 h-8 text-gray-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          
+          <div class="absolute -bottom-2 -left-2 w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+            <svg class="w-5 h-5 text-blue-700" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+          </div>
+          
+          <div class="absolute top-1/2 -right-6 w-8 h-8 bg-green-200 rounded-full flex items-center justify-center shadow-lg animate-spin-slow">
+            <svg class="w-4 h-4 text-green-700" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
             </svg>
           </div>
         </div>

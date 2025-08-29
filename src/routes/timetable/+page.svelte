@@ -361,6 +361,30 @@
       </button>
     </div>
     
+    <!-- 모바일 요일 선택 버튼 -->
+    <div class="mb-3">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-sm font-medium text-gray-700">요일 선택:</span>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        {#each ["월", "화", "수", "목", "금", "토", "일"] as day}
+          <button
+            class="day-select-btn {displayedDays.includes(day) ? 'day-active' : 'day-inactive'}"
+            onclick={() => {
+              if (displayedDays.includes(day)) {
+                displayedDays = displayedDays.filter(d => d !== day);
+              } else {
+                displayedDays = [...displayedDays, day];
+              }
+            }}
+            aria-label="{day}요일 {displayedDays.includes(day) ? '숨기기' : '보이기'}"
+          >
+            {day}
+          </button>
+        {/each}
+      </div>
+    </div>
+    
     <!-- 장바구니 과목 가로 스크롤 -->
     <div class="flex gap-3 overflow-x-auto pb-2">
       {#each sidebarData.cartCourses.slice(0, 4) as course}
@@ -508,6 +532,42 @@
 
   .overflow-x-auto::-webkit-scrollbar-thumb:hover {
     background: rgba(59, 130, 246, 0.5);
+  }
+
+  /* 모바일 요일 선택 버튼 */
+  .day-select-btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid;
+  }
+
+  .day-active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  }
+
+  .day-active:hover {
+    background: #2563eb;
+    border-color: #2563eb;
+    transform: translateY(-1px);
+  }
+
+  .day-inactive {
+    background: white;
+    color: #6b7280;
+    border-color: #d1d5db;
+  }
+
+  .day-inactive:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+    color: #374151;
   }
 </style>
 

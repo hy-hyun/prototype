@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  // Svelte 5 룬모드 사용
   
   // 임시 데이터
   let userName = "김학생";
@@ -39,6 +39,14 @@
   let selectedSemester = $state('1-1'); // 교양필수 학기 선택
   
   // 교양 영역별 상세 데이터 (다중전공 기준)
+  type SemesterData = {
+    completed: number;
+    required: number;
+    subjects: Array<{ name: string; completed: number; required: number; status: string }>;
+  };
+  
+  type SemesterKey = '1-1' | '1-2' | '2-1' | '2-2' | '3-1' | '3-2' | '4-1' | '4-2';
+  
   let generalEducation = {
     required: { 
       completed: 12, required: 15, name: '교양필수',
@@ -72,7 +80,7 @@
         '3-2': { completed: 0, required: 0, subjects: [] },
         '4-1': { completed: 0, required: 0, subjects: [] },
         '4-2': { completed: 0, required: 0, subjects: [] }
-      },
+      } as Record<SemesterKey, SemesterData>,
       areas: [
         { name: '글쓰기', completed: 6, required: 6 },
         { name: '영어', completed: 4, required: 6 },
@@ -273,11 +281,11 @@
                 {#each Object.keys(generalEducation.required.bySemester) as semester}
                   <button 
                     class="px-2 py-1 text-xs font-medium rounded transition-all {selectedSemester === semester ? 'bg-white text-gray-700 shadow-sm' : 'text-gray-600 hover:text-gray-800'}"
-                    onclick={() => selectedSemester = semester}
+                    onclick={() => selectedSemester = semester as SemesterKey}
                   >
                     {semester}
                     <div class="text-xs">
-                      ({generalEducation.required.bySemester[semester].completed}/{generalEducation.required.bySemester[semester].required})
+                      ({generalEducation.required.bySemester[semester as SemesterKey].completed}/{generalEducation.required.bySemester[semester as SemesterKey].required})
                     </div>
                   </button>
                 {/each}

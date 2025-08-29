@@ -2,17 +2,18 @@
   import { notices } from "$lib/stores";
   import { derived } from "svelte/store";
   
-  let currentPage = 1;
+  let currentPage = $state(1);
   const itemsPerPage = 10;
   
   const pinnedNotices = derived(notices, ($n) => $n.filter((x) => x.pinned));
   const regularNotices = derived(notices, ($n) => $n.filter((x) => !x.pinned));
   
-  $: paginatedRegularNotices = (() => {
+  // Svelte 5 룬모드로 변환
+  const paginatedRegularNotices = $derived.by(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return $regularNotices.slice(startIndex, endIndex);
-  })();
+  });
   
   const totalPages = derived(regularNotices, ($notices) => {
     return Math.ceil($notices.length / itemsPerPage);
@@ -148,7 +149,7 @@
         <!-- 이전 버튼 -->
         {#if currentPage > 1}
           <button 
-            on:click={goToPrevPage}
+            onclick={goToPrevPage}
             class="px-3 py-2 text-sm text-hanyang-blue hover:bg-hanyang-blue hover:text-white rounded-lg border border-hanyang-blue/30 transition-all duration-200 font-medium"
           >
             ‹
@@ -165,7 +166,7 @@
             </button>
           {:else if Math.abs(pageNum - currentPage) <= 2 || pageNum === 1 || pageNum === $totalPages}
             <button 
-              on:click={() => goToPage(pageNum)}
+              onclick={() => goToPage(pageNum)}
               class="px-3 py-2 text-sm text-hanyang-blue hover:bg-hanyang-blue hover:text-white rounded-lg border border-hanyang-blue/30 transition-all duration-200 font-medium"
             >
               {pageNum}
@@ -178,7 +179,7 @@
         <!-- 다음 버튼 -->
         {#if currentPage < $totalPages}
           <button 
-            on:click={goToNextPage}
+            onclick={goToNextPage}
             class="px-3 py-2 text-sm text-hanyang-blue hover:bg-hanyang-blue hover:text-white rounded-lg border border-hanyang-blue/30 transition-all duration-200 font-medium"
           >
             ›

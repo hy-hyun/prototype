@@ -6,7 +6,6 @@
   import LoginModal from "$lib/components/LoginModal.svelte";
   import Loading from "$lib/components/Loading.svelte";
   import { Button } from "$lib/components/ui/button";
-  import { onMount } from 'svelte';
   import { auth } from '$lib/firebase';
   import { onAuthStateChanged } from 'firebase/auth';
   import {
@@ -20,8 +19,8 @@
   let { children } = $props();
   let showLoginModal = $state(false);
 
-  // 컴포넌트가 마운트될 때 Firebase 인증 상태를 감시합니다.
-  onMount(() => {
+  // Svelte 5 룬모드: $effect로 Firebase 인증 상태 감시
+  $effect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // 사용자가 로그인되어 있는 경우

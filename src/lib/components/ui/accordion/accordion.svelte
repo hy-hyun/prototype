@@ -5,7 +5,11 @@
 		ref = $bindable(null),
 		value = $bindable(),
 		...restProps
-	}: AccordionPrimitive.RootProps = $props();
+	} = $props<{
+		ref?: HTMLElement | null;
+		value?: string | string[];
+		[key: string]: any;
+	}>();
 </script>
 
 <AccordionPrimitive.Root

@@ -69,23 +69,30 @@ export const filterOptions = writable({
 });
 
 // Firebase에서 강의 데이터 로드 (캐싱 적용)
-export async function loadCourses(limitCount: number = 1000) {
+export async function loadCourses(limitCount: number = 1000, forceRefresh: boolean = false) {
   coursesError.set(null);
-  // 캐시에서 먼저 확인
-  const cachedCourses = LocalStorageCache.get<Lecture[]>(CACHE_KEYS.COURSES);
-  const cachedFilterOptions = LocalStorageCache.get<{
-    categories: { value: string; label: string }[];
-    departments: { value: string; label: string }[];
-    liberalArtsAreas: { value: string; label: string }[];
-    courseTypes: { value: string; label: string }[];
-    instructors: { value: string; label: string }[];
-    courseLevels: { value: string; label: string }[];
-  }>(CACHE_KEYS.FILTER_OPTIONS);
   
-  if (cachedCourses && cachedFilterOptions) {
-    courses.set(cachedCourses);
-    filterOptions.set(cachedFilterOptions);
-    return;
+  // forceRefresh가 true이면 캐시를 무시하고 새로 로드
+  if (!forceRefresh) {
+    // 캐시에서 먼저 확인
+    const cachedCourses = LocalStorageCache.get<Lecture[]>(CACHE_KEYS.COURSES);
+    const cachedFilterOptions = LocalStorageCache.get<{
+      categories: { value: string; label: string }[];
+      departments: { value: string; label: string }[];
+      liberalArtsAreas: { value: string; label: string }[];
+      courseTypes: { value: string; label: string }[];
+      instructors: { value: string; label: string }[];
+      courseLevels: { value: string; label: string }[];
+    }>(CACHE_KEYS.FILTER_OPTIONS);
+    
+    if (cachedCourses && cachedFilterOptions) {
+      console.log('📚 캐시된 강의 데이터 사용 중 (개수:', cachedCourses.length, ')');
+      courses.set(cachedCourses);
+      filterOptions.set(cachedFilterOptions);
+      return;
+    }
+  } else {
+    console.log('🔄 강제 새로고침 - 캐시 무시하고 Firebase에서 새로 로드');
   }
 
   coursesLoading.set(true);
@@ -105,36 +112,59 @@ export async function loadCourses(limitCount: number = 1000) {
     const rawCourseData: any[] = [];
     const lectureData: Lecture[] = [];
 
+    let index = 0;
     querySnapshot.forEach((doc) => {
       const data = doc.data();
 
       // 원본 데이터 저장 (필터 생성용)
       rawCourseData.push(data);
 
+      // 첫 번째 문서의 데이터 구조를 로깅 (디버깅용)
+      if (index === 0) {
+        console.log('🔍 Firebase 첫 번째 강의 데이터 구조:', {
+          전체데이터: data,
+          스케줄필드: data.schedule,
+          스케줄타입: typeof data.schedule,
+          강의명: data.subjectName,
+          시간표: data.timeTable || data.schedule || data.classTime,
+          장소: data.location || data.classroom || data.building,
+          교수: data.instructor,
+          학과: data.offeringDepartment || data.department
+        });
+      }
+
       // Firebase 데이터 구조에 맞춰 매핑
       const mappedLecture = {
-        courseId: data.courseNumber || data.subjectCode || '',
-        classId: data.class || '01',
-        title: data.subjectName || '',
-        category: data.category || '교양',
-        dept: data.offeringDepartment || '',
+        courseId: data.courseNumber || data.subjectCode || data.courseId || '',
+        classId: data.class || data.classNumber || '01',
+        title: data.subjectName || data.courseName || data.title || '',
+        category: data.category || data.courseType || '교양',
+        dept: data.offeringDepartment || data.department || '',
         instructor: typeof data.instructor === 'object' ? data.instructor.name : data.instructor || '',
         credits: {
-          lecture: data.creditHours || 3,
+          lecture: data.creditHours || data.credits || 3,
           lab: 0
         },
-        schedule: parseSchedule(data.schedule || ''),
-        capacity: calculateCapacity(data.enrollmentCapByYear),
-        area: data.liberalArtsArea || data.category || '',
-        limit: data.restrictions || '',
+        schedule: parseSchedule(data.schedule || data.timeTable || data.classTime || data.meetingTimes),
+        capacity: calculateCapacity(data.enrollmentCapByYear || data.capacity),
+        area: data.liberalArtsArea || data.area || data.category || '',
+        limit: data.restrictions || data.prerequisites || '',
         keywords: data.keywords || [],
         method: (data.registrationMethod === '베팅' ? 'BID' : 'FCFS') as 'FCFS' | 'BID',
         courseLevel: data.courseLevel ? data.courseLevel.toString() : undefined
       };
       
-      // 디버깅 로그 제거 (성능 최적화)
+      // 처음 5개 강의의 매핑 결과 로깅
+      if (index < 5) {
+        console.log(`📚 강의 ${index + 1} 매핑 결과:`, {
+          원본스케줄: data.schedule || data.timeTable || data.classTime,
+          매핑된스케줄: mappedLecture.schedule,
+          강의명: mappedLecture.title
+        });
+      }
       
       lectureData.push(mappedLecture);
+      index++;
     });
 
     // 스토어에 데이터를 설정하기 전에 중복을 제거합니다.
@@ -227,43 +257,69 @@ function generateFilterOptions(courseData: any[]) {
   });
 }
 
-// 스케줄 문자열을 파싱하는 함수
-function parseSchedule(scheduleStr: string) {
-  if (!scheduleStr) return [];
+// 스케줄 데이터를 파싱하는 함수 - Firebase 실제 데이터 구조에 맞춰 수정
+function parseSchedule(scheduleData: any) {
+  if (!scheduleData) return [];
 
   const dayMap: { [key: string]: number } = {
-    '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6
+    '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+    'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3, 'friday': 4, 'saturday': 5, 'sunday': 6
   };
 
   try {
-    // "월 10:00-11:30, 수 10:00-11:30" 형태를 파싱
-    const sessions = scheduleStr.split(',').map(s => s.trim());
-    return sessions.map(session => {
-      const parts = session.split(' ');
-      if (parts.length >= 2) {
-        const day = dayMap[parts[0]] || 1;
-        const timeRange = parts[1];
-        const [startTime, endTime] = timeRange.split('-');
-        const start = parseTimeToSlot(startTime);
-        const end = parseTimeToSlot(endTime);
-        
-        // 테스트용 건물 정보 할당 (courseId 기반으로 고정)
-        const testBuildings = ['IT관', '공학관', '인문관', '자연관'];
-        const buildingIndex = parseInt(session.slice(-1)) % testBuildings.length; // 세션 문자열 마지막 문자 기반
-        const fixedBuilding = testBuildings[buildingIndex];
-        
+    // Firebase 데이터가 배열인지 문자열인지 확인
+    if (Array.isArray(scheduleData)) {
+      // 배열 형태의 스케줄 데이터 처리
+      return scheduleData.map(item => {
         return {
-          day,
-          start,
-          end,
-          building: fixedBuilding,
-          room: `${100 + buildingIndex * 10}호`
+          day: typeof item.day === 'string' ? (dayMap[item.day.toLowerCase()] ?? 1) : (item.day ?? 1),
+          start: parseTimeToSlot(item.startTime || item.start || '09:00'),
+          end: parseTimeToSlot(item.endTime || item.end || '10:30'),
+          building: item.building || item.location?.building || '',
+          room: item.room || item.location?.room || ''
         };
-      }
-      return { day: 1, start: 0, end: 1, building: '', room: '' };
-    });
+      });
+    } else if (typeof scheduleData === 'object' && scheduleData !== null) {
+      // 객체 형태의 스케줄 데이터 처리
+      return [{
+        day: typeof scheduleData.day === 'string' ? (dayMap[scheduleData.day.toLowerCase()] ?? 1) : (scheduleData.day ?? 1),
+        start: parseTimeToSlot(scheduleData.startTime || scheduleData.start || '09:00'),
+        end: parseTimeToSlot(scheduleData.endTime || scheduleData.end || '10:30'),
+        building: scheduleData.building || scheduleData.location?.building || '',
+        room: scheduleData.room || scheduleData.location?.room || ''
+      }];
+    } else if (typeof scheduleData === 'string') {
+      // 문자열 형태의 스케줄 데이터 처리 (기존 로직 유지)
+      const sessions = scheduleData.split(',').map(s => s.trim());
+      return sessions.map(session => {
+        // "월 10:00-11:30" 또는 "월 10:00-11:30 IT관 101호" 형태 파싱
+        const parts = session.split(' ');
+        if (parts.length >= 2) {
+          const day = dayMap[parts[0]] || 1;
+          const timeRange = parts[1];
+          const [startTime, endTime] = timeRange.split('-');
+          const start = parseTimeToSlot(startTime);
+          const end = parseTimeToSlot(endTime);
+          
+          // 장소 정보가 있는지 확인 (더미 데이터 제거)
+          const building = parts[2] || '';
+          const room = parts[3] || '';
+          
+          return {
+            day,
+            start,
+            end,
+            building,
+            room
+          };
+        }
+        return { day: 1, start: 0, end: 1, building: '', room: '' };
+      });
+    }
+    
+    return [];
   } catch (error) {
-    console.warn('스케줄 파싱 오류:', scheduleStr, error);
+    console.warn('스케줄 파싱 오류:', scheduleData, error);
     return [{ day: 1, start: 0, end: 1, building: '', room: '' }];
   }
 }
@@ -447,7 +503,7 @@ export function refreshCourseData() {
   LocalStorageCache.remove(CACHE_KEYS.COURSES);
   LocalStorageCache.remove(CACHE_KEYS.FILTER_OPTIONS);
   console.log('💾 강의 데이터 캐시 삭제 완료');
-  return loadCourses(); // 새로 로드
+  return loadCourses(1000, true); // 강제 새로고침으로 새로 로드
 }
 
 export function refreshNotices() {

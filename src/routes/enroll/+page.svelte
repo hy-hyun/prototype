@@ -8,12 +8,12 @@
   import { Tabs, TabsList, TabsTrigger, TabsContent } from "$lib/components/ui/tabs";
 
   import { get } from "svelte/store";
-  import { onMount } from "svelte";
-  let view: "cart" | "applications" = "cart";
-  let cartView: "fcfs" | "bid" | "results" = "fcfs";
-  let applying = false;
-  let loginOpen = false;
-  let statusFilter: "ALL" | "PENDING" | "CONFIRMED" | "FAILED" | "CANCELLED" = "ALL";
+  // Svelte 5 룬모드: $state() 사용
+  let view = $state<"cart" | "applications">("cart");
+  let cartView = $state<"fcfs" | "bid" | "results">("fcfs");
+  let applying = $state(false);
+  let loginOpen = $state(false);
+  let statusFilter = $state<"ALL" | "PENDING" | "CONFIRMED" | "FAILED" | "CANCELLED">("ALL");
 
   // 데이터 로딩은 +layout.ts에서 전역으로 처리하므로 이 코드는 제거합니다.
 
@@ -253,26 +253,26 @@
     );
   }
 
-  // 로컬 베팅 포인트 계산
-  $: bidSpent = $cart.filter(x => x.method === 'BID').reduce((sum, x) => sum + (x.bidAmount ?? 0), 0);
-  $: availableBettingPoints = Math.max(0, $metrics.remainingBettingPoints - bidSpent);
+  // 로컬 베팅 포인트 계산 - Svelte 5 룬모드
+  const bidSpent = $derived($cart.filter(x => x.method === 'BID').reduce((sum, x) => sum + (x.bidAmount ?? 0), 0));
+  const availableBettingPoints = $derived(Math.max(0, $metrics.remainingBettingPoints - bidSpent));
 
   function isApplied(courseId: string, classId: string): boolean {
     return get(applications).some((a) => a.courseId === courseId && a.classId === classId);
   }
 
-  // 현재 선택된 뷰에 따라 필터링된 장바구니 아이템 (반응형)
-  $: filteredCartItems = (() => {
+  // 현재 선택된 뷰에 따라 필터링된 장바구니 아이템 - Svelte 5 룬모드
+  const filteredCartItems = $derived.by(() => {
     if (cartView === 'fcfs') {
       return $cart.filter(x => x.method === 'FCFS');
     } else if (cartView === 'bid') {
       return $cart.filter(x => x.method === 'BID');
     }
     return [];
-  })();
+  });
 
-  // 베팅결과 (반응형)
-  $: bettingResults = $applications.filter(a => a.method === 'BID');
+  // 베팅결과 - Svelte 5 룬모드
+  const bettingResults = $derived($applications.filter(a => a.method === 'BID'));
 </script>
 
 <h2 class="text-lg font-semibold mb-4">수강신청</h2>

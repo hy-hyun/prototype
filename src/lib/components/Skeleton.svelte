@@ -1,8 +1,16 @@
 <script lang="ts">
-  export let width: string = 'w-full';
-  export let height: string = 'h-4';
-  export let rounded: string = 'rounded';
-  export let count: number = 1;
+  // Svelte 5 룬모드: $props() 사용
+  let { 
+    width = 'w-full', 
+    height = 'h-4', 
+    rounded = 'rounded', 
+    count = 1 
+  } = $props<{
+    width?: string;
+    height?: string;
+    rounded?: string;
+    count?: number;
+  }>();
 </script>
 
 {#each Array(count) as _, i}

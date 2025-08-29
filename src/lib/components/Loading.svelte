@@ -1,7 +1,14 @@
 <script lang="ts">
-  export let size: 'sm' | 'md' | 'lg' = 'md';
-  export let text: string = '로딩 중...';
-  export let fullscreen: boolean = false;
+  // Svelte 5 룬모드: $props() 사용
+  let { 
+    size = 'md', 
+    text = '로딩 중...', 
+    fullscreen = false 
+  } = $props<{
+    size?: 'sm' | 'md' | 'lg';
+    text?: string;
+    fullscreen?: boolean;
+  }>();
   
   const sizeClasses = {
     sm: 'w-4 h-4',

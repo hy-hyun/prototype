@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { courses, addToCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading, coursesError } from "$lib/stores";
+  import { courses, addToCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading, coursesError, refreshCourseData } from "$lib/stores";
   import { showToast } from "$lib/toast";
   import Loading from "$lib/components/Loading.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
@@ -235,13 +235,23 @@
     <p class="text-sm text-gray-600">
       검색 결과: <span class="font-semibold text-blue-600">{results.length}</span>개
     </p>
-    <button 
-      type="button"
-      class="text-sm text-gray-500 hover:text-gray-700"
-      onclick={resetFilters}
-    >
-      필터 초기화
-    </button>
+    <div class="flex gap-2">
+      <button 
+        type="button"
+        class="text-sm text-blue-500 hover:text-blue-700 disabled:opacity-50"
+        onclick={() => refreshCourseData()}
+        disabled={$coursesLoading}
+      >
+        {$coursesLoading ? '로딩 중...' : '데이터 새로고침'}
+      </button>
+      <button 
+        type="button"
+        class="text-sm text-gray-500 hover:text-gray-700"
+        onclick={resetFilters}
+      >
+        필터 초기화
+      </button>
+    </div>
   </div>
 </div>
 

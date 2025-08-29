@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase 데이터 디버깅</title>
+</head>
+<body>
+    <h1>Firebase 강의 데이터 구조 확인</h1>
+    <button id="loadData">데이터 로드</button>
+    <div id="output"></div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBVDytX4ZTbBt1y8STt9vVdfF7_cmw7Gk0",
+            authDomain: "gen-lang-client-0705810476.firebaseapp.com", 
+            projectId: "gen-lang-client-0705810476",
+            storageBucket: "gen-lang-client-0705810476.firebasestorage.app",
+            messagingSenderId: "1012745348076",
+            appId: "1:1012745348076:web:dd2d93317dca103b3496c9",
+            measurementId: "G-SJY7VH7L2Z"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        document.getElementById('loadData').addEventListener('click', async () => {
+            const output = document.getElementById('output');
+            output.innerHTML = '<p>로딩 중...</p>';
+
+            try {
+                const coursesRef = collection(db, 'courses');
+                const q = query(coursesRef, limit(3));
+                const querySnapshot = await getDocs(q);
+
+                let html = '<h2>Firebase 강의 데이터 (첫 3개)</h2>';
+                let count = 0;
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    count++;
+                    
+                    html += `
+                        <div style="border: 1px solid #ccc; margin: 10px; padding: 10px;">
+                            <h3>강의 ${count}: ${data.subjectName || '제목 없음'}</h3>
+                            <h4>전체 데이터 구조:</h4>
+                            <pre style="background: #f5f5f5; padding: 10px; overflow: auto;">${JSON.stringify(data, null, 2)}</pre>
+                            
+                            <h4>시간표 관련 필드들:</h4>
+                            <ul>
+                                <li><strong>schedule:</strong> ${JSON.stringify(data.schedule)}</li>
+                                <li><strong>timeTable:</strong> ${JSON.stringify(data.timeTable)}</li>
+                                <li><strong>classTime:</strong> ${JSON.stringify(data.classTime)}</li>
+                                <li><strong>meetingTimes:</strong> ${JSON.stringify(data.meetingTimes)}</li>
+                            </ul>
+                            
+                            <h4>장소 관련 필드들:</h4>
+                            <ul>
+                                <li><strong>location:</strong> ${JSON.stringify(data.location)}</li>
+                                <li><strong>classroom:</strong> ${JSON.stringify(data.classroom)}</li>
+                                <li><strong>building:</strong> ${JSON.stringify(data.building)}</li>
+                                <li><strong>room:</strong> ${JSON.stringify(data.room)}</li>
+                            </ul>
+                        </div>
+                    `;
+                });
+
+                if (count === 0) {
+                    html += '<p>데이터가 없습니다.</p>';
+                }
+
+                output.innerHTML = html;
+            } catch (error) {
+                output.innerHTML = `<p style="color: red;">오류: ${error.message}</p>`;
+                console.error('Firebase 오류:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+

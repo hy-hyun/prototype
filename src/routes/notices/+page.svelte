@@ -62,8 +62,8 @@
   <section>
     <div class="flex items-center mb-6">
       <h1 class="text-3xl font-bold hanyang-navy dark:text-neutral-100 flex items-center gap-3">
-        <svg class="w-8 h-8 text-sky-500" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        <svg class="w-8 h-8 hanyang-navy dark:text-neutral-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
         공지사항
       </h1>

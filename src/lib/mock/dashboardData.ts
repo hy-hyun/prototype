@@ -107,11 +107,7 @@ export const dashboardData = {
 		{ semester: '2025-1', credits: 23, cumulative: 102, milestone: '다중전공 시작, 복학 학기' },
 		{ semester: '2025-2', credits: 18, cumulative: 120, milestone: '예상', isFuture: true },
 		{ semester: '2026-1', credits: 15, cumulative: 135, milestone: '예상', isFuture: true },
-<<<<<<< HEAD
 		{ semester: '2026-2', credits: 16, cumulative: 151, milestone: '예상', isFuture: true },
-=======
-		{ semester: '2026-2', credits: 13, cumulative: 148, milestone: '예상', isFuture: true },
->>>>>>> main
 	],
 	recommendedCourses: [
 		{ id: '1', title: '교육공학사례연구', dept: '교육공학과', credits: 3, reason: '400단위 전공 3학점 추천' },
@@ -151,7 +147,6 @@ export const dashboardData = {
 				basic: {
 					name: '기본이수',
 					required: 21,
-<<<<<<< HEAD
 					fields: 7,
 					courses: [
 						{ title: '이러닝설계론', credits: 3, status: 'completed', fieldId: '교육학개론' },
@@ -164,28 +159,16 @@ export const dashboardData = {
 						{ title: '첨단매체와스마트러닝', credits: 3, status: 'completed', fieldId: '교육공학' },
 						{ title: '교수체제개발', credits: 3, status: 'completed', fieldId: '교육행정' },
 						{ title: '디지털변혁시대의HRD방법론', credits: 3, status: 'completed', fieldId: '교육행정' }
-=======
-					courses: [
-						{ id: 'm1', title: '이러닝개발', credits: 3, status: 'completed' },
-						{ id: 'm2', title: '교육방법및교육공학', credits: 3, status: 'completed' },
-						{ id: 'm3', title: '인적자원개발론', credits: 3, status: 'in_progress' }
->>>>>>> main
 					]
 				},
 				subjectEducation: {
 					name: '교과교육',
 					required: 8,
-<<<<<<< HEAD
 					fields: 3,
 					courses: [
 						{ title: '교육학교과교육론', credits: 3, status: 'not_started', fieldId: '교과교육론' },
 						{ title: '교육학교과교재및이론', credits: 3, status: 'not_started', fieldId: '교과교재연구및지도' },
 						{ title: '교육논술', credits: 2, status: 'not_started', fieldId: '논리및논술' }
-=======
-					courses: [
-						{ id: 'se1', title: '컴퓨터교과교육론', credits: 3, status: 'not_started' },
-						{ id: 'se2', title: '컴퓨터교과교재연구및지도법', credits: 3, status: 'not_started' }
->>>>>>> main
 					]
 				}
 			}
@@ -196,7 +179,6 @@ export const dashboardData = {
 				theory: {
 					name: '교직이론',
 					required: 12,
-<<<<<<< HEAD
 					fields: 6,
 					courses: [
 						{ title: '교육사회학', credits: 2, status: 'completed', fieldId: '교육사회학' },
@@ -205,41 +187,26 @@ export const dashboardData = {
 						{ title: '교육행정및경영', credits: 2, status: 'completed', fieldId: '교육행정및경영' },
 						{ title: '생활지도및상담', credits: 2, status: 'completed', fieldId: '생활지도및상담' },
 						{ title: '교육평가론', credits: 2, status: 'completed', fieldId: '교육평가론' }
-=======
-					courses: [
-						{ id: 't1', title: '교육심리', credits: 2, status: 'completed' },
-						{ id: 't2', title: '교육철학 및 교육사', credits: 2, status: 'completed' },
-						{ id: 't3', title: '교육과정', credits: 2, status: 'in_progress' },
-						{ id: 't4', title: '교육사회', credits: 2, status: 'not_started' }
->>>>>>> main
 					]
 				},
 				aptitude: {
 					name: '교직소양',
 					required: 6,
-<<<<<<< HEAD
 					fields: 3,
 					courses: [
 						{ title: '특수교육학개론', credits: 2, status: 'not_started', fieldId: '특수교육학개론' },
 						{ title: '교직실무', credits: 2, status: 'not_started', fieldId: '교직실무' },
 						{ title: '학교폭력예방및학생의이해', credits: 2, status: 'not_started', fieldId: '학교폭력예방의이론과실제' }
 					]
-=======
-					courses: [{ id: 'a1', title: '특수교육학개론', credits: 2, status: 'not_started' }]
->>>>>>> main
 				},
 				practice: {
 					name: '교육실습',
 					required: 4,
-<<<<<<< HEAD
 					fields: 2,
 					courses: [
 						{ title: '교육봉사활동1', credits: 2, status: 'completed', fieldId: '교육봉사활동' },
 						{ title: '교육실습', credits: 2, status: 'not_started', fieldId: '학교현장실습' }
 					]
-=======
-					courses: [{ id: 'p1', title: '교육실습', credits: 2, status: 'not_started' }]
->>>>>>> main
 				}
 			}
 		}

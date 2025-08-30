@@ -127,7 +127,7 @@
 
         <!-- 2. 주간 시간표 제목 (중앙) -->
         <div class="flex items-center justify-center flex-1 max-w-4xl mx-auto">
-          <h1 class="font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-blue-700 flex items-center gap-3" style="font-family: 'Poppins', 'Nunito', 'Roboto', system-ui, sans-serif; letter-spacing: -0.03em; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <h1 class="font-black text-blue-600 flex items-center gap-3" style="font-family: 'Poppins', 'Nunito', 'Roboto', system-ui, sans-serif; letter-spacing: -0.03em; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
@@ -195,46 +195,33 @@
 <style>
   /* 글래스모피즘 헤더 */
   .glass-header {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.6) 100%);
+    background: rgba(219, 234, 254, 0.9); /* 연한 하늘색 (sky-100) */
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(147, 197, 253, 0.3); /* sky-300 테두리 */
     border-radius: 24px 24px 32px 32px; /* 상단과 하단 모두 둥글게 */
     position: relative;
     z-index: 30; /* 네비게이션(z-40) 아래로 설정 */
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  }
-
-  .glass-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    /* 더 진한 그라데이션 배경 */
-    background: linear-gradient(135deg, rgba(29, 78, 216, 0.15) 0%, rgba(59, 130, 246, 0.1) 30%, rgba(147, 197, 253, 0.08) 50%, rgba(59, 130, 246, 0.1) 70%, rgba(29, 78, 216, 0.15) 100%);
-    border-radius: 24px 24px 32px 32px; /* 배경도 상단과 하단 모두 둥글게 */
-    pointer-events: none;
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
   }
 
   /* 글래스모피즘 선택 박스 */
   .glass-select {
     position: relative;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(219, 234, 254, 0.8); /* 연한 하늘색 */
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(147, 197, 253, 0.4); /* sky-300 테두리 */
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
     transition: all 0.3s ease;
-    opacity: 0.8;
+    opacity: 0.9;
   }
 
   .glass-select:hover {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(219, 234, 254, 0.95); /* 연한 하늘색 강화 */
     transform: translateY(-1px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2);
     opacity: 1;
   }
 
@@ -242,10 +229,10 @@
   .icon-btn {
     width: 48px;
     height: 48px;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(219, 234, 254, 0.8); /* 연한 하늘색 */
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(147, 197, 253, 0.4); /* sky-300 테두리 */
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -254,13 +241,13 @@
     cursor: pointer;
     color: #6b7280;
     position: relative;
-    opacity: 0.8;
+    opacity: 0.9;
   }
 
   .icon-btn:hover {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(219, 234, 254, 0.95); /* 연한 하늘색 강화 */
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
     color: #374151;
     opacity: 1;
   }
@@ -309,21 +296,21 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(219, 234, 254, 0.8); /* 연한 하늘색 */
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(147, 197, 253, 0.4); /* sky-300 테두리 */
     border-radius: 16px;
     padding: 8px 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
     transition: all 0.3s ease;
-    opacity: 0.8;
+    opacity: 0.9;
   }
 
   .inline-gauge-container:hover {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(219, 234, 254, 0.95); /* 연한 하늘색 강화 */
     transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2);
     opacity: 1;
   }
 

@@ -1,0 +1,154 @@
+[1mdiff --git a/src/routes/dashboard/+page.svelte b/src/routes/dashboard/+page.svelte[m
+[1mindex 8f505fa..26ec304 100644[m
+[1m--- a/src/routes/dashboard/+page.svelte[m
+[1m+++ b/src/routes/dashboard/+page.svelte[m
+[36m@@ -1,7 +1,6 @@[m
+ <script lang="ts">[m
+   import { onMount } from 'svelte';[m
+   import { dashboardData } from '$lib/mock/dashboardData';[m
+[31m-  import { dashboardData } from '$lib/mock/dashboardData';[m
+   [m
+   // 김민우 학생 데이터[m
+   let userName = dashboardData.userInfo.name;[m
+[36m@@ -11,7 +10,6 @@[m
+   [m
+   // 다중전공 데이터 구조[m
+   let majors = dashboardData.majors;[m
+[31m-  let majors = dashboardData.majors;[m
+   [m
+   let selectedMajor = $state('main');[m
+   let selectedSemester = $state('1-1'); // 교양필수 학기 선택[m
+[36m@@ -55,31 +53,37 @@[m
+     tooltip = { ...tooltip, show: false };[m
+   }[m
+   [m
+[31m-     // 선택된 영역 정보 상태[m
+[31m-   let selectedArea: { name: string; completed: number; required: number } | null = $state(null);[m
+[31m-   let donutTooltip = $state({ visible: false, area: '', percentage: 0 });[m
+[31m-   [m
+[31m-               // 아코디언 상태[m
+[31m-     let expandedCards = $state({[m
+[31m-       basicCourses: false,[m
+[31m-       recommendedCourses: false,[m
+[31m-       quickActions: false,[m
+[31m-       teachingMajor: false,[m
+[31m-       teachingProfession: false,[m
+[31m-       teachingSubject: false,[m
+[31m-       teachingAptitude: false,[m
+[31m-       teachingPractice: false[m
+[31m-     });[m
+[31m-   [m
+[31m-   // 영역 정보 표시 함수[m
+[31m-   function showAreaInfo(name: string, completed: number, required: number) {[m
+[31m-     selectedArea = { name, completed, required };[m
+[31m-   }[m
+[31m-   [m
+[31m-               // 아코디언 토글 함수[m
+[31m-     function toggleAccordion(cardType: 'basicCourses' | 'recommendedCourses' | 'quickActions' | 'teachingMajor' | 'teachingProfession' | 'teachingSubject' | 'teachingAptitude' | 'teachingPractice') {[m
+[31m-       expandedCards[cardType] = !expandedCards[cardType];[m
+[31m-     }[m
+[32m+[m[32m  // 선택된 영역 정보 상태[m
+[32m+[m[32m  let selectedArea: { name: string; completed: number; required: number } | null = $state(null);[m
+[32m+[m[32m  let donutTooltip = $state({ visible: false, area: '', percentage: 0 });[m
+[32m+[m[41m  [m
+[32m+[m[32m  // 아코디언 상태[m
+[32m+[m[32m  let expandedCards = $state({[m
+[32m+[m[32m    basicCourses: false,[m
+[32m+[m[32m    recommendedCourses: false,[m
+[32m+[m[32m    quickActions: false,[m
+[32m+[m[32m    teachingMajor: false,[m
+[32m+[m[32m    teachingProfession: false,[m
+[32m+[m[32m    teachingSubject: false,[m
+[32m+[m[32m    teachingAptitude: false,[m
+[32m+[m[32m    teachingPractice: false[m
+[32m+[m[32m  });[m
+[32m+[m[41m  [m
+[32m+[m[32m  // 졸업 섹션 상태[m
+[32m+[m[32m  let graduationSections = $state({[m
+[32m+[m[32m    majors: false,[m
+[32m+[m[32m    general: false[m
+[32m+[m[32m  });[m
+[32m+[m[41m  [m
+[32m+[m[32m  // 영역 정보 표시 함수[m
+[32m+[m[32m  function showAreaInfo(name: string, completed: number, required: number) {[m
+[32m+[m[32m    selectedArea = { name, completed, required };[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  // 아코디언 토글 함수[m
+[32m+[m[32m  function toggleAccordion(cardType: 'basicCourses' | 'recommendedCourses' | 'quickActions' | 'teachingMajor' | 'teachingProfession' | 'teachingSubject' | 'teachingAptitude' | 'teachingPractice') {[m
+[32m+[m[32m    expandedCards[cardType] = !expandedCards[cardType];[m
+[32m+[m[32m  }[m
+ </script>[m
+ [m
+ <div class="min-h-screen bg-gray-50 p-6">[m
+[36m@@ -113,190 +117,186 @@[m
+             ⭐ 러닝저니[m
+           </h3>[m
+           [m
+[31m-                     <!-- 연도별 학기 진행 그래프 -->[m
+[31m-           <div class="mb-6">[m
+[31m-             <div class="bg-gray-50 rounded-lg p-4">[m
+[31m-               <div class="flex items-center justify-between mb-4">[m
+[31m-                                   <h4 class="text-sm font-medium text-gray-700">누적 학점 진행</h4>[m
+[31m-                 <div class="flex items-center gap-4 text-xs text-gray-500">[m
+[31m-                   <div class="flex items-center gap-2">[m
+[31m-                     <div class="w-3 h-3 bg-blue-400 rounded-sm"></div>[m
+[31m-                     <span>완료</span>[m
+[31m-                   </div>[m
+[31m-                   <div class="flex items-center gap-2">[m
+[31m-                     <div class="w-3 h-3 bg-gray-300 rounded-sm"></div>[m
+[31m-                     <span>예상</span>[m
+[31m-                   </div>[m
+[31m-                 </div>[m
+[31m-               </div>[m
+[31m-               [m
+[31m-                               <!-- 그래프 컨테이너 -->[m
+[31m-                <div class="relative h-48 animate-fade-in">[m
+[31m-                                                      <!-- Y축 (누적 학점) -->[m
+[31m-                   <div class="absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between text-xs text-gray-500">[m
+[31m-                     <span>200</span>[m
+[31m-                     <span>150</span>[m
+[31m-                     <span>100</span>[m
+[31m-                     <span>50</span>[m
+[31m-                     <span>0</span>[m
+[31m-                   </div>[m
+[31m-                  [m
+[31m-                                     <!-- X축 (학기/학년) -->[m
+[31m-                   <div class="absolute left-12 right-0 -bottom-8 flex justify-between text-xs text-gray-500">[m
+[31m-                     {#each learningJourney as journey, i}[m
+[31m-                       <div class="text-center">[m
+[31m-                         <div class="font-medium">[m
+[31m-                           {#if journey.isFuture && parseInt(journey.semester.split('-')[0]) >= 2025}[m
+[31m-                             {parseInt(journey.semester.split('-')[0]) - 2021}-{journey.semester.split('-')[1]}({journey.semester.split('-')[0]})[m
+[31m-                           {:else}[m
+[31m-                             {parseInt(journey.semester.split('-')[0]) - 2021}-{journey.semester.split('-')[1]}[m
+[31m-                           {/if}[m
+[31m-                         </div>[m
+[31m-                       </div>[m
+[31m-                     {/each}[m
+[31m-                   </div>[m
+[31m-                  [m
+[31m-                  <!-- 격자선 -->[m
+[31m-                  <div class="absolute left-12 right-0 top-0 bottom-0">[m
+[31m-                    {#each Array.from({length: 4}, (_, i) => i) as i}[m
+[31m-                      <div class="absolute left-0 right-0 h-px bg-gray-200" style="top: {(i + 1) * 25}%"></div>[m
+[31m-                    {/each}[m
+[32m+[m[32m          <!-- 연도별 학기 진행 그래프 -->[m
+[32m+[m[32m          <div class="mb-6">[m
+[32m+[m[32m            <div class="bg-gray-50 rounded-lg p-4">[m
+[32m+[m[32m              <div class="flex items-center justify-between mb-4">[m
+[32m+[m[32m                <h4 class="text-sm font-medium text-gray-700">누적 학점 진행</h4>[m
+[32m+[m[32m                <div class="flex items-center gap-4 text-xs text-gray-500">[m
+[32m+[m[32m                  <div class="flex items-center gap-2">[m
+[32m+[m[32m                    <div class="w-3 h-3 bg-blue-400 rounded-sm"></div>[m
+[32m+[m[32m                    <span>완료</span>[m
+[32m+[m[32m                  </div>[m
+[32m+[m[32m                  <div class="flex items-center gap-2">[m
+[32m+[m[32m                    <div class="w-3 h-3 bg-gray-300 rounded-sm"></div>[m
+[32m+[m[32m                    <span>예상</span>[m
+                   </div>[m
+[31m-                 [m
+[31m-                 <!-- 그래프 영역 -->[m
+[31m-                 <div class="absolute left-12 right-0 top-0 bottom-0">[m
+[31m-                   <!-- 완료된 학기 영역 -->[m
+[31m-          

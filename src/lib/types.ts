@@ -66,4 +66,12 @@ export type Gap = {
   warningMessage: string; // 상태 메시지
 };
 
+export type LearningJourney = {
+	semester: string;
+	credits: number;
+	cumulative: number;
+	milestone: string | null;
+	isFuture: boolean;
+};
+
 

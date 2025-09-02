@@ -39,15 +39,18 @@
     data: null,
   });
   
+  let graphAreaContainer: HTMLDivElement;
+
   // 툴팁 표시 함수
   function showTooltip(journey: LearningJourney, index: number) {
     const element = document.querySelector(`[data-journey-index="${index}"]`);
-    if (element) {
-      const rect = element.getBoundingClientRect();
+    if (element && graphAreaContainer) {
+      const elementRect = element.getBoundingClientRect();
+      const containerRect = graphAreaContainer.getBoundingClientRect();
       tooltip = {
         show: true,
-        x: rect.left + rect.width / 2,
-        y: rect.top,
+        x: elementRect.left - containerRect.left + elementRect.width / 2,
+        y: elementRect.top - containerRect.top,
         data: journey,
       };
     }
@@ -107,7 +110,7 @@
 
 	// 선택된 영역 정보 상태
   let selectedArea: { name: string; completed: number; required: number } | null = $state(null);
-  let donutTooltip = $state({ visible: false, area: '', percentage: 0 });
+  let donutTooltip = $state({ visible: false, area: '', completed: 0, required: 0 });
   
   // 아코디언 상태
   let expandedCards = $state({
@@ -136,6 +139,61 @@
   function toggleAccordion(cardType: 'basicCourses' | 'recommendedCourses' | 'quickActions' | 'teachingMajor' | 'teachingProfession' | 'teachingSubject' | 'teachingAptitude' | 'teachingPractice') {
     expandedCards[cardType] = !expandedCards[cardType];
   }
+
+  // 교직이수 영역별 이수 계산
+  const { major, profession } = dashboardData.teachingCourses;
+
+  const completedFieldsCount = $derived({
+    basic: new Set(major.categories.basic.courses.filter(c => c.status === 'completed').map(c => c.fieldId)).size,
+    subjectEducation: new Set(major.categories.subjectEducation.courses.filter(c => c.status === 'completed').map(c => c.fieldId)).size,
+    theory: new Set(profession.categories.theory.courses.filter(c => c.status === 'completed').map(c => c.fieldId)).size,
+    aptitude: new Set(profession.categories.aptitude.courses.filter(c => c.status === 'completed').map(c => c.fieldId)).size,
+    practice: new Set(profession.categories.practice.courses.filter(c => c.status === 'completed').map(c => c.fieldId)).size,
+  });
+
+  const totalFields = $derived({
+    basic: major.categories.basic.fields,
+    subjectEducation: major.categories.subjectEducation.fields,
+    theory: profession.categories.theory.fields,
+    aptitude: profession.categories.aptitude.fields,
+    practice: profession.categories.practice.fields
+  });
+
+  const getProgressColor = (completed: number, total: number) => {
+    if (total === 0) return 'bg-green-500';
+    const percentage = (completed / total) * 100;
+    if (percentage >= 100) return 'bg-green-500';
+    if (percentage >= 50) return 'bg-yellow-500';
+    return 'bg-pink-500';
+  };
+
+  const getProgressTextColor = (completed: number, total: number) => {
+    if (total === 0) return 'text-green-600';
+    const percentage = (completed / total) * 100;
+    if (percentage >= 100) return 'text-green-600';
+    if (percentage >= 50) return 'text-yellow-600';
+    return 'text-pink-600';
+  };
+
+  const getProgressBadgeClass = (completed: number, total: number) => {
+    if (total === 0) return 'bg-green-100 text-green-700';
+    const percentage = (completed / total) * 100;
+    if (percentage >= 100) return 'bg-green-100 text-green-700';
+    if (percentage >= 50) return 'bg-yellow-100 text-yellow-700';
+    return 'bg-pink-100 text-pink-700';
+  };
+
+  const coreAreaColors = ['#1e40af', '#3b82f6', '#60a5fa', '#93c5fd', '#a8d5ff'];
+
+  const getXAxisLabelTransform = (index: number, total: number) => {
+    if (index === 0) {
+      return 'translateX(0%)';
+    }
+    if (index === total - 1) {
+      return 'translateX(-100%)';
+    }
+    return 'translateX(-50%)';
+  };
 </script>
 
 <div class="min-h-screen bg-gray-50 p-6">
@@ -169,7 +227,7 @@
           
           <!-- 연도별 학기 진행 그래프 -->
           <div class="mb-6">
-            <div class="bg-gray-50 rounded-lg p-4">
+            <div class="bg-gray-50 rounded-lg px-2 py-4">
               <div class="flex items-center justify-between mb-4">
                 <h4 class="text-sm font-medium text-gray-700">누적 학점 진행</h4>
                 <div class="flex items-center gap-4 text-xs text-gray-500">
@@ -203,7 +261,7 @@
                     {@const displayYear = year < 2025 ? year - 2020 : year - 2022}
                     <div
                       class="absolute text-center text-xs text-gray-500"
-                      style="left: {(i / (learningJourney.length - 1)) * 100}%; transform: translateX(-50%);"
+                      style="left: {(i / (learningJourney.length - 1)) * 100}%; transform: {getXAxisLabelTransform(i, learningJourney.length)};"
                     >
                       <div class="font-medium">
                         {displayYear}-{sem}
@@ -226,7 +284,7 @@
                 </div>
 
                 <!-- 그래프 영역 -->
-                <div class="absolute left-12 right-0 top-0 bottom-0">
+                <div class="absolute left-12 right-0 top-0 bottom-0" bind:this={graphAreaContainer}>
                   <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                     <!-- 전체 학기 영역 (곡선 아래를 0학점까지 완전히 채우기) -->
                     <path d={fullAreaPath} fill="#e5e7eb" />
@@ -499,8 +557,8 @@
                         stroke-dashoffset="0"
                         transform="rotate(-90 100 110)"
                         class="cursor-pointer hover:opacity-80 transition-all duration-200"
-                        onclick={() => showAreaInfo('고전읽기영역', 2, 2)}
-                        onmouseenter={() => donutTooltip = { visible: true, area: '고전읽기영역', percentage: 15.4 }}
+                        onclick={() => showAreaInfo(generalEducation.core.areas[0].name, generalEducation.core.areas[0].completed, generalEducation.core.areas[0].required)}
+                        onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[0].name, completed: generalEducation.core.areas[0].completed, required: generalEducation.core.areas[0].required }}
                         onmouseleave={() => donutTooltip.visible = false}
                       />
                       
@@ -514,8 +572,8 @@
                         stroke-dashoffset="-73.45"
                         transform="rotate(-90 100 110)"
                         class="cursor-pointer hover:opacity-80 transition-all duration-200"
-                        onclick={() => showAreaInfo('글로벌언어와문화영역', 3, 2)}
-                        onmouseenter={() => donutTooltip = { visible: true, area: '글로벌언어와문화영역', percentage: 23.1 }}
+                        onclick={() => showAreaInfo(generalEducation.core.areas[1].name, generalEducation.core.areas[1].completed, generalEducation.core.areas[1].required)}
+                        onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[1].name, completed: generalEducation.core.areas[1].completed, required: generalEducation.core.areas[1].required }}
                         onmouseleave={() => donutTooltip.visible = false}
                       />
                       
@@ -529,8 +587,8 @@
                         stroke-dashoffset="-146.81"
                         transform="rotate(-90 100 110)"
                         class="cursor-pointer hover:opacity-80 transition-all duration-200"
-                        onclick={() => showAreaInfo('소프트웨어영역', 2, 2)}
-                        onmouseenter={() => donutTooltip = { visible: true, area: '소프트웨어영역', percentage: 15.4 }}
+                        onclick={() => showAreaInfo(generalEducation.core.areas[2].name, generalEducation.core.areas[2].completed, generalEducation.core.areas[2].required)}
+                        onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[2].name, completed: generalEducation.core.areas[2].completed, required: generalEducation.core.areas[2].required }}
                         onmouseleave={() => donutTooltip.visible = false}
                       />
                       
@@ -544,8 +602,8 @@
                         stroke-dashoffset="-271.15"
                         transform="rotate(-90 100 110)"
                         class="cursor-pointer hover:opacity-80 transition-all duration-200"
-                        onclick={() => showAreaInfo('미래산업과창업영역 + 과학과기술영역', 4, 2)}
-                        onmouseenter={() => donutTooltip = { visible: true, area: '미래산업과창업영역 + 과학과기술영역', percentage: 30.8 }}
+                        onclick={() => showAreaInfo(generalEducation.core.areas[3].name, generalEducation.core.areas[3].completed, generalEducation.core.areas[3].required)}
+                        onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[3].name, completed: generalEducation.core.areas[3].completed, required: generalEducation.core.areas[3].required }}
                         onmouseleave={() => donutTooltip.visible = false}
                       />
                       
@@ -559,8 +617,8 @@
                         stroke-dashoffset="-406.53"
                         transform="rotate(-90 100 110)"
                         class="cursor-pointer hover:opacity-80 transition-all duration-200"
-                        onclick={() => showAreaInfo('인문과예술영역 + 사회와세계영역', 2, 2)}
-                        onmouseenter={() => donutTooltip = { visible: true, area: '인문과예술영역 + 사회와세계영역', percentage: 15.4 }}
+                        onclick={() => showAreaInfo(generalEducation.core.areas[4].name, generalEducation.core.areas[4].completed, generalEducation.core.areas[4].required)}
+                        onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[4].name, completed: generalEducation.core.areas[4].completed, required: generalEducation.core.areas[4].required }}
                         onmouseleave={() => donutTooltip.visible = false}
                       />
                       
@@ -574,7 +632,7 @@
                       <!-- 호버 시 표시되는 라벨들 -->
                       {#if donutTooltip.visible}
                         <text x="100" y="40" text-anchor="middle" class="text-sm font-medium fill-blue-700 opacity-90">
-                          {donutTooltip.area} ({donutTooltip.percentage}%)
+                          {donutTooltip.area} ({donutTooltip.completed}/{donutTooltip.required})
                         </text>
                       {/if}
                     </svg>
@@ -582,26 +640,17 @@
                   
                   <!-- 범례 -->
                   <div class="space-y-2">
-                    <div class="flex items-center gap-2">
-                      <div class="w-3 h-3 rounded-full" style="background-color: #1e40af;"></div>
-                      <span class="text-sm text-gray-700">고전읽기영역 (15.4%) ✅</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <div class="w-3 h-3 rounded-full" style="background-color: #3b82f6;"></div>
-                      <span class="text-sm text-gray-700">글로벌언어와문화영역 (23.1%) ✅</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <div class="w-3 h-3 rounded-full" style="background-color: #60a5fa;"></div>
-                      <span class="text-sm text-gray-700">소프트웨어영역 (15.4%) ✅</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <div class="w-3 h-3 rounded-full" style="background-color: #93c5fd;"></div>
-                      <span class="text-sm text-gray-700">미래산업과창업영역 + 과학과기술영역 (30.8%) ✅</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <div class="w-3 h-3 rounded-full" style="background-color: #a8d5ff;"></div>
-                      <span class="text-sm text-gray-700">인문과예술영역 + 사회와세계영역 (15.4%) ✅</span>
-                    </div>
+                    {#each generalEducation.core.areas as area, i}
+                      <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full" style="background-color: {coreAreaColors[i]};"></div>
+                        <span class="text-sm text-gray-700">
+                          {area.name} ({area.completed}/{area.required})
+                          {#if area.completed >= area.required}
+                            <span class="ml-1">✅</span>
+                          {/if}
+                        </span>
+                      </div>
+                    {/each}
                   </div>
                   
                   <!-- 영역 정보 표시 -->
@@ -658,19 +707,148 @@
                       <!-- 기본이수 -->
                       <div class="flex justify-between items-center">
                         <span class="text-xs text-gray-600">기본이수</span>
-                        <span class="text-xs font-medium">30/21 학점</span>
+                        <span class="text-xs font-medium {getProgressTextColor(completedFieldsCount.basic, totalFields.basic)}">{completedFieldsCount.basic}/{totalFields.basic}</span>
                       </div>
-                      <div class="w-full bg-green-100 rounded-full h-1.5">
-                        <div class="bg-green-500 h-1.5 rounded-full" style="width: 100%"></div>
+                      <div class="w-full bg-gray-200 rounded-full h-1.5">
+                        <div class="{getProgressColor(completedFieldsCount.basic, totalFields.basic)} h-1.5 rounded-full" style="width: {Math.round((completedFieldsCount.basic / totalFields.basic) * 100)}%"></div>
                       </div>
 
                       <!-- 교과교육 -->
                       <div class="flex justify-between items-center">
                         <span class="text-xs text-gray-600">교과교육</span>
-                        <span class="text-xs font-medium">0/8 학점</span>
+                        <span class="text-xs font-medium {getProgressTextColor(completedFieldsCount.subjectEducation, totalFields.subjectEducation)}">{completedFieldsCount.subjectEducation}/{totalFields.subjectEducation}</span>
                       </div>
-                      <div class="w-full bg-green-100 rounded-full h-1.5">
-                        <div class="bg-green-500 h-1.5 rounded-full" style="width: 0%"></div>
+                      <div class="w-full bg-gray-200 rounded-full h-1.5">
+                        <div class="{getProgressColor(completedFieldsCount.subjectEducation, totalFields.subjectEducation)} h-1.5 rounded-full" style="width: {Math.round((completedFieldsCount.subjectEducation / totalFields.subjectEducation) * 100)}%"></div>
+                      </div>
+                    </div>
+
+                    <!-- 과목별 상세 정보 아코디언 그룹 -->
+                    <div class="space-y-3 pt-4">
+                      <!-- 기본이수 상세 아코디언 -->
+                      <div class="bg-white rounded-lg border border-green-200">
+                        <button
+                          class="w-full p-3 text-left flex items-center justify-between hover:bg-green-50 transition-colors"
+                          onclick={() => toggleAccordion('teachingMajor')}
+                        >
+                          <div class="flex items-center gap-2">
+                            <h6 class="font-medium text-green-900 text-xs">📚 기본이수 상세</h6>
+                            <span class="text-xs px-2 py-1 rounded {getProgressBadgeClass(completedFieldsCount.basic, totalFields.basic)}">
+                              {completedFieldsCount.basic}/{totalFields.basic}
+                            </span>
+                          </div>
+                          <svg
+                            class="w-4 h-4 transition-transform {expandedCards.teachingMajor ? 'rotate-180' : ''}"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 9l-7 7-7-7"
+                            ></path>
+                          </svg>
+                        </button>
+
+                        {#if expandedCards.teachingMajor}
+                          <div class="p-3 pt-0 space-y-2 animate-fade-in">
+                            {#each dashboardData.teachingCourses.major.categories.basic.courses as course}
+                              <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <div class="flex items-center gap-2">
+                                  <div
+                                    class="w-2 h-2 rounded-full {course.status === 'completed'
+                                      ? 'bg-green-500'
+                                      : course.status === 'in_progress'
+                                      ? 'bg-yellow-500'
+                                      : 'bg-gray-400'}"
+                                  ></div>
+                                  <span class="text-xs text-gray-700">{course.title}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                  <span class="text-xs text-gray-600">{course.credits}학점</span>
+                                  <span
+                                    class="text-xs px-2 py-1 rounded {course.status === 'completed'
+                                      ? 'bg-green-100 text-green-700'
+                                      : course.status === 'in_progress'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : 'bg-gray-100 text-gray-600'}"
+                                  >
+                                    {course.status === 'completed'
+                                      ? '완료'
+                                      : course.status === 'in_progress'
+                                      ? '수강중'
+                                      : '미이수'}
+                                  </span>
+                                </div>
+                              </div>
+                            {/each}
+                          </div>
+                        {/if}
+                      </div>
+
+                      <!-- 교과교육 상세 아코디언 -->
+                      <div class="bg-white rounded-lg border border-green-200">
+                        <button
+                          class="w-full p-3 text-left flex items-center justify-between hover:bg-green-50 transition-colors"
+                          onclick={() => toggleAccordion('teachingSubject')}
+                        >
+                          <div class="flex items-center gap-2">
+                            <h6 class="font-medium text-green-900 text-xs">📖 교과교육 상세</h6>
+                            <span class="text-xs px-2 py-1 rounded {getProgressBadgeClass(completedFieldsCount.subjectEducation, totalFields.subjectEducation)}">
+                              {completedFieldsCount.subjectEducation}/{totalFields.subjectEducation}
+                            </span>
+                          </div>
+                          <svg
+                            class="w-4 h-4 transition-transform {expandedCards.teachingSubject ? 'rotate-180' : ''}"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 9l-7 7-7-7"
+                            ></path>
+                          </svg>
+                        </button>
+
+                        {#if expandedCards.teachingSubject}
+                          <div class="p-3 pt-0 space-y-2 animate-fade-in">
+                            {#each dashboardData.teachingCourses.major.categories.subjectEducation.courses as course}
+                              <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <div class="flex items-center gap-2">
+                                  <div
+                                    class="w-2 h-2 rounded-full {course.status === 'completed'
+                                      ? 'bg-green-500'
+                                      : course.status === 'in_progress'
+                                      ? 'bg-yellow-500'
+                                      : 'bg-gray-400'}"
+                                  ></div>
+                                  <span class="text-xs text-gray-700">{course.title}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                  <span class="text-xs text-gray-600">{course.credits}학점</span>
+                                  <span
+                                    class="text-xs px-2 py-1 rounded {course.status === 'completed'
+                                      ? 'bg-green-100 text-green-700'
+                                      : course.status === 'in_progress'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : 'bg-gray-100 text-gray-600'}"
+                                  >
+                                    {course.status === 'completed'
+                                      ? '완료'
+                                      : course.status === 'in_progress'
+                                      ? '수강중'
+                                      : '미이수'}
+                                  </span>
+                                </div>
+                              </div>
+                            {/each}
+                          </div>
+                        {/if}
                       </div>
                     </div>
                   </div>
@@ -685,362 +863,220 @@
                       <!-- 교직이론 -->
                       <div class="flex justify-between items-center">
                         <span class="text-xs text-gray-600">교직이론</span>
-                        <span class="text-xs font-medium">12/12 학점</span>
+                        <span class="text-xs font-medium {getProgressTextColor(completedFieldsCount.theory, totalFields.theory)}">{completedFieldsCount.theory}/{totalFields.theory}</span>
                       </div>
-                      <div class="w-full bg-green-100 rounded-full h-1.5">
-                        <div class="bg-green-500 h-1.5 rounded-full" style="width: 100%"></div>
+                      <div class="w-full bg-gray-200 rounded-full h-1.5">
+                        <div class="{getProgressColor(completedFieldsCount.theory, totalFields.theory)} h-1.5 rounded-full" style="width: {Math.round((completedFieldsCount.theory / totalFields.theory) * 100)}%"></div>
                       </div>
 
                       <!-- 교직소양 -->
                       <div class="flex justify-between items-center">
                         <span class="text-xs text-gray-600">교직소양</span>
-                        <span class="text-xs font-medium">0/6 학점</span>
+                        <span class="text-xs font-medium {getProgressTextColor(completedFieldsCount.aptitude, totalFields.aptitude)}">{completedFieldsCount.aptitude}/{totalFields.aptitude}</span>
                       </div>
-                      <div class="w-full bg-green-100 rounded-full h-1.5">
-                        <div class="bg-green-500 h-1.5 rounded-full" style="width: 0%"></div>
+                      <div class="w-full bg-gray-200 rounded-full h-1.5">
+                        <div class="{getProgressColor(completedFieldsCount.aptitude, totalFields.aptitude)} h-1.5 rounded-full" style="width: {Math.round((completedFieldsCount.aptitude / totalFields.aptitude) * 100)}%"></div>
                       </div>
 
                       <!-- 교육실습 -->
                       <div class="flex justify-between items-center">
                         <span class="text-xs text-gray-600">교육실습</span>
-                        <span class="text-xs font-medium">2/4 학점</span>
+                        <span class="text-xs font-medium {getProgressTextColor(completedFieldsCount.practice, totalFields.practice)}">{completedFieldsCount.practice}/{totalFields.practice}</span>
                       </div>
-                      <div class="w-full bg-green-100 rounded-full h-1.5">
-                        <div class="bg-green-500 h-1.5 rounded-full" style="width: 50%"></div>
+                      <div class="w-full bg-gray-200 rounded-full h-1.5">
+                        <div class="{getProgressColor(completedFieldsCount.practice, totalFields.practice)} h-1.5 rounded-full" style="width: {Math.round((completedFieldsCount.practice / totalFields.practice) * 100)}%"></div>
                       </div>
                     </div>
-                  </div>
-
-                  <!-- 과목별 상세 정보 아코디언 그룹 -->
-                  <div class="space-y-3 pt-2">
-                    <!-- 전공과목 상세 아코디언 -->
-                    <div class="bg-white rounded-lg border border-green-200">
-                      <button
-                        class="w-full p-3 text-left flex items-center justify-between hover:bg-green-50 transition-colors"
-                        onclick={() => toggleAccordion('teachingMajor')}
-                      >
-                        <div class="flex items-center gap-2">
-                          <h6 class="font-medium text-green-900 text-xs">📚 전공과목 상세</h6>
-                          <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                            {dashboardData.teachingCourses.major.categories.basic.courses.filter(
-                              (c) => c.status === 'completed'
-                            ).length}/{dashboardData.teachingCourses.major.categories.basic.courses.length}
-                            완료
-                          </span>
-                        </div>
-                        <svg
-                          class="w-4 h-4 transition-transform {expandedCards.teachingMajor ? 'rotate-180' : ''}"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                    
+                    <div class="space-y-3 pt-4">
+                      <!-- 교직이론 상세 아코디언 -->
+                      <div class="bg-white rounded-lg border border-green-200">
+                        <button
+                          class="w-full p-3 text-left flex items-center justify-between hover:bg-green-50 transition-colors"
+                          onclick={() => toggleAccordion('teachingProfession')}
                         >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 9l-7 7-7-7"
-                          ></path>
-                        </svg>
-                      </button>
+                          <div class="flex items-center gap-2">
+                            <h6 class="font-medium text-green-900 text-xs">👨‍🏫 교직이론 상세</h6>
+                            <span class="text-xs px-2 py-1 rounded {getProgressBadgeClass(completedFieldsCount.theory, totalFields.theory)}">
+                              {completedFieldsCount.theory}/{totalFields.theory}
+                            </span>
+                          </div>
+                          <svg
+                            class="w-4 h-4 transition-transform {expandedCards.teachingProfession ? 'rotate-180' : ''}"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 9l-7 7-7-7"
+                            ></path>
+                          </svg>
+                        </button>
 
-                      {#if expandedCards.teachingMajor}
-                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
-                          {#each dashboardData.teachingCourses.major.categories.basic.courses as course}
-                            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                              <div class="flex items-center gap-2">
-                                <div
-                                  class="w-2 h-2 rounded-full {course.status === 'completed'
-                                    ? 'bg-green-500'
-                                    : course.status === 'in_progress'
-                                    ? 'bg-yellow-500'
-                                    : 'bg-gray-400'}"
-                                ></div>
-                                <span class="text-xs text-gray-700">{course.title}</span>
+                        {#if expandedCards.teachingProfession}
+                          <div class="p-3 pt-0 space-y-2 animate-fade-in">
+                            {#each dashboardData.teachingCourses.profession.categories.theory.courses as course}
+                              <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <div class="flex items-center gap-2">
+                                  <div
+                                    class="w-2 h-2 rounded-full {course.status === 'completed'
+                                      ? 'bg-green-500'
+                                      : course.status === 'in_progress'
+                                      ? 'bg-yellow-500'
+                                      : 'bg-gray-400'}"
+                                  ></div>
+                                  <span class="text-xs text-gray-700">{course.title}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                  <span class="text-xs text-gray-600">{course.credits}학점</span>
+                                  <span
+                                    class="text-xs px-2 py-1 rounded {course.status === 'completed'
+                                      ? 'bg-green-100 text-green-700'
+                                      : course.status === 'in_progress'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : 'bg-gray-100 text-gray-600'}"
+                                  >
+                                    {course.status === 'completed'
+                                      ? '완료'
+                                      : course.status === 'in_progress'
+                                      ? '수강중'
+                                      : '미이수'}
+                                  </span>
+                                </div>
                               </div>
-                              <div class="flex items-center gap-2">
-                                <span class="text-xs text-gray-600">{course.credits}학점</span>
-                                <span
-                                  class="text-xs px-2 py-1 rounded {course.status === 'completed'
-                                    ? 'bg-green-100 text-green-700'
-                                    : course.status === 'in_progress'
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-gray-100 text-gray-600'}"
-                                >
-                                  {course.status === 'completed'
-                                    ? '완료'
-                                    : course.status === 'in_progress'
-                                    ? '수강중'
-                                    : '미이수'}
-                                </span>
-                              </div>
-                            </div>
-                          {/each}
-                        </div>
-                      {/if}
-                    </div>
+                            {/each}
+                          </div>
+                        {/if}
+                      </div>
 
-                    <!-- 교과교육 상세 아코디언 -->
-                    <div class="bg-white rounded-lg border border-green-200">
-                      <button
-                        class="w-full p-3 text-left flex items-center justify-between hover:bg-green-50 transition-colors"
-                        onclick={() => toggleAccordion('teachingSubject')}
-                      >
-                        <div class="flex items-center gap-2">
-                          <h6 class="font-medium text-green-900 text-xs">📖 교과교육 상세</h6>
-                          <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                            {dashboardData.teachingCourses.major.categories.subjectEducation.courses.filter(
-                              (c) => c.status === 'completed'
-                            ).length}/{dashboardData.teachingCourses.major.categories.subjectEducation.courses.length}
-                            완료
-                          </span>
-                        </div>
-                        <svg
-                          class="w-4 h-4 transition-transform {expandedCards.teachingSubject ? 'rotate-180' : ''}"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                      <!-- 교직소양 상세 아코디언 -->
+                      <div class="bg-white rounded-lg border border-green-200">
+                        <button
+                          class="w-full p-3 text-left flex items-center justify-between hover:bg-green-50 transition-colors"
+                          onclick={() => toggleAccordion('teachingAptitude')}
                         >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 9l-7 7-7-7"
-                          ></path>
-                        </svg>
-                      </button>
+                          <div class="flex items-center gap-2">
+                            <h6 class="font-medium text-green-900 text-xs">🎯 교직소양 상세</h6>
+                            <span class="text-xs px-2 py-1 rounded {getProgressBadgeClass(completedFieldsCount.aptitude, totalFields.aptitude)}">
+                              {completedFieldsCount.aptitude}/{totalFields.aptitude}
+                            </span>
+                          </div>
+                          <svg
+                            class="w-4 h-4 transition-transform {expandedCards.teachingAptitude ? 'rotate-180' : ''}"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 9l-7 7-7-7"
+                            ></path>
+                          </svg>
+                        </button>
 
-                      {#if expandedCards.teachingSubject}
-                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
-                          {#each dashboardData.teachingCourses.major.categories.subjectEducation.courses as course}
-                            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                              <div class="flex items-center gap-2">
-                                <div
-                                  class="w-2 h-2 rounded-full {course.status === 'completed'
-                                    ? 'bg-green-500'
-                                    : course.status === 'in_progress'
-                                    ? 'bg-yellow-500'
-                                    : 'bg-gray-400'}"
-                                ></div>
-                                <span class="text-xs text-gray-700">{course.title}</span>
+                        {#if expandedCards.teachingAptitude}
+                          <div class="p-3 pt-0 space-y-2 animate-fade-in">
+                            {#each dashboardData.teachingCourses.profession.categories.aptitude.courses as course}
+                              <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <div class="flex items-center gap-2">
+                                  <div
+                                    class="w-2 h-2 rounded-full {course.status === 'completed'
+                                      ? 'bg-green-500'
+                                      : course.status === 'in_progress'
+                                      ? 'bg-yellow-500'
+                                      : 'bg-gray-400'}"
+                                  ></div>
+                                  <span class="text-xs text-gray-700">{course.title}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                  <span class="text-xs text-gray-600">{course.credits}학점</span>
+                                  <span
+                                    class="text-xs px-2 py-1 rounded {course.status === 'completed'
+                                      ? 'bg-green-100 text-green-700'
+                                      : course.status === 'in_progress'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : 'bg-gray-100 text-gray-600'}"
+                                  >
+                                    {course.status === 'completed'
+                                      ? '완료'
+                                      : course.status === 'in_progress'
+                                      ? '수강중'
+                                      : '미이수'}
+                                  </span>
+                                </div>
                               </div>
-                              <div class="flex items-center gap-2">
-                                <span class="text-xs text-gray-600">{course.credits}학점</span>
-                                <span
-                                  class="text-xs px-2 py-1 rounded {course.status === 'completed'
-                                    ? 'bg-green-100 text-green-700'
-                                    : course.status === 'in_progress'
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-gray-100 text-gray-600'}"
-                                >
-                                  {course.status === 'completed'
-                                    ? '완료'
-                                    : course.status === 'in_progress'
-                                    ? '수강중'
-                                    : '미이수'}
-                                </span>
-                              </div>
-                            </div>
-                          {/each}
-                        </div>
-                      {/if}
-                    </div>
+                            {/each}
+                          </div>
+                        {/if}
+                      </div>
 
-                    <!-- 교직과목 상세 아코디언 -->
-                    <div class="bg-white rounded-lg border border-green-200">
-                      <button
-                        class="w-full p-3 text-left flex items-center justify-between hover:bg-green-50 transition-colors"
-                        onclick={() => toggleAccordion('teachingProfession')}
-                      >
-                        <div class="flex items-center gap-2">
-                          <h6 class="font-medium text-green-900 text-xs">👨‍🏫 교직과목 상세</h6>
-                          <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                            {dashboardData.teachingCourses.profession.categories.theory.courses.filter(
-                              (c) => c.status === 'completed'
-                            ).length}/{dashboardData.teachingCourses.profession.categories.theory.courses.length}
-                            완료
-                          </span>
-                        </div>
-                        <svg
-                          class="w-4 h-4 transition-transform {expandedCards.teachingProfession ? 'rotate-180' : ''}"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                      <!-- 교육실습 상세 아코디언 -->
+                      <div class="bg-white rounded-lg border border-green-200">
+                        <button
+                          class="w-full p-3 text-left flex items-center justify-between hover:bg-green-50 transition-colors"
+                          onclick={() => toggleAccordion('teachingPractice')}
                         >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 9l-7 7-7-7"
-                          ></path>
-                        </svg>
-                      </button>
+                          <div class="flex items-center gap-2">
+                            <h6 class="font-medium text-green-900 text-xs">🏫 교육실습 상세</h6>
+                            <span class="text-xs px-2 py-1 rounded {getProgressBadgeClass(completedFieldsCount.practice, totalFields.practice)}">
+                              {completedFieldsCount.practice}/{totalFields.practice}
+                            </span>
+                          </div>
+                          <svg
+                            class="w-4 h-4 transition-transform {expandedCards.teachingPractice ? 'rotate-180' : ''}"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 9l-7 7-7-7"
+                            ></path>
+                          </svg>
+                        </button>
 
-                      {#if expandedCards.teachingProfession}
-                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
-                          {#each dashboardData.teachingCourses.profession.categories.theory.courses as course}
-                            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                              <div class="flex items-center gap-2">
-                                <div
-                                  class="w-2 h-2 rounded-full {course.status === 'completed'
-                                    ? 'bg-green-500'
-                                    : course.status === 'in_progress'
-                                    ? 'bg-yellow-500'
-                                    : 'bg-gray-400'}"
-                                ></div>
-                                <span class="text-xs text-gray-700">{course.title}</span>
+                        {#if expandedCards.teachingPractice}
+                          <div class="p-3 pt-0 space-y-2 animate-fade-in">
+                            {#each dashboardData.teachingCourses.profession.categories.practice.courses as course}
+                              <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <div class="flex items-center gap-2">
+                                  <div
+                                    class="w-2 h-2 rounded-full {course.status === 'completed'
+                                      ? 'bg-green-500'
+                                      : course.status === 'in_progress'
+                                      ? 'bg-yellow-500'
+                                      : 'bg-gray-400'}"
+                                  ></div>
+                                  <span class="text-xs text-gray-700">{course.title}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                  <span class="text-xs text-gray-600">{course.credits}학점</span>
+                                  <span
+                                    class="text-xs px-2 py-1 rounded {course.status === 'completed'
+                                      ? 'bg-green-100 text-green-700'
+                                      : course.status === 'in_progress'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : 'bg-gray-100 text-gray-600'}"
+                                  >
+                                    {course.status === 'completed'
+                                      ? '완료'
+                                      : course.status === 'in_progress'
+                                      ? '수강중'
+                                      : '미이수'}
+                                  </span>
+                                </div>
                               </div>
-                              <div class="flex items-center gap-2">
-                                <span class="text-xs text-gray-600">{course.credits}학점</span>
-                                <span
-                                  class="text-xs px-2 py-1 rounded {course.status === 'completed'
-                                    ? 'bg-green-100 text-green-700'
-                                    : course.status === 'in_progress'
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-gray-100 text-gray-600'}"
-                                >
-                                  {course.status === 'completed'
-                                    ? '완료'
-                                    : course.status === 'in_progress'
-                                    ? '수강중'
-                                    : '미이수'}
-                                </span>
-                              </div>
-                            </div>
-                          {/each}
-                        </div>
-                      {/if}
-                    </div>
-
-                    <!-- 교직소양 상세 아코디언 -->
-                    <div class="bg-white rounded-lg border border-green-200">
-                      <button
-                        class="w-full p-3 text-left flex items-center justify-between hover:bg-green-50 transition-colors"
-                        onclick={() => toggleAccordion('teachingAptitude')}
-                      >
-                        <div class="flex items-center gap-2">
-                          <h6 class="font-medium text-green-900 text-xs">🎯 교직소양 상세</h6>
-                          <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                            {dashboardData.teachingCourses.profession.categories.aptitude.courses.filter(
-                              (c) => c.status === 'completed'
-                            ).length}/{dashboardData.teachingCourses.profession.categories.aptitude.courses.length}
-                            완료
-                          </span>
-                        </div>
-                        <svg
-                          class="w-4 h-4 transition-transform {expandedCards.teachingAptitude ? 'rotate-180' : ''}"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 9l-7 7-7-7"
-                          ></path>
-                        </svg>
-                      </button>
-
-                      {#if expandedCards.teachingAptitude}
-                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
-                          {#each dashboardData.teachingCourses.profession.categories.aptitude.courses as course}
-                            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                              <div class="flex items-center gap-2">
-                                <div
-                                  class="w-2 h-2 rounded-full {course.status === 'completed'
-                                    ? 'bg-green-500'
-                                    : course.status === 'in_progress'
-                                    ? 'bg-yellow-500'
-                                    : 'bg-gray-400'}"
-                                ></div>
-                                <span class="text-xs text-gray-700">{course.title}</span>
-                              </div>
-                              <div class="flex items-center gap-2">
-                                <span class="text-xs text-gray-600">{course.credits}학점</span>
-                                <span
-                                  class="text-xs px-2 py-1 rounded {course.status === 'completed'
-                                    ? 'bg-green-100 text-green-700'
-                                    : course.status === 'in_progress'
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-gray-100 text-gray-600'}"
-                                >
-                                  {course.status === 'completed'
-                                    ? '완료'
-                                    : course.status === 'in_progress'
-                                    ? '수강중'
-                                    : '미이수'}
-                                </span>
-                              </div>
-                            </div>
-                          {/each}
-                        </div>
-                      {/if}
-                    </div>
-
-                    <!-- 교육실습 상세 아코디언 -->
-                    <div class="bg-white rounded-lg border border-green-200">
-                      <button
-                        class="w-full p-3 text-left flex items-center justify-between hover:bg-green-50 transition-colors"
-                        onclick={() => toggleAccordion('teachingPractice')}
-                      >
-                        <div class="flex items-center gap-2">
-                          <h6 class="font-medium text-green-900 text-xs">🏫 교육실습 상세</h6>
-                          <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                            {dashboardData.teachingCourses.profession.categories.practice.courses.filter(
-                              (c) => c.status === 'completed'
-                            ).length}/{dashboardData.teachingCourses.profession.categories.practice.courses.length}
-                            완료
-                          </span>
-                        </div>
-                        <svg
-                          class="w-4 h-4 transition-transform {expandedCards.teachingPractice ? 'rotate-180' : ''}"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 9l-7 7-7-7"
-                          ></path>
-                        </svg>
-                      </button>
-
-                      {#if expandedCards.teachingPractice}
-                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
-                          {#each dashboardData.teachingCourses.profession.categories.practice.courses as course}
-                            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                              <div class="flex items-center gap-2">
-                                <div
-                                  class="w-2 h-2 rounded-full {course.status === 'completed'
-                                    ? 'bg-green-500'
-                                    : course.status === 'in_progress'
-                                    ? 'bg-yellow-500'
-                                    : 'bg-gray-400'}"
-                                ></div>
-                                <span class="text-xs text-gray-700">{course.title}</span>
-                              </div>
-                              <div class="flex items-center gap-2">
-                                <span class="text-xs text-gray-600">{course.credits}학점</span>
-                                <span
-                                  class="text-xs px-2 py-1 rounded {course.status === 'completed'
-                                    ? 'bg-green-100 text-green-700'
-                                    : course.status === 'in_progress'
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-gray-100 text-gray-600'}"
-                                >
-                                  {course.status === 'completed'
-                                    ? '완료'
-                                    : course.status === 'in_progress'
-                                    ? '수강중'
-                                    : '미이수'}
-                                </span>
-                              </div>
-                            </div>
-                          {/each}
-                        </div>
-                      {/if}
+                            {/each}
+                          </div>
+                        {/if}
+                      </div>
                     </div>
                   </div>
                 </div>

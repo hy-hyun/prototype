@@ -147,10 +147,10 @@
   </div>
 
   <!-- 메인 그리드 레이아웃 -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="flex flex-col lg:flex-row gap-6">
     
     <!-- 왼쪽 컬럼: 졸업 사정 (2/3 너비) -->
-    <div class="lg:col-span-2 space-y-6">
+    <div class="w-full lg:w-2/3 space-y-6">
       
       <!-- 졸업 사정 카드 -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -340,10 +340,10 @@
           
           <!-- 학기별 진행 타임라인 -->
           <div class="relative mt-4">
-			<div class="absolute left-1/2 top-0 bottom-0 w-px bg-gray-200"></div>
-			<div class="grid grid-cols-2 gap-x-6">
+			<div class="absolute left-1/2 top-0 bottom-0 w-px bg-gray-200 hidden md:block"></div>
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">
 				<!-- Left Column -->
-				<div class="space-y-3">
+				<div class="space-y-3 min-w-0">
 					{#each journeyPart1 as journey (journey.semester)}
 						<div
 							class="flex items-start rounded-lg p-3 transition-colors {journey.isFuture ? 'bg-gray-50' : 'bg-blue-50'}"
@@ -376,7 +376,7 @@
 					{/each}
 				</div>
 				<!-- Right Column -->
-				<div class="space-y-3">
+				<div class="space-y-3 min-w-0">
 					{#each journeyPart2 as journey (journey.semester)}
 						<div
 							class="flex items-start rounded-lg p-3 transition-colors {journey.isFuture ? 'bg-gray-50' : 'bg-blue-50'}"
@@ -1060,7 +1060,6 @@
                 </div>
               </div>
             </div>
-          </div>
         </div>
 
         <!-- 예상 졸업 학기 -->
@@ -1077,7 +1076,7 @@
     </div>
     
     <!-- 오른쪽 컬럼: 기본수업, 추천 강의 (1/3 너비) -->
-    <div class="space-y-6">
+    <div class="w-full lg:w-1/3 space-y-6">
       
       <!-- 기본 수업 카드 -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
@@ -1170,6 +1169,8 @@
         </div>
       </div>
     </div>
+  </div>
+
 </div>
 
 <style>

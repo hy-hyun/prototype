@@ -6,6 +6,8 @@
   import { showToast } from "$lib/toast";
   import LoginModal from "$lib/components/LoginModal.svelte";
   import { Tabs, TabsList, TabsTrigger, TabsContent } from "$lib/components/ui/tabs";
+  import { dndzone, SOURCES, TRIGGERS } from 'svelte-dnd-action';
+  import type { CartItem } from '$lib/types';
 
   import { get } from "svelte/store";
   // Svelte 5 룬모드: $state() 사용
@@ -14,6 +16,9 @@
   let applying = $state(false);
   let loginOpen = $state(false);
   let statusFilter = $state<"ALL" | "PENDING" | "CONFIRMED" | "FAILED" | "CANCELLED">("ALL");
+  
+  // 드래그앤드롭 중인 임시 아이템들 상태
+  let draggedItems = $state<any[]>([]);
 
   // 데이터 로딩은 +layout.ts에서 전역으로 처리하므로 이 코드는 제거합니다.
 
@@ -59,7 +64,19 @@
       return;
     }
     await applyBid(item.courseId, item.classId, amount);
-    showToast("베팅 신청이 완료되었습니다", "success");
+    
+    // 베팅 결과에 따라 다른 메시지 표시
+    const application = get(applications).find(a => 
+      a.courseId === item.courseId && a.classId === item.classId
+    );
+    
+    if (application?.bidResult === 'WON') {
+      showToast(`베팅 당첨! ${amount}p가 차감되었습니다`, "success");
+    } else if (application?.bidResult === 'LOST') {
+      showToast(`베팅 탈락했습니다 (포인트 차감 없음)`, "error");
+    } else {
+      showToast("베팅 신청이 완료되었습니다", "success");
+    }
   }
 
   async function applyCurrentTabAll() {
@@ -145,10 +162,42 @@
 
   function formatSchedule(courseId: string, classId: string) {
     const lec = findLecture(courseId, classId);
-    if (!lec) return "";
-    const dayMap = ["월", "화", "수", "목", "금", "토", "일"];
+    if (!lec || !lec.schedule || lec.schedule.length === 0) return "시간 정보 없음";
+    
+    const days = ["", "월", "화", "수", "목", "금", "토", "일"];
+    
     return lec.schedule
-      .map((s) => `${dayMap[(s.day - 1) % 7]} ${s.start}-${s.end}${s.building ? ` @${s.building}-${s.room ?? ''}` : ''}`)
+      .map((s) => {
+        // 시간 슬롯을 실제 시간으로 변환 (9시 기준, 30분 단위)
+        const startHour = Math.floor(s.start / 2) + 9;
+        const startMinute = (s.start % 2) * 30;
+        const endHour = Math.floor(s.end / 2) + 9;
+        const endMinute = (s.end % 2) * 30;
+        
+        const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+        const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+        
+        // 장소 정보 포맷팅
+        const building = s.building || '';
+        const room = s.room || '';
+        let location = '';
+        
+        if (building && room) {
+          // 둘 다 "미정"인 경우 하나만 표시
+          if (building === '미정' && room === '미정') {
+            location = ` 미정`;
+          } else {
+            location = ` ${building} ${room}`;
+          }
+        } else if (building) {
+          location = ` ${building}`;
+        } else if (room) {
+          location = ` ${room}`;
+        }
+        
+        const dayName = days[s.day] || "월";
+        return `${dayName} ${startTime}~${endTime}${location}`;
+      })
       .join(", ");
   }
 
@@ -212,6 +261,20 @@
   }
 
   function cancelApp(a: { courseId: string; classId: string }) {
+    // 취소할 신청 정보 찾기
+    const applicationToCancel = get(applications).find((x) => 
+      x.courseId === a.courseId && x.classId === a.classId
+    );
+    
+    // 베팅이고 당첨된 경우 포인트 반환 메시지 표시
+    if (applicationToCancel?.method === 'BID' && 
+        applicationToCancel?.bidResult === 'WON' && 
+        applicationToCancel?.bidAmount) {
+      showToast(`수강 취소 완료 (베팅 포인트 ${applicationToCancel.bidAmount}p 반환)`, "success");
+    } else {
+      showToast("수강 취소가 완료되었습니다", "success");
+    }
+    
     applications.update((list) => list.filter((x) => !(x.courseId === a.courseId && x.classId === a.classId)));
   }
 
@@ -261,17 +324,111 @@
     return get(applications).some((a) => a.courseId === courseId && a.classId === classId);
   }
 
+  // 베팅 상태를 확인하는 함수
+  function getBettingStatus(courseId: string, classId: string): { isApplied: boolean; bidResult?: "WAITING" | "WON" | "LOST"; status?: string } {
+    const application = get(applications).find((a) => a.courseId === courseId && a.classId === classId);
+    
+    if (!application) {
+      return { isApplied: false };
+    }
+    
+    // 베팅이 아닌 경우 (선착순)
+    if (application.method !== 'BID') {
+      return { isApplied: true, status: application.status };
+    }
+    
+    // 베팅인 경우
+    return { 
+      isApplied: true, 
+      bidResult: application.bidResult,
+      status: application.status
+    };
+  }
+
   // 현재 선택된 뷰에 따라 필터링된 장바구니 아이템 - Svelte 5 룬모드
   const filteredCartItems = $derived.by(() => {
+    let items: CartItem[] = [];
     if (cartView === 'fcfs') {
-      return $cart.filter(x => x.method === 'FCFS');
+      items = $cart.filter(x => x.method === 'FCFS');
     } else if (cartView === 'bid') {
-      return $cart.filter(x => x.method === 'BID');
+      items = $cart.filter(x => x.method === 'BID');
     }
-    return [];
+    
+    // order 순으로 정렬, order가 없는 경우 뒤로
+    return items.sort((a, b) => (a.order || 999) - (b.order || 999));
   });
 
-  // 베팅결과 - Svelte 5 룬모드
+  // 드래그앤드롭을 위한 아이템 배열 - 각 아이템에 고유 id 추가
+  const sortableItems = $derived.by(() => {
+    // 드래그 중이면 임시 아이템들을 사용, 아니면 필터된 아이템들 사용
+    const itemsToUse = draggedItems.length > 0 ? draggedItems : filteredCartItems;
+    
+    return itemsToUse.map((item: any, index: number) => ({
+      id: `${item.courseId}-${item.classId}`,
+      ...item,
+      originalIndex: index,
+      isDndShadowItem: item.isDndShadowItem || false
+    }));
+  });
+
+  // 드래그앤드롭 핸들러
+  function handleDndConsider(e: CustomEvent) {
+    const { items } = e.detail;
+    // 드래그 중 임시로 순서 변경된 아이템들을 상태에 저장
+    draggedItems = items;
+    
+    console.log('🔄 드래그 중:', {
+      itemsCount: items.length,
+      items: items.map((item: any) => ({
+        courseId: item.courseId,
+        id: item.id
+      }))
+    });
+  }
+
+  function handleDndFinalize(e: CustomEvent) {
+    const { items } = e.detail;
+    
+    // 새로운 순서로 장바구니 업데이트
+    cart.update((currentCart) => {
+      const updatedCart = [...currentCart];
+      
+      // 현재 탭의 아이템들만 순서 변경
+      const currentMethod = cartView === 'fcfs' ? 'FCFS' : 'BID';
+      const otherItems = updatedCart.filter(x => x.method !== currentMethod);
+      
+      // 드래그된 아이템들의 새로운 순서 적용 - 모든 속성 보존
+      const reorderedItems = items.map((item: any, newIndex: number) => {
+        // 원본 아이템에서 모든 속성을 가져와서 order만 업데이트
+        const originalItem = updatedCart.find(x => 
+          x.courseId === item.courseId && x.classId === item.classId
+        );
+        
+        return {
+          ...originalItem, // 원본 아이템의 모든 속성 보존
+          order: newIndex + 1 // 새로운 순서만 업데이트
+        };
+      }).filter(Boolean); // undefined 제거
+      
+      console.log('🔄 드래그앤드롭 완료:', {
+        currentMethod,
+        otherItemsCount: otherItems.length,
+        reorderedItemsCount: reorderedItems.length,
+        reorderedItems: reorderedItems.map((item: CartItem) => ({
+          courseId: item.courseId,
+          order: item.order,
+          method: item.method
+        }))
+      });
+      
+      return [...otherItems, ...reorderedItems];
+    });
+    
+    // 드래그 완료 후 임시 상태 초기화
+    draggedItems = [];
+  }
+
+  // 베팅결과 - Svelte 5 룬모드 (모든 베팅 결과 포함 - 당첨/탈락/대기)
   const bettingResults = $derived($applications.filter(a => a.method === 'BID'));
 </script>
 
@@ -284,7 +441,8 @@
       <TabsTrigger value="applications">신청내역</TabsTrigger>
     </TabsList>
     <div class="text-sm text-neutral-600 dark:text-neutral-400">
-      기본 수업 학점 {$metrics.basicCredits} / 최대 학점 {$metrics.maxCredits} / 신청 과목 수 {$metrics.enrolledCourses} / 잔여 베팅 포인트 {$metrics.remainingBettingPoints}
+      기본 수업 학점 {$metrics.basicCredits} / 최대 학점 {$metrics.maxCredits} / 신청 과목 수 {$metrics.enrolledCourses} / 
+      베팅 포인트: {$metrics.usedBettingPoints}/{$metrics.totalBettingPoints} (잔여: {$metrics.remainingBettingPoints})
     </div>
   </div>
 
@@ -328,7 +486,7 @@
           베팅결과
         </button>
       </div>
-      <button class="border rounded px-3 py-1 text-sm disabled:opacity-50" disabled={applying || filteredCartItems.length === 0} onclick={applyCurrentTabAll}>
+      <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-3 py-1 text-sm disabled:opacity-50" disabled={applying || filteredCartItems.length === 0} onclick={applyCurrentTabAll}>
         표시 항목 전체 신청
       </button>
     </div>
@@ -392,14 +550,43 @@
           {/each}
         </ul>
       {/if}
-    {:else if filteredCartItems.length === 0}
+    {:else if sortableItems.length === 0}
       <p class="text-sm text-neutral-500">
         {cartView === 'fcfs' ? '선착순 장바구니가' : '베팅 장바구니가'} 비었습니다.
       </p>
     {:else}
-      <ul class="grid gap-2">
-        {#each filteredCartItems as item}
-          <li class="rounded border p-3 flex items-center justify-between gap-3">
+      <div class="relative">
+        <div class="text-xs text-gray-500 mb-2 flex items-center gap-2">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+          </svg>
+          드래그하여 우선순위를 변경할 수 있습니다
+        </div>
+        <ul 
+          class="grid gap-2" 
+          use:dndzone={{
+            items: sortableItems,
+            flipDurationMs: 200,
+            dropTargetStyle: {}
+          }}
+          onconsider={handleDndConsider}
+          onfinalize={handleDndFinalize}
+        >
+          {#each sortableItems as item (item.id)}
+            <li class="rounded border p-3 flex items-center justify-between gap-3 cursor-move hover:shadow-md transition-shadow bg-white relative group"
+                class:opacity-75={item.isDndShadowItem}>
+            <!-- 드래그 핸들 -->
+            <div class="flex items-center mr-2 text-gray-400 group-hover:text-gray-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+              </svg>
+            </div>
+            
+            <!-- 우선순위 번호 -->
+            <div class="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 text-xs font-medium rounded-full mr-3">
+              {item.order || (sortableItems.findIndex(x => x.id === item.id) + 1)}
+            </div>
+            
             <div class="text-sm flex-1">
               <div class="font-medium">
                 {#if findLecture(item.courseId, item.classId)}
@@ -431,25 +618,36 @@
                   </div>
                 </div>
                 <input class="border rounded px-2 py-1 w-24 text-sm" type="number" min="1" max="100" step="1" placeholder="최대 100p" value={item.bidAmount ?? ''} oninput={(e) => handleBidInput(e, item)} />
-                {#if isApplied(item.courseId, item.classId)}
-                  <button class="border rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>신청 완료</button>
+                {#if getBettingStatus(item.courseId, item.classId).isApplied}
+                  {@const bettingStatus = getBettingStatus(item.courseId, item.classId)}
+                  {#if bettingStatus.bidResult === 'WON'}
+                    <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>베팅 당첨</button>
+                  {:else if bettingStatus.bidResult === 'LOST'}
+                    <button class="border border-red-500 bg-red-50 text-red-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>베팅 탈락</button>
+                  {:else if bettingStatus.bidResult === 'WAITING'}
+                    <button class="border border-yellow-500 bg-yellow-50 text-yellow-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>베팅 대기</button>
+                  {:else}
+                    <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>신청 완료</button>
+                  {/if}
                 {:else}
-                  <button class="border rounded px-2 py-1 text-sm disabled:opacity-50" onclick={() => doApply(item)} disabled={!item.bidAmount || item.bidAmount <= 0 || countBidSameCourse(item.courseId) > 1}>
+                  <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-2 py-1 text-sm disabled:opacity-50" onclick={() => doApply(item)} disabled={!item.bidAmount || item.bidAmount <= 0 || countBidSameCourse(item.courseId) > 1}>
                     베팅 신청
                   </button>
                 {/if}
               </div>
             {:else}
-              {#if isApplied(item.courseId, item.classId)}
-                <button class="border rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>신청 완료</button>
+              {#if getBettingStatus(item.courseId, item.classId).isApplied}
+                {@const bettingStatus = getBettingStatus(item.courseId, item.classId)}
+                <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>신청 완료</button>
               {:else}
-                <button class="border rounded px-2 py-1 text-sm" onclick={() => doApply(item)}>신청</button>
+                <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-2 py-1 text-sm" onclick={() => doApply(item)}>신청</button>
               {/if}
             {/if}
-            <button class="border rounded px-2 py-1 text-sm" onclick={() => removeFromCart(item.courseId, item.classId)}>장바구니 해제</button>
+            <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-sm" onclick={() => removeFromCart(item.courseId, item.classId)}>장바구니 해제</button>
           </li>
         {/each}
       </ul>
+      </div>
     {/if}
   </TabsContent>
 
@@ -486,7 +684,17 @@
       <p class="text-sm text-neutral-500">신청내역이 없습니다.</p>
     {:else}
       <ul class="grid gap-2">
-        {#each $applications.filter(a => statusFilter === 'ALL' ? true : a.status === statusFilter) as a}
+        {#each $applications.filter(a => {
+          // 상태 필터 적용
+          const statusMatch = statusFilter === 'ALL' ? true : a.status === statusFilter;
+          
+          // 베팅인 경우 당첨된 것만 표시 (탈락은 제외)
+          if (a.method === 'BID' && a.bidResult === 'LOST') {
+            return false;
+          }
+          
+          return statusMatch;
+        }) as a}
           <li class="rounded border p-3 text-sm flex items-center justify-between">
             <div class="flex-1">
               <div class="font-medium">{findLecture(a.courseId, a.classId)?.title || `${a.courseId}-${a.classId}`}</div>
@@ -522,7 +730,7 @@
                   {a.status}
                 {/if}
               </span>
-              <button class="border rounded px-2 py-1 text-xs" onclick={() => cancelApp(a)}>수강 취소</button>
+              <button class="border border-red-500 bg-red-500 text-white hover:bg-red-600 rounded px-2 py-1 text-xs" onclick={() => cancelApp(a)}>수강 취소</button>
             </div>
           </li>
         {/each}
@@ -532,4 +740,30 @@
 </Tabs>
 
 <LoginModal bind:isOpen={loginOpen} />
+
+<style>
+  /* 드래그앤드롭 시각적 피드백 스타일 */
+  :global(.dnd-action-dragged-el) {
+    transform: rotate(5deg);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+  }
+  
+  :global(.dnd-action-dragged-el *) {
+    pointer-events: none;
+  }
+  
+  /* 드롭 타겟 하이라이트 */
+  :global([data-is-dnd-shadow-item]) {
+    opacity: 0.5;
+    background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+    border: 2px dashed #2196f3;
+    transform: scale(0.98);
+  }
+  
+  /* 드래그 중인 아이템의 원본 위치 표시 */
+  :global(.sortable-chosen) {
+    background-color: #f5f5f5 !important;
+  }
+</style>
 

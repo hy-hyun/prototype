@@ -99,15 +99,21 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
   loadingText.set('강의 데이터 로딩 중...');
 
   try {
+    console.log('🔥 Firebase 연결 시작...');
+    
     // 쿼리 최적화: limit과 orderBy 적용
     const coursesRef = collection(db, 'courses');
+    console.log('📚 courses 컬렉션 참조 생성 완료');
+    
     const coursesQuery = query(
       coursesRef,
       orderBy('subjectName') // 과목명으로 정렬
       // limit 제거 - 모든 데이터 로드
     );
+    console.log('🔍 쿼리 생성 완료');
 
     const querySnapshot = await getDocs(coursesQuery);
+    console.log(`📊 Firebase에서 ${querySnapshot.size}개 문서 로딩 완료`);
 
     const rawCourseData: any[] = [];
     const lectureData: Lecture[] = [];
@@ -119,18 +125,43 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
       // 원본 데이터 저장 (필터 생성용)
       rawCourseData.push(data);
 
-      // 첫 번째 문서의 데이터 구조를 로깅 (디버깅용)
-      if (index === 0) {
-        console.log('🔍 Firebase 첫 번째 강의 데이터 구조:', {
-          전체데이터: data,
-          스케줄필드: data.schedule,
-          스케줄타입: typeof data.schedule,
-          강의명: data.subjectName,
-          시간표: data.timeTable || data.schedule || data.classTime,
-          장소: data.location || data.classroom || data.building,
-          교수: data.instructor,
-          학과: data.offeringDepartment || data.department
+      // 처음 10개 문서의 데이터 구조를 자세히 로깅 (디버깅용)
+      if (index < 10) {
+        console.log(`\n${'='.repeat(80)}`);
+        console.log(`🔍 Firebase 문서 ${index + 1} (ID: ${doc.id})`);
+        console.log(`📄 전체 원본 데이터:`, JSON.stringify(data, null, 2));
+        
+        console.log(`\n📋 필드 분석:`);
+        console.log(`  강의명: "${data.subjectName || data.courseName || data.title || 'N/A'}"`);
+        console.log(`  문서 ID: ${doc.id}`);
+        console.log(`  전체 키 목록: [${Object.keys(data).join(', ')}]`);
+        
+        console.log(`\n⏰ 시간 관련 필드들:`);
+        Object.keys(data).forEach(key => {
+          if (key.toLowerCase().includes('time') || key.toLowerCase().includes('schedule') || 
+              key.toLowerCase().includes('class') || key.toLowerCase().includes('meeting')) {
+            console.log(`    ${key}: ${JSON.stringify(data[key])}`);
+          }
         });
+        
+        console.log(`\n🏢 장소 관련 필드들:`);
+        Object.keys(data).forEach(key => {
+          if (key.toLowerCase().includes('location') || key.toLowerCase().includes('room') || 
+              key.toLowerCase().includes('building') || key.toLowerCase().includes('classroom') ||
+              key.toLowerCase().includes('venue') || key.toLowerCase().includes('place') ||
+              key.toLowerCase().includes('facility')) {
+            console.log(`    ${key}: ${JSON.stringify(data[key])}`);
+          }
+        });
+        
+        console.log(`\n🔍 기타 중요 필드들:`);
+        ['instructor', 'department', 'offeringDepartment', 'courseNumber', 'subjectCode', 'courseId'].forEach(key => {
+          if (data[key] !== undefined) {
+            console.log(`    ${key}: ${JSON.stringify(data[key])}`);
+          }
+        });
+        
+        console.log(`${'='.repeat(80)}\n`);
       }
 
       // Firebase 데이터 구조에 맞춰 매핑
@@ -145,7 +176,23 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
           lecture: data.creditHours || data.credits || 3,
           lab: 0
         },
-        schedule: parseSchedule(data.schedule || data.timeTable || data.classTime || data.meetingTimes),
+        schedule: parseSchedule(
+          data.schedule || 
+          data.timeTable || 
+          data.classTime || 
+          data.meetingTimes || 
+          data.times || 
+          data.classSchedule ||
+          data.lectureSchedule ||
+          data.courseSchedule ||
+          data.weeklySchedule ||
+          data.lectureTimes ||
+          data.classHours ||
+          data.timeSlots ||
+          data.periods ||
+          data.sessions,
+          data.location // 최상위 레벨의 location 정보도 전달
+        ),
         capacity: calculateCapacity(data.enrollmentCapByYear || data.capacity),
         area: data.liberalArtsArea || data.area || data.category || '',
         limit: data.restrictions || data.prerequisites || '',
@@ -154,13 +201,22 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
         courseLevel: data.courseLevel ? data.courseLevel.toString() : undefined
       };
       
-      // 처음 5개 강의의 매핑 결과 로깅
+      // 처음 5개 강의의 매핑 결과 로깅 - 장소 정보 포함
       if (index < 5) {
-        console.log(`📚 강의 ${index + 1} 매핑 결과:`, {
-          원본스케줄: data.schedule || data.timeTable || data.classTime,
-          매핑된스케줄: mappedLecture.schedule,
-          강의명: mappedLecture.title
-        });
+        console.log(`\n📚 === 강의 ${index + 1} 최종 매핑 결과 ===`);
+        console.log(`  강의명: "${mappedLecture.title}"`);
+        console.log(`  원본 스케줄 데이터:`, data.schedule || data.timeTable || data.classTime || data.meetingTimes);
+        console.log(`  매핑된 스케줄:`, mappedLecture.schedule);
+        
+        if (mappedLecture.schedule && mappedLecture.schedule.length > 0) {
+          console.log(`  📍 스케줄별 장소 정보:`);
+          mappedLecture.schedule.forEach((s, idx) => {
+            console.log(`    세션 ${idx + 1}: ${['', '월', '화', '수', '목', '금', '토', '일'][s.day]} ${Math.floor(s.start/2)+9}:${(s.start%2)*30}~${Math.floor(s.end/2)+9}:${(s.end%2)*30} | 건물: "${s.building}" | 강의실: "${s.room}"`);
+          });
+        } else {
+          console.log(`  ❌ 스케줄 정보 없음`);
+        }
+        console.log(`=================================\n`);
       }
       
       lectureData.push(mappedLecture);
@@ -258,69 +314,278 @@ function generateFilterOptions(courseData: any[]) {
 }
 
 // 스케줄 데이터를 파싱하는 함수 - Firebase 실제 데이터 구조에 맞춰 수정
-function parseSchedule(scheduleData: any) {
+function parseSchedule(scheduleData: any, topLevelLocation?: any) {
   if (!scheduleData) return [];
 
   const dayMap: { [key: string]: number } = {
-    '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
-    'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3, 'friday': 4, 'saturday': 5, 'sunday': 6
+    '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6, '일': 7,
+    'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 7,
+    'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6, 'sun': 7,
+    '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7
   };
 
+
+
   try {
+    console.log('\n🔍 parseSchedule 함수 호출됨:');
+    console.log('  📥 입력 데이터:', JSON.stringify(scheduleData, null, 2));
+    console.log('  📊 데이터 타입:', typeof scheduleData);
+    console.log('  📋 배열 여부:', Array.isArray(scheduleData));
+    console.log('  🔢 데이터 존재:', !!scheduleData);
+
     // Firebase 데이터가 배열인지 문자열인지 확인
     if (Array.isArray(scheduleData)) {
-      // 배열 형태의 스케줄 데이터 처리
-      return scheduleData.map(item => {
-        return {
-          day: typeof item.day === 'string' ? (dayMap[item.day.toLowerCase()] ?? 1) : (item.day ?? 1),
-          start: parseTimeToSlot(item.startTime || item.start || '09:00'),
-          end: parseTimeToSlot(item.endTime || item.end || '10:30'),
-          building: item.building || item.location?.building || '',
-          room: item.room || item.location?.room || ''
+      console.log('📅 배열 형태 스케줄 처리 중...');
+      return scheduleData.map((item, index) => {
+        console.log(`📅 배열 아이템 ${index}:`, item);
+        
+        // 요일 처리
+        let day = 1; // 기본값: 월요일
+        if (item.dayOfWeek !== undefined) day = typeof item.dayOfWeek === 'string' ? (dayMap[item.dayOfWeek.toLowerCase()] ?? 1) : item.dayOfWeek;
+        else if (item.day !== undefined) day = typeof item.day === 'string' ? (dayMap[item.day.toLowerCase()] ?? 1) : item.day;
+        else if (item.weekday !== undefined) day = typeof item.weekday === 'string' ? (dayMap[item.weekday.toLowerCase()] ?? 1) : item.weekday;
+
+        // 시간 처리 - 다양한 필드명 지원
+        const startTime = item.startTime || item.start || item.beginTime || item.from || '09:00';
+        const endTime = item.endTime || item.end || item.finishTime || item.to || '10:30';
+
+        // 장소 처리 - 다양한 필드명과 구조 지원
+        let building = '';
+        let room = '';
+
+        console.log(`    🏢 아이템 ${index} 장소 정보 추출 시작:`, {
+          location: item.location,
+          building: item.building,
+          buildingName: item.buildingName,
+          room: item.room,
+          roomNumber: item.roomNumber,
+          classroom: item.classroom,
+          classRoom: item.classRoom,
+          lectureRoom: item.lectureRoom,
+          venue: item.venue
+        });
+
+        if (item.location) {
+          console.log(`      📍 location 필드 존재:`, item.location);
+          if (typeof item.location === 'string') {
+            // "IT관 101호" 형태 파싱
+            const locationParts = item.location.split(' ');
+            building = locationParts[0] || '';
+            room = locationParts[1] || '';
+            console.log(`      📝 문자열 location 파싱: building="${building}", room="${room}"`);
+          } else if (typeof item.location === 'object') {
+            building = item.location.building || item.location.buildingName || '';
+            room = item.location.room || item.location.roomNumber || item.location.classroom || '';
+            console.log(`      📦 객체 location 파싱: building="${building}", room="${room}"`);
+          }
+        } else {
+          console.log(`      🔍 개별 필드에서 장소 정보 추출 중...`);
+          // 개별 필드에서 추출 - 더 많은 필드명 지원
+          building = item.building || item.buildingName || item.classroom?.building || 
+                    item.classRoom?.building || item.lectureRoom?.building || 
+                    item.venue?.building || item.place?.building || 
+                    item.facility?.building || '';
+          room = item.room || item.roomNumber || item.classroom?.room || 
+                item.classroomNumber || item.classroom?.roomNumber ||
+                item.classRoom?.room || item.classRoom?.roomNumber ||
+                item.lectureRoom?.room || item.lectureRoom?.roomNumber ||
+                item.venue?.room || item.venue?.roomNumber ||
+                item.place?.room || item.place?.roomNumber ||
+                item.facility?.room || item.facility?.roomNumber || '';
+          console.log(`      📝 개별 필드 추출 결과: building="${building}", room="${room}"`);
+        }
+
+        // Firebase 데이터에 없으면 미정으로 표시
+        const originalBuilding = building;
+        const originalRoom = room;
+        
+        if (!building) {
+          building = '미정';
+        }
+        if (!room) {
+          room = '미정';
+        }
+
+        console.log(`    ✅ 아이템 ${index} 장소 처리 완료:`, {
+          원본건물: originalBuilding,
+          원본강의실: originalRoom,
+          최종건물: building,
+          최종강의실: room
+        });
+
+        const result = {
+          day,
+          start: parseTimeToSlot(startTime),
+          end: parseTimeToSlot(endTime),
+          building,
+          room
         };
+
+        console.log(`📅 배열 아이템 ${index} 매핑 결과:`, result);
+        return result;
       });
     } else if (typeof scheduleData === 'object' && scheduleData !== null) {
-      // 객체 형태의 스케줄 데이터 처리
-      return [{
-        day: typeof scheduleData.day === 'string' ? (dayMap[scheduleData.day.toLowerCase()] ?? 1) : (scheduleData.day ?? 1),
-        start: parseTimeToSlot(scheduleData.startTime || scheduleData.start || '09:00'),
-        end: parseTimeToSlot(scheduleData.endTime || scheduleData.end || '10:30'),
-        building: scheduleData.building || scheduleData.location?.building || '',
-        room: scheduleData.room || scheduleData.location?.room || ''
+      console.log('📅 객체 형태 스케줄 처리 중...', scheduleData);
+      
+      // 요일 처리
+      let day = 1;
+      if (scheduleData.dayOfWeek !== undefined) day = typeof scheduleData.dayOfWeek === 'string' ? (dayMap[scheduleData.dayOfWeek.toLowerCase()] ?? 1) : scheduleData.dayOfWeek;
+      else if (scheduleData.day !== undefined) day = typeof scheduleData.day === 'string' ? (dayMap[scheduleData.day.toLowerCase()] ?? 1) : scheduleData.day;
+      else if (scheduleData.weekday !== undefined) day = typeof scheduleData.weekday === 'string' ? (dayMap[scheduleData.weekday.toLowerCase()] ?? 1) : scheduleData.weekday;
+
+      // 시간 처리
+      const startTime = scheduleData.startTime || scheduleData.start || scheduleData.beginTime || scheduleData.from || '09:00';
+      const endTime = scheduleData.endTime || scheduleData.end || scheduleData.finishTime || scheduleData.to || '10:30';
+
+      // 장소 처리
+      let building = '';
+      let room = '';
+
+      if (scheduleData.location) {
+        if (typeof scheduleData.location === 'string') {
+          const locationParts = scheduleData.location.split(' ');
+          building = locationParts[0] || '';
+          room = locationParts[1] || '';
+        } else if (typeof scheduleData.location === 'object') {
+          building = scheduleData.location.building || scheduleData.location.buildingName || '';
+          room = scheduleData.location.room || scheduleData.location.roomNumber || scheduleData.location.classroom || '';
+        }
+      } else {
+        // 개별 필드에서 추출 - 더 많은 필드명 지원
+        building = scheduleData.building || scheduleData.buildingName || 
+                  scheduleData.classroom?.building || scheduleData.classRoom?.building ||
+                  scheduleData.lectureRoom?.building || scheduleData.venue?.building ||
+                  scheduleData.place?.building || scheduleData.facility?.building || '';
+        room = scheduleData.room || scheduleData.roomNumber || 
+              scheduleData.classroom?.room || scheduleData.classroomNumber ||
+              scheduleData.classroom?.roomNumber || scheduleData.classRoom?.room ||
+              scheduleData.classRoom?.roomNumber || scheduleData.lectureRoom?.room ||
+              scheduleData.lectureRoom?.roomNumber || scheduleData.venue?.room ||
+              scheduleData.venue?.roomNumber || scheduleData.place?.room ||
+              scheduleData.place?.roomNumber || scheduleData.facility?.room ||
+              scheduleData.facility?.roomNumber || '';
+      }
+
+      // Firebase 데이터에 없으면 미정으로 표시
+      if (!building) {
+        building = '미정';
+      }
+      if (!room) {
+        room = '미정';
+      }
+
+      const result = [{
+        day,
+        start: parseTimeToSlot(startTime),
+        end: parseTimeToSlot(endTime),
+        building,
+        room
       }];
+
+      console.log('📅 객체 스케줄 매핑 결과:', result);
+      return result;
     } else if (typeof scheduleData === 'string') {
-      // 문자열 형태의 스케줄 데이터 처리 (기존 로직 유지)
-      const sessions = scheduleData.split(',').map(s => s.trim());
-      return sessions.map(session => {
-        // "월 10:00-11:30" 또는 "월 10:00-11:30 IT관 101호" 형태 파싱
-        const parts = session.split(' ');
+      console.log('📅 문자열 형태 스케줄 처리 중...', scheduleData);
+      console.log('📍 최상위 레벨 location 정보:', topLevelLocation);
+      
+      // 문자열 형태의 스케줄 데이터 처리 (Firebase 실제 구조에 맞춤)
+      const sessions = scheduleData.split(/[,;]/).map(s => s.trim()).filter(s => s.length > 0);
+      return sessions.map((session, index) => {
+        console.log(`📅 문자열 세션 ${index}: "${session}"`);
+        
+        // "월 15:00-18:00" 형태 파싱 (Firebase 실제 데이터 형태)
+        const parts = session.split(' ').filter(p => p.length > 0);
         if (parts.length >= 2) {
-          const day = dayMap[parts[0]] || 1;
+          const dayStr = parts[0];
           const timeRange = parts[1];
-          const [startTime, endTime] = timeRange.split('-');
-          const start = parseTimeToSlot(startTime);
-          const end = parseTimeToSlot(endTime);
+          const day = dayMap[dayStr] || 1;
           
-          // 장소 정보가 있는지 확인 (더미 데이터 제거)
-          const building = parts[2] || '';
-          const room = parts[3] || '';
+          let startTime = '09:00', endTime = '10:30';
+          if (timeRange.includes('-')) {
+            [startTime, endTime] = timeRange.split('-');
+          } else if (timeRange.includes('~')) {
+            [startTime, endTime] = timeRange.split('~');
+          }
           
-          return {
+          // 장소 정보는 최상위 레벨 location에서 가져오기
+          let building = '';
+          let room = '';
+          
+          if (topLevelLocation && typeof topLevelLocation === 'object') {
+            building = topLevelLocation.building || '';
+            room = topLevelLocation.room || '';
+            console.log(`📍 최상위 location에서 추출: building="${building}", room="${room}"`);
+          } else {
+            // 문자열에 포함된 장소 정보도 확인 (백업)
+            building = parts[2] || '';
+            room = parts[3] || '';
+            console.log(`📍 문자열에서 추출: building="${building}", room="${room}"`);
+          }
+          
+          // Firebase 데이터에 없으면 미정으로 표시
+          if (!building) {
+            building = '미정';
+          }
+          if (!room) {
+            room = '미정';
+          }
+          
+          const result = {
             day,
-            start,
-            end,
+            start: parseTimeToSlot(startTime),
+            end: parseTimeToSlot(endTime),
             building,
             room
           };
+
+          console.log(`📅 문자열 세션 ${index} 최종 결과:`, result);
+          return result;
         }
-        return { day: 1, start: 0, end: 1, building: '', room: '' };
+        
+        // 파싱 실패 시에도 최상위 location 정보 사용
+        let building = '';
+        let room = '';
+        
+        if (topLevelLocation && typeof topLevelLocation === 'object') {
+          building = topLevelLocation.building || '미정';
+          room = topLevelLocation.room || '미정';
+        } else {
+          building = '미정';
+          room = '미정';
+        }
+        
+        return { 
+          day: 1, 
+          start: 0, 
+          end: 2, 
+          building, 
+          room 
+        };
       });
     }
     
+    console.log('📅 스케줄 데이터 처리 불가 - 빈 배열 반환');
     return [];
   } catch (error) {
-    console.warn('스케줄 파싱 오류:', scheduleData, error);
-    return [{ day: 1, start: 0, end: 1, building: '', room: '' }];
+    console.error('❌ 스케줄 파싱 오류:', { scheduleData, topLevelLocation, error });
+    
+    // 에러 시에도 기본 스케줄 제공 (최상위 location 정보 활용)
+    let building = '미정';
+    let room = '미정';
+    
+    if (topLevelLocation && typeof topLevelLocation === 'object') {
+      building = topLevelLocation.building || '미정';
+      room = topLevelLocation.room || '미정';
+      console.log('📍 에러 시 최상위 location 사용:', { building, room });
+    }
+    
+    return [{ 
+      day: 1, 
+      start: 0, 
+      end: 2, 
+      building, 
+      room 
+    }];
   }
 }
 
@@ -404,25 +669,44 @@ applications.subscribe($applications => {
   }
 });
 
-export const metrics = derived(cart, ($c) => {
+export const metrics = derived([cart, applications], ([$cart, $applications]) => {
   const basicCredits = 6; // 기본 수업 학점
   const maxCredits = 21; // 최대 학점
   const enrolledCourses = 0; // 신청 과목 수 (추후 구현)
-  // 잔여 베팅 포인트 = (최대 학점 - 기본 수업 학점) * 10
-  const remainingBettingPoints = (maxCredits - basicCredits) * 10;
+  
+  // 총 베팅 포인트 = (최대 학점 - 기본 수업 학점) * 10
+  const totalBettingPoints = (maxCredits - basicCredits) * 10;
+  
+  // 사용된 베팅 포인트 계산 (당첨된 베팅의 포인트만)
+  const usedBettingPoints = $applications
+    .filter(a => a.method === 'BID' && a.bidResult === 'WON')
+    .reduce((sum, a) => sum + (a.bidAmount || 0), 0);
+  
+  // 잔여 베팅 포인트 = 총 포인트 - 사용된 포인트
+  const remainingBettingPoints = totalBettingPoints - usedBettingPoints;
   
   return { 
     basicCredits, 
     maxCredits, 
     enrolledCourses, 
-    remainingBettingPoints 
+    remainingBettingPoints,
+    totalBettingPoints,
+    usedBettingPoints
   };
 });
 
 export function addToCart(item: CartItem) {
   cart.update((c) => {
     const exists = c.find((x) => x.courseId === item.courseId && x.classId === item.classId);
-    if (!exists) c.push(item);
+    if (!exists) {
+      // 같은 method의 아이템들 중 가장 큰 order 값을 찾아서 +1
+      const sameMethodItems = c.filter(x => x.method === item.method);
+      const maxOrder = sameMethodItems.length > 0 
+        ? Math.max(...sameMethodItems.map(x => x.order || 0))
+        : 0;
+      
+      c.push({ ...item, order: maxOrder + 1 });
+    }
     return [...c];
   });
 }

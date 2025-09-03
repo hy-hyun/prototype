@@ -21,7 +21,7 @@ export type Lecture = {
 
 export type Notice = { id: string; title: string; content: string; pinned?: boolean; createdAt: string; author?: string; views?: number };
 
-export type CartItem = { courseId: string; classId: string; method: "FCFS" | "BID"; bidAmount?: number };
+export type CartItem = { courseId: string; classId: string; method: "FCFS" | "BID"; bidAmount?: number; order?: number };
 export type Application = { 
   courseId: string; 
   classId: string; 

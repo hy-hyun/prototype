@@ -31,28 +31,42 @@
       return;
     }
     
-    // 검색어가 없으면 전체 강의 표시
-    if (!searchTerm) {
-      results = allCourses;
-      return;
-    }
-    
-    // 검색 실행: 과목명 또는 키워드에서 찾기
+    // 필터링 실행: 키워드 검색 + 필터 조건
     results = allCourses.filter((course) => {
-      // 과목명에서 검색
-      const titleMatch = course.title.toLowerCase().includes(searchTerm);
-      
-      // 키워드에서 검색 (# 태그 검색)
-      let keywordMatch = false;
-      if (searchTerm.startsWith('#')) {
-        const tag = searchTerm.slice(1); // # 제거
-        keywordMatch = !!(course.keywords && course.keywords.some(k => k.toLowerCase().includes(tag)));
-      } else {
-        // 일반 검색에서도 키워드 배열 확인
-        keywordMatch = !!(course.keywords && course.keywords.some(k => k.toLowerCase().includes(searchTerm)));
+      // 1. 키워드 검색 (검색어가 있을 때만)
+      let keywordMatch = true;
+      if (searchTerm) {
+        // 과목명에서 검색
+        const titleMatch = course.title.toLowerCase().includes(searchTerm);
+        
+        // 키워드에서 검색 (# 태그 검색)
+        let tagMatch = false;
+        if (searchTerm.startsWith('#')) {
+          const tag = searchTerm.slice(1); // # 제거
+          tagMatch = !!(course.keywords && course.keywords.some(k => k.toLowerCase().includes(tag)));
+        } else {
+          // 일반 검색에서도 키워드 배열 확인
+          tagMatch = !!(course.keywords && course.keywords.some(k => k.toLowerCase().includes(searchTerm)));
+        }
+        
+        keywordMatch = titleMatch || tagMatch;
       }
       
-      return titleMatch || keywordMatch;
+      // 2. 필터 조건들 검사
+      const termMatch = !filters.term || course.courseId.includes(filters.term);
+      const gradeMatch = !filters.grade || course.courseLevel?.startsWith(filters.grade + "00");
+      const deptMatch = !filters.dept || course.dept === filters.dept;
+      const categoryMatch = !filters.category || course.category === filters.category;
+      // 교양영역 필터는 이수구분이 '교양' 또는 '핵심교양'인 경우에만 적용
+      const liberalArtsAreaMatch = !filters.liberalArtsArea || 
+        ((course.category === '교양' || course.category === '핵심교양') && course.area === filters.liberalArtsArea);
+      const instructorMatch = !filters.instructor || course.instructor.toLowerCase().includes(filters.instructor.toLowerCase());
+      const courseLevelMatch = !filters.courseLevel || course.courseLevel === filters.courseLevel;
+      const creditHoursMatch = !filters.creditHours || course.credits.lecture.toString() === filters.creditHours;
+      
+      return keywordMatch && termMatch && gradeMatch && deptMatch && 
+             categoryMatch && liberalArtsAreaMatch && instructorMatch && 
+             courseLevelMatch && creditHoursMatch;
     });
   }
 
@@ -103,10 +117,42 @@
 
   function formatSchedule(schedule: any[]) {
     const days = ["", "월", "화", "수", "목", "금", "토", "일"];
+    
+    if (!schedule || schedule.length === 0) {
+      return "시간 정보 없음";
+    }
+    
     return schedule
       .map((s) => {
-        const location = [s.building, s.room].filter(Boolean).join(" ");
-        return `${days[s.day]} ${s.start}~${s.end}시${location ? ` ${location}` : ""}`;
+        // 시간 슬롯을 실제 시간으로 변환 (9시 기준, 30분 단위)
+        const startHour = Math.floor(s.start / 2) + 9;
+        const startMinute = (s.start % 2) * 30;
+        const endHour = Math.floor(s.end / 2) + 9;
+        const endMinute = (s.end % 2) * 30;
+        
+        const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+        const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+        
+        // 장소 정보 포맷팅 개선
+        const building = s.building || '';
+        const room = s.room || '';
+        let location = '';
+        
+        if (building && room) {
+          // 둘 다 "미정"인 경우 하나만 표시
+          if (building === '미정' && room === '미정') {
+            location = ` 미정`;
+          } else {
+            location = ` ${building} ${room}`;
+          }
+        } else if (building) {
+          location = ` ${building}`;
+        } else if (room) {
+          location = ` ${room}`;
+        }
+        
+        const dayName = days[s.day] || "월";
+        return `${dayName} ${startTime}~${endTime}${location}`;
       })
       .join(", ");
   }
@@ -168,7 +214,17 @@
 
       <div>
         <p class="text-xs text-gray-500 mb-2">이수구분</p>
-        <select class="border rounded p-2 bg-white w-full" bind:value={filters.category} onchange={() => performRealTimeSearch()}>
+        <select 
+          class="border rounded p-2 bg-white w-full" 
+          bind:value={filters.category} 
+          onchange={() => {
+            // 이수구분이 '교양' 또는 '핵심교양'이 아닌 경우 교양영역 필터 초기화
+            if (filters.category !== '교양' && filters.category !== '핵심교양') {
+              filters.liberalArtsArea = '';
+            }
+            performRealTimeSearch();
+          }}
+        >
           <option value="">전체 구분</option>
           {#each $filterOptions.categories as category}
             <option value={category.value}>{category.label}</option>
@@ -191,8 +247,17 @@
     <div class="grid gap-3 md:grid-cols-4">
       <div>
         <p class="text-xs text-gray-500 mb-2">교양영역</p>
-        <select class="border rounded p-2 bg-white w-full" bind:value={filters.liberalArtsArea} onchange={() => performRealTimeSearch()}>
-          <option value="">전체 교양영역</option>
+        <select 
+          class="border rounded p-2 bg-white w-full" 
+          class:opacity-50={filters.category !== '교양' && filters.category !== '핵심교양'}
+          class:cursor-not-allowed={filters.category !== '교양' && filters.category !== '핵심교양'}
+          bind:value={filters.liberalArtsArea} 
+          onchange={() => performRealTimeSearch()}
+          disabled={filters.category !== '교양' && filters.category !== '핵심교양'}
+        >
+          <option value="">
+            {(filters.category === '교양' || filters.category === '핵심교양') ? '전체 교양영역' : '교양/핵심교양만 해당'}
+          </option>
           {#each $filterOptions.liberalArtsAreas as area}
             <option value={area.value}>{area.label}</option>
           {/each}
@@ -219,11 +284,11 @@
       </div>
 
       <div>
-        <p class="text-xs text-gray-500 mb-2">단계</p>
+        <p class="text-xs text-gray-500 mb-2">단위</p>
         <select class="border rounded p-2 bg-white w-full" bind:value={filters.courseLevel} onchange={() => performRealTimeSearch()}>
-          <option value="">전체 단계</option>
+          <option value="">전체 단위</option>
           {#each $filterOptions.courseLevels as level}
-            <option value={level.value}>{level.label}</option>
+            <option value={level.value}>{level.label.replace('단계', '단위')}</option>
           {/each}
         </select>
       </div>
@@ -306,6 +371,11 @@
                   <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
                     {l.category}
                   </span>
+                  {#if l.category === '교양' && l.area}
+                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
+                      {l.area}
+                    </span>
+                  {/if}
                   <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
                     {l.credits.lecture}학점
                   </span>
@@ -319,21 +389,27 @@
             <!-- 상세 정보 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600">
               <div class="flex items-center gap-2">
-                <span class="font-medium">학점:</span>
-                <span>{l.credits.lecture}학점</span>
-              </div>
-              <div class="flex items-center gap-2">
                 <span class="font-medium">정원:</span>
                 <span>{l.capacity}명</span>
               </div>
               <div class="flex items-center gap-2">
-                <span class="font-medium">교양영역:</span>
-                <span class="text-xs">{l.area || "-"}</span>
-              </div>
-              <div class="flex items-center gap-2">
                 <span class="font-medium">과목코드:</span>
-                <span class="text-xs">{l.courseId}</span>
+                <span class="text-xs font-mono">{l.courseId}</span>
               </div>
+              <!-- 교양영역 표시 (핵심교양, 교양인 경우) -->
+              {#if (l.category === '핵심교양' || l.category === '교양') && l.area}
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">교양영역:</span>
+                  <span class="text-xs">{l.area}</span>
+                </div>
+              {/if}
+              <!-- 모든 강의에 대해 단위 표시 (courseLevel이 있는 경우) -->
+              {#if l.courseLevel}
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">단위:</span>
+                  <span class="text-xs">{Math.floor(parseInt(l.courseLevel) / 100) * 100}단위</span>
+                </div>
+              {/if}
               <div class="flex items-center gap-2 md:col-span-2">
                 <span class="font-medium">시간:</span>
                 <span class="text-xs">{formatSchedule(l.schedule)}</span>
@@ -402,59 +478,84 @@
         </div>
         
         <!-- 모달 내용 -->
-        <div class="space-y-4">
-          <div class="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span class="font-medium text-gray-700">학수번호:</span>
-              <span class="ml-2">{selectedLecture.courseId}-{selectedLecture.classId}</span>
-            </div>
-            <div>
-              <span class="font-medium text-gray-700">이수구분:</span>
-              <span class="ml-2">{selectedLecture.category}</span>
-            </div>
-            <div>
-              <span class="font-medium text-gray-700">학점:</span>
-              <span class="ml-2">{selectedLecture.credits.lecture}학점</span>
-            </div>
-            <div>
-              <span class="font-medium text-gray-700">수강정원:</span>
-              <span class="ml-2">{selectedLecture.capacity}명</span>
-            </div>
-            <div>
-              <span class="font-medium text-gray-700">과목코드:</span>
-              <span class="ml-2">{selectedLecture.courseId}</span>
-            </div>
-            <div>
-              <span class="font-medium text-gray-700">교양영역:</span>
-              <span class="ml-2">{selectedLecture.area || "-"}</span>
-            </div>
-          </div>
-          
+        <div class="space-y-6">
+          <!-- 기본 정보 섹션 -->
           <div>
-            <h3 class="font-medium text-gray-700 mb-2">강의시간</h3>
-            <p class="text-sm text-gray-600">{formatSchedule(selectedLecture.schedule)}</p>
+            <h3 class="font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">기본 정보</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="font-medium text-gray-700">학수번호:</span>
+                <span class="ml-2 font-mono text-gray-900">{selectedLecture.courseId}-{selectedLecture.classId}</span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700">과목코드:</span>
+                <span class="ml-2 font-mono text-gray-900">{selectedLecture.courseId}</span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700">이수구분:</span>
+                <span class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm font-medium">{selectedLecture.category}</span>
+              </div>
+              <!-- 교양영역 표시 (핵심교양, 교양인 경우) -->
+              {#if (selectedLecture.category === '핵심교양' || selectedLecture.category === '교양') && selectedLecture.area}
+                <div>
+                  <span class="font-medium text-gray-700">교양영역:</span>
+                  <span class="ml-2 px-2 py-1 bg-green-100 text-green-700 rounded text-sm font-medium">{selectedLecture.area}</span>
+                </div>
+              {/if}
+              <!-- 모든 강의에 대해 단위 표시 (courseLevel이 있는 경우) -->
+              {#if selectedLecture.courseLevel}
+                <div>
+                  <span class="font-medium text-gray-700">단위:</span>
+                  <span class="ml-2">{Math.floor(parseInt(selectedLecture.courseLevel) / 100) * 100}단위</span>
+                </div>
+              {/if}
+              <div>
+                <span class="font-medium text-gray-700">학점:</span>
+                <span class="ml-2 px-2 py-1 bg-purple-100 text-purple-700 rounded text-sm font-medium">{selectedLecture.credits.lecture}학점</span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700">수강정원:</span>
+                <span class="ml-2">{selectedLecture.capacity}명</span>
+              </div>
+            </div>
           </div>
           
+          <!-- 강의시간 섹션 -->
+          <div>
+            <h3 class="font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">강의시간</h3>
+            <p class="text-sm text-gray-600 bg-gray-50 p-3 rounded">{formatSchedule(selectedLecture.schedule)}</p>
+          </div>
+          
+          <!-- 키워드 섹션 -->
           {#if selectedLecture.keywords && selectedLecture.keywords.length > 0}
             <div>
-              <h3 class="font-medium text-gray-700 mb-2">키워드</h3>
-              <div class="flex gap-1 flex-wrap">
+              <h3 class="font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">키워드</h3>
+              <div class="flex gap-2 flex-wrap">
                 {#each selectedLecture.keywords as keyword}
-                  <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-                    {keyword}
+                  <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                    #{keyword}
                   </span>
                 {/each}
               </div>
             </div>
           {/if}
           
-          <!-- 강의계획서 (더미 데이터) -->
+          <!-- 강의계획서 섹션 -->
           <div>
-            <h3 class="font-medium text-gray-700 mb-2">강의계획서</h3>
-            <div class="bg-gray-50 p-3 rounded text-sm text-gray-600">
-              <p><strong>강의목표:</strong> 본 강의는 {selectedLecture.title}의 기초 개념을 학습하고 실무 능력을 기르는 것을 목표로 합니다.</p>
-              <p class="mt-2"><strong>평가방법:</strong> 중간고사 30%, 기말고사 30%, 과제 20%, 출석 20%</p>
-              <p class="mt-2"><strong>교재:</strong> 강의 중 별도 공지</p>
+            <h3 class="font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">강의계획서</h3>
+            <div class="bg-gray-50 p-4 rounded-lg text-sm text-gray-600 space-y-3">
+              <div>
+                <span class="font-semibold text-gray-700">강의목표:</span>
+                <span class="ml-2">본 강의는 {selectedLecture.title}의 기초 개념을 학습하고 실무 능력을 기르는 것을 목표로 합니다.</span>
+              </div>
+              <div>
+                <span class="font-semibold text-gray-700">평가방법:</span>
+                <span class="ml-2">중간고사 30%, 기말고사 30%, 과제 20%, 출석 20%</span>
+              </div>
+              <div>
+                <span class="font-semibold text-gray-700">교재:</span>
+                <span class="ml-2">강의 중 별도 공지</span>
+              </div>
             </div>
           </div>
         </div>

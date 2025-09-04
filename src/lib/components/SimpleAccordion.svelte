@@ -148,7 +148,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    flex: 1;
   }
 
   .pin-icon {
@@ -159,7 +158,7 @@
   .accordion-right {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 16px;
   }
 
   .accordion-date {
@@ -229,8 +228,10 @@
     background-color: #374151;
   }
 
-  :global(.dark) .accordion-date {
-    color: #9ca3af; /* 다크모드에서 더 밝은 회색 */
+  :global(.dark) .accordion-date,
+  :global(.dark) .accordion-author,
+  :global(.dark) .accordion-views {
+    color: #9ca3af;
   }
 
   :global(.dark) .accordion-title {

@@ -26,18 +26,7 @@
       title: notice.title,
       date: formatDate(notice.createdAt),
       isPinned: notice.pinned,
-      content: `
-        ${notice.content}
-        
-        📅 공지일: ${formatDate(notice.createdAt)}
-        ${notice.pinned ? '📌 고정 공지' : ''}
-        
-        ${notice.id === 'n1' ? '💡 안내: 수강신청 시 학점 제한과 베팅제를 확인하세요.' : ''}
-        ${notice.id === 'n2' ? '✅ 참고: 시스템 점검 시간에는 접속이 제한됩니다.' : ''}
-        ${notice.id === 'n3' ? '🆕 신규: AI 관련 과목들이 새롭게 개설되었습니다.' : ''}
-        ${notice.id === 'n4' ? '📚 가이드: 가이드북을 통해 성공적인 수강신청을 준비하세요.' : ''}
-        ${notice.id === 'n5' ? '🎯 베팅제: 포인트 사용 전략을 신중히 세우세요.' : ''}
-      `.trim()
+      content: notice.content || '내용이 없습니다.'
     }));
   });
   

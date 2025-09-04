@@ -1,6 +1,7 @@
 <script lang="ts">
   import { notices } from "$lib/stores";
   import { derived } from "svelte/store";
+  import * as Accordion from "$lib/components/ui/accordion";
   
   let currentPage = $state(1);
   const itemsPerPage = 10;
@@ -69,78 +70,74 @@
       </h1>
     </div>
     
-    <!-- 공지사항 테이블 -->
-    <div class="bg-white dark:bg-neutral-900 border border-hanyang-blue/20 dark:border-blue-700/30 rounded-xl overflow-hidden shadow-md">
-      <table class="w-full">
-        <thead class="bg-hanyang-blue dark:bg-blue-700">
-          <tr>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider w-16">번호</th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">제목</th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider w-24">작성자</th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider w-32">등록일</th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider w-20">조회수</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-hanyang-blue/10 dark:divide-blue-700/20 bg-white dark:bg-neutral-900">
-          <!-- 고정 공지사항 -->
-          {#each $pinnedNotices as notice}
-            <tr class="hover:bg-hanyang-light-blue/10 dark:hover:bg-blue-900/20 transition-all duration-200 cursor-pointer border-l-4 border-l-sky-400">
-              <td class="px-6 py-4 whitespace-nowrap">
-                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-sky-100 to-blue-100 text-sky-800 dark:from-sky-900 dark:to-blue-900 dark:text-sky-200 shadow-sm">
-                   📌 중요
-                 </span>
-              </td>
-              <td class="px-6 py-4">
-                <div class="flex items-center gap-3">
-                  <span class="text-lg">📢</span>
-                  <span class="text-sm font-semibold text-hanyang-navy dark:text-neutral-100 hover:text-hanyang-blue dark:hover:text-sky-400 transition-colors">{notice.title}</span>
+    <!-- 공지사항 아코디언 -->
+    <div class="border border-hanyang-blue/20 dark:border-blue-700/30 rounded-xl overflow-hidden shadow-md">
+      <!-- Accordion Header -->
+      <div class="flex justify-between items-center p-4 bg-hanyang-blue dark:bg-blue-700 text-white font-semibold text-sm">
+        <div class="flex-1 text-center">제목</div>
+        <div class="hidden md:flex items-center gap-4 flex-shrink-0">
+            <span class="w-20 text-center">작성자</span>
+            <span class="w-24 text-center">등록일</span>
+            <span class="w-20 text-center">조회수</span>
+        </div>
+      </div>
+      <Accordion.Root type="single" collapsible class="w-full">
+        <!-- 고정 공지사항 -->
+        {#each $pinnedNotices as notice}
+          <Accordion.Item value={notice.id} class="border-b border-hanyang-blue/10 dark:border-blue-700/20">
+            <Accordion.Trigger class="p-4 text-left hover:no-underline hover:bg-hanyang-light-blue/10 dark:hover:bg-blue-900/20 transition-colors hide-arrow">
+              <div class="flex justify-between items-center w-full gap-4">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                   <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/70 dark:text-blue-300 shadow-sm flex-shrink-0"><span class="text-red-400 dark:text-red-300 mr-1">📌</span>중요</span>
+                  <p class="font-semibold text-hanyang-navy dark:text-neutral-100 truncate">{notice.title}</p>
                 </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-hanyang-dark-gray dark:text-neutral-300">
-                {notice.author || '홍**'}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-hanyang-dark-gray dark:text-neutral-300">
-                {formatDate(notice.createdAt)}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-hanyang-blue dark:text-sky-400 text-right">
-                {notice.views || 0}
-              </td>
-            </tr>
-          {/each}
-          
-          <!-- 일반 공지사항 -->
-          {#each paginatedRegularNotices as notice, index}
-            <tr class="hover:bg-sky-50/50 dark:hover:bg-blue-900/10 transition-all duration-200 cursor-pointer group">
-              <td class="px-6 py-4 whitespace-nowrap text-center">
-                <span class="text-sm font-semibold text-hanyang-blue dark:text-sky-400 bg-sky-50 dark:bg-blue-900/20 px-2 py-1 rounded-md">
-                  {getNoticeNumber(index)}
-                </span>
-              </td>
-              <td class="px-6 py-4">
-                <div class="flex items-center gap-2">
-                  <span class="text-sm font-medium text-hanyang-navy dark:text-neutral-100 group-hover:text-hanyang-blue dark:group-hover:text-sky-400 transition-colors">
-                    {notice.title}
-                  </span>
-                  {#if notice.views && notice.views > 500}
-                    <span class="text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-full">HOT</span>
-                  {:else if notice.views && notice.views > 200}
-                    <span class="text-xs bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 px-2 py-0.5 rounded-full">인기</span>
-                  {/if}
+                <div class="hidden md:flex items-center gap-4 text-sm text-hanyang-dark-gray dark:text-neutral-300 flex-shrink-0">
+                  <span class="w-20 text-center">{notice.author || '홍**'}</span>
+                  <span class="w-24 text-center">{formatDate(notice.createdAt)}</span>
+                  <span class="w-20 text-center">{notice.views || 0}</span>
                 </div>
-              </td>
-                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-hanyang-dark-gray dark:text-neutral-300">
-                 {notice.author || '홍**'}
-               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-hanyang-dark-gray dark:text-neutral-300">
-                {formatDate(notice.createdAt)}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-hanyang-blue dark:text-sky-400 text-right">
-                {notice.views || 0}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+              </div>
+            </Accordion.Trigger>
+            <Accordion.Content class="p-6 bg-sky-50/50 dark:bg-blue-900/10 text-sm">
+              {#if notice.content}
+                <div class="max-w-none">
+                  {@html notice.content}
+                </div>
+              {:else}
+                <p>내용이 없습니다.</p>
+              {/if}
+            </Accordion.Content>
+          </Accordion.Item>
+        {/each}
+        
+        <!-- 일반 공지사항 -->
+        {#each paginatedRegularNotices as notice, index}
+           <Accordion.Item value={notice.id} class="border-b border-hanyang-blue/10 dark:border-blue-700/20 last:border-b-0">
+            <Accordion.Trigger class="p-4 text-left hover:no-underline hover:bg-sky-50/50 dark:hover:bg-blue-900/10 transition-colors hide-arrow">
+              <div class="flex justify-between items-center w-full gap-4">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <span class="text-sm font-semibold text-hanyang-blue dark:text-sky-400 bg-sky-50 dark:bg-blue-900/20 px-2 py-1 rounded-md w-12 text-center flex-shrink-0">{getNoticeNumber(index)}</span>
+                  <p class="font-medium text-hanyang-navy dark:text-neutral-100 truncate">{notice.title}</p>
+                </div>
+                <div class="hidden md:flex items-center gap-4 text-sm text-hanyang-dark-gray dark:text-neutral-300 flex-shrink-0">
+                  <span class="w-20 text-center">{notice.author || '홍**'}</span>
+                  <span class="w-24 text-center">{formatDate(notice.createdAt)}</span>
+                  <span class="w-20 text-center">{notice.views || 0}</span>
+                </div>
+              </div>
+            </Accordion.Trigger>
+            <Accordion.Content class="p-6 bg-gray-50 dark:bg-neutral-800/20 text-sm">
+              {#if notice.content}
+                <div class="max-w-none">
+                  {@html notice.content}
+                </div>
+              {:else}
+                <p>내용이 없습니다.</p>
+              {/if}
+            </Accordion.Content>
+          </Accordion.Item>
+        {/each}
+      </Accordion.Root>
     </div>
     
     <!-- 페이지네이션 -->
@@ -189,5 +186,11 @@
     {/if}
   </section>
 </div>
+
+<style>
+  :global(.hide-arrow > svg) {
+    display: none;
+  }
+</style>
 
 

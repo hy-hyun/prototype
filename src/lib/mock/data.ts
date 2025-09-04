@@ -3,49 +3,25 @@ import type { Lecture, Notice } from "$lib/types";
 
 
 export const MOCK_NOTICES: Notice[] = [
-  { 
-    id: "n1", 
-    title: "2025-2학기 수강신청 일정 안내", 
-    content: `📅 수강신청 기간: 8월 12일(월) 09:00 ~ 8월 16일(금) 18:00
-
-📋 신청 순서:
-• 1단계 (8/12-8/13): 4학년, 대학원생
-• 2단계 (8/14-8/15): 2-3학년
-• 3단계 (8/16): 1학년 및 편입생
-
-📌 주요 안내사항:
-- 최대 신청 학점: 21학점 (계절학기 이수자 24학점)
-- 베팅제 적용 과목: 핵심교양 일부
-- 수강정정 기간: 8월 19일(월) ~ 8월 23일(금)
-
-⚠️ 주의사항:
-시스템 과부하 방지를 위해 새벽시간 접속을 권장드립니다.`, 
-    pinned: true, 
-    createdAt: "2025-08-01",
-    author: "박**",
-    views: 1847
+  {
+    id: "notice-mock-enrollment-2025-2",
+    title: "2025학년도 2학기 모의수강신청 안내",
+    author: "학사팀",
+    createdAt: "2025-07-20",
+    views: 3102,
+    pinned: true,
+    category: "학사",
+    content: `<h3 style='font-size: 1.25rem; font-weight: bold;'>■ 모의수강신청기간</h3><p style='margin-top: 1rem; line-height: 1.6;'>2025학년도 2학기 사전 수강신청 체험기간을 진행합니다. 전체 학부 재학생은 실제 수강신청기간 중 당황하지 않도록 모의수강신청기간 세부일정을 확인한 뒤 해당시간에 필히 참여하여야 합니다. 단, 복학희망자는 복학신청 및 결재 이후 참여할 수 있습니다.</p><p style='margin-top: 1rem; line-height: 1.6;'>이번학기 <strong style='border-bottom: 1px dotted #d9534f;'>포인트 베팅제</strong> 도입으로 인하여 수강신청 방식이 크게 변경되었습니다. 자세한 사항은 공지사항의 '포인트 베팅제 안내' 페이지를 참고바랍니다. 감사합니다.</p><table style='width:100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.95rem;'><thead style='background-color: #003366; color: white;'><tr style='text-align: center;'><th style='padding: 10px; border: 1px solid #ccc; width: 15%;'>구 분</th><th style='padding: 10px; border: 1px solid #ccc; width: 25%;'>학 년</th><th style='padding: 10px; border: 1px solid #ccc; width: 40%;'>모의 수강 신청 일자</th><th style='padding: 10px; border: 1px solid #ccc; width: 20%;'>비 고</th></tr></thead><tbody><tr><td rowspan='6' style='padding: 10px; border: 1px solid #ccc; text-align: center; vertical-align: middle;'>모의수강신청<br>및 베팅</td><td style='padding: 10px; border: 1px solid #ccc; text-align: center;'>1학년</td><td style='padding: 10px; border: 1px solid #ccc; text-align: center;'><strong>7. 28. (월)</strong> 11:00 – 15:00</td><td rowspan='6' style='padding: 10px; border: 1px solid #ccc; vertical-align: middle; text-align:left;'><ul style='list-style-type: square; padding-left: 20px; margin: 0;'><li>모의수강신청기간 중 진행된 수강신청 내역은 기간 종료 이후 모두 삭제됨</li></ul></td></tr><tr><td style='padding: 10px; border: 1px solid #ccc; text-align: center;'>2학년</td><td style='padding: 10px; border: 1px solid #ccc; text-align: center;'><strong>7. 28. (월)</strong> 15:00 – 24:00</td></tr><tr><td style='padding: 10px; border: 1px solid #ccc; text-align: center;'>3학년</td><td style='padding: 10px; border: 1px solid #ccc; text-align: center;'><strong>7. 29. (화)</strong> 11:00 – 15:00</td></tr><tr><td style='padding: 10px; border: 1px solid #ccc; text-align: center;'>4,5학년</td><td style='padding: 10px; border: 1px solid #ccc; text-align: center;'><strong>7. 29. (화)</strong> 15:00 – 24:00</td></tr><tr><td style='padding: 10px; border: 1px solid #ccc; text-align: center;'><span style='border-bottom: 1px dotted #d9534f;'>다전공</span></td><td style='padding: 10px; border: 1px solid #ccc; text-align: center;'><strong>7. 30. (수)</strong> 11:00 – 14:00</td></tr><tr><td style='padding: 10px; border: 1px solid #ccc; text-align: center;'><span style='border-bottom: 1px dotted #d9534f;'>전체학년</span></td><td style='padding: 10px; border: 1px solid #ccc; text-align: center;'><strong>7. 30. (수)</strong> 16:00 – 24:00</td></tr></tbody></table>`
   },
-  { 
-    id: "n2", 
-    title: "시스템 점검 안내", 
-    content: `🔧 점검 일시: 8월 10일(토) 02:00 ~ 04:00 (2시간)
-
-🚫 중단 서비스:
-- 수강신청 시스템
-- 학사정보 포털
-- 모바일 앱
-
-📱 점검 내용:
-- 서버 성능 최적화
-- 보안 업데이트 적용
-- 베팅제 시스템 안정화
-
-점검 시간 중에는 모든 학사 관련 서비스 이용이 불가합니다.
-미리 필요한 정보를 확인해 주시기 바랍니다.`, 
-    pinned: true, 
-    createdAt: "2025-08-03",
-    author: "이**",
-    views: 2156
+  {
+    "id": "notice-enrollment-schedule-2025-2",
+    "title": "학년별 수강신청 및 개강 전 전체 학년 수강정정 일정",
+    "author": "학사팀",
+    "createdAt": "2025-07-20",
+    "views": 4512,
+    "pinned": true,
+    "category": "학사",
+    "content": "<h3 style='font-size: 1.25rem; font-weight: bold;'>■ 학년별 수강신청 및 개강 전 전체 학년 수강정정 일정</h3><table style='width:100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.95rem; text-align: center;'><thead style='background-color: #003366; color: white;'><tr style='text-align: center;'><th style='padding: 10px; border: 1px solid #ccc; width: 30%;'>구 분</th><th style='padding: 10px; border: 1px solid #ccc; width: 15%;'>학 년</th><th style='padding: 10px; border: 1px solid #ccc; width: 35%;'>신 청 일 자</th><th style='padding: 10px; border: 1px solid #ccc; width: 20%;'>비 고</th></tr></thead><tbody><tr><td rowspan='5' style='padding: 10px; border: 1px solid #ccc; vertical-align: middle;'>기본 과목 선착순 신청</td><td style='padding: 10px; border: 1px solid #ccc;'>교환학생</td><td style='padding: 10px; border: 1px solid #ccc;'><strong>8. 6. (수)</strong> 11:00 – 24:00</td><td rowspan='5' style='padding: 10px; border: 1px solid #ccc; vertical-align: middle;'>온라인 선착순 수강신청</td></tr><tr><td style='padding: 10px; border: 1px solid #ccc;'>1학년</td><td style='padding: 10px; border: 1px solid #ccc;'><strong>8. 6. (수)</strong> 13:00 – 24:00</td></tr><tr><td style='padding: 10px; border: 1px solid #ccc;'>2학년</td><td style='padding: 10px; border: 1px solid #ccc;'><strong>8. 6. (수)</strong> 15:00 – 24:00</td></tr><tr><td style='padding: 10px; border: 1px solid #ccc;'>3학년</td><td style='padding: 10px; border: 1px solid #ccc;'><strong>8. 7. (목)</strong> 11:00 – 24:00</td></tr><tr><td style='padding: 10px; border: 1px solid #ccc;'>4,5학년</td><td style='padding: 10px; border: 1px solid #ccc;'><strong>8. 7. (목)</strong> 13:00 – 24:00</td></tr><tr><td style='padding: 10px; border: 1px solid #ccc;'>베팅 1R 포인트 입력</td><td rowspan='5' style='padding: 10px; border: 1px solid #ccc; vertical-align: middle;'><span style='border-bottom: 1px dotted #d9534f;'>전체학년</span></td><td style='padding: 10px; border: 1px solid #ccc;'><strong>8. 8. (금)</strong> 09:00<br>~<br><strong>8. 11. (월)</strong> 14:00</td><td style='padding: 10px; border: 1px solid #ccc;'></td></tr><tr><td style='padding: 10px; border: 1px solid #ccc;'>베팅 1R 결과 열람</td><td style='padding: 10px; border: 1px solid #ccc;'><strong>8. 11. (월)</strong> 15:00</td><td style='padding: 10px; border: 1px solid #ccc;'></td></tr><tr><td style='padding: 10px; border: 1px solid #ccc;'>베팅 2R 포인트 입력 마감</td><td style='padding: 10px; border: 1px solid #ccc;'><strong>8. 12. (화)</strong> 09:00<br>~<br><strong>8. 13. (수)</strong> 14:00</td><td style='padding: 10px; border: 1px solid #ccc;'></td></tr><tr><td style='padding: 10px; border: 1px solid #ccc;'>베팅 2R 결과 열람</td><td style='padding: 10px; border: 1px solid #ccc;'><strong>8. 13. (수)</strong> 15:00</td><td style='padding: 10px; border: 1px solid #ccc;'></td></tr><tr><td style='padding: 10px; border: 1px solid #ccc;'>개강 전 정정</td><td style='padding: 10px; border: 1px solid #ccc;'><strong>8. 14. (목)</strong> 11:00 – 24:00</td><td style='padding: 10px; border: 1px solid #ccc;'>0~11시 수강정정 불가</td></tr></tbody></table>"
   },
   { 
     id: "n3", 

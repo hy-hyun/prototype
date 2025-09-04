@@ -56,20 +56,42 @@
 
   <!-- 요일별 탭 메뉴 -->
   <div class="px-4 py-3 border-b border-gray-100">
-    <div class="flex flex-wrap gap-2 mb-4">
+    <div class="flex flex-col gap-2 mb-4">
+      <!-- 전체 버튼 (윗줄) -->
       {#each dayTabs as tab (tab.key)}
-        <button 
-          type="button"
-          class="px-3 py-2 text-sm rounded-lg transition-colors font-medium {
-            activeTab === tab.key 
-              ? 'bg-blue-500 text-white shadow-sm' 
-              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
-          }"
-          onclick={() => changeTab(tab.key)}
-        >
-          {tab.label} ({tab.count})
-        </button>
+        {#if tab.key === "전체"}
+          <button 
+            type="button"
+            class="px-2 py-2 text-sm rounded-lg transition-colors font-medium {
+              activeTab === tab.key 
+                ? 'bg-blue-500 text-white shadow-sm' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-150 hover:text-gray-800'
+            }"
+            onclick={() => changeTab(tab.key)}
+          >
+            {tab.label} ({tab.count})
+          </button>
+        {/if}
       {/each}
+      
+      <!-- 요일 버튼들 (아래줄, 작은 크기) -->
+      <div class="flex flex-wrap gap-1">
+        {#each dayTabs as tab (tab.key)}
+          {#if tab.key !== "전체"}
+            <button 
+              type="button"
+              class="px-2 py-1 text-xs rounded-lg transition-colors font-medium {
+                activeTab === tab.key 
+                  ? 'bg-blue-500 text-white shadow-sm' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-150 hover:text-gray-800'
+              }"
+              onclick={() => changeTab(tab.key)}
+            >
+              {tab.label} ({tab.count})
+            </button>
+          {/if}
+        {/each}
+      </div>
     </div>
   </div>
 
@@ -83,7 +105,7 @@
         </div>
       {:else}
         {#each courses as course (course.courseId + course.classId)}
-          <div class="mb-4 p-4 bg-gray-50 rounded-xl border hover:bg-gray-100 transition-all duration-200 hover:shadow-md {
+          <div class="mb-4 p-4 bg-gray-100 rounded-xl border hover:bg-gray-150 transition-all duration-200 hover:shadow-md {
             course.isInCart ? 'bg-green-50 border-green-200 shadow-sm' : 'border-gray-200'
           }">
             <!-- 과목 기본 정보 -->

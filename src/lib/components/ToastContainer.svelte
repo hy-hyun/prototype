@@ -42,24 +42,24 @@
   {#each $toastMessages as toast (toast.id)}
     {#if toast.type === 'replace'}
       <!-- 교체 확인 Toast -->
-      <div class="bg-white border border-orange-200 rounded-lg shadow-lg max-w-sm p-4 animate-in slide-in-from-right">
-        <div class="text-sm font-semibold text-orange-800 mb-2 flex items-center gap-2">
-          <span>⚠️</span>
+      <div class="bg-white/90 backdrop-blur-sm border border-blue-200 rounded-lg shadow-lg max-w-sm p-4 animate-in slide-in-from-right">
+        <div class="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
+          <span>ℹ️</span>
           시간 중복 감지
         </div>
         
         <!-- 기존 → 새 강의 -->
         <div class="space-y-2 text-xs mb-3">
           <!-- 기존 강의 -->
-          <div class="bg-red-50 border border-red-200 rounded p-2">
-            <div class="text-red-700 font-medium flex items-center gap-1">
-              <span>🗑️</span>
+          <div class="bg-blue-50 border border-blue-200 rounded p-2">
+            <div class="text-blue-700 font-medium flex items-center gap-1">
+              <span>📚</span>
               {toast.existingLecture?.title}
             </div>
-            <div class="text-red-600 mt-1 text-xs">
+            <div class="text-blue-600 mt-1 text-xs">
               {formatSchedule(toast.existingLecture?.schedule || [])}
             </div>
-            <div class="text-red-500 text-xs">
+            <div class="text-blue-500 text-xs">
               {formatLocation(toast.existingLecture?.schedule || [])}
             </div>
           </div>
@@ -68,15 +68,15 @@
           <div class="text-center text-gray-400">⬇️</div>
           
           <!-- 새 강의 -->
-          <div class="bg-green-50 border border-green-200 rounded p-2">
-            <div class="text-green-700 font-medium flex items-center gap-1">
-              <span>✅</span>
+          <div class="bg-blue-100 border border-blue-300 rounded p-2">
+            <div class="text-blue-800 font-medium flex items-center gap-1">
+              <span>➕</span>
               {toast.newLecture?.title}
             </div>
-            <div class="text-green-600 mt-1 text-xs">
+            <div class="text-blue-700 mt-1 text-xs">
               {formatSchedule(toast.newLecture?.schedule || [])}
             </div>
-            <div class="text-green-500 text-xs">
+            <div class="text-blue-600 text-xs">
               {formatLocation(toast.newLecture?.schedule || [])}
             </div>
           </div>

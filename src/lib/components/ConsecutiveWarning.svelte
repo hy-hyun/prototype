@@ -147,24 +147,24 @@
 </script>
 
 {#if formattedWarnings.length > 0}
-  <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 rounded-md">
+  <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 rounded-md">
     <div class="flex items-center mb-3">
       <div class="flex-shrink-0">
-        <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
         </svg>
       </div>
       <div class="ml-3 flex-1">
-        <h3 class="text-sm font-medium text-yellow-800">
+        <h3 class="text-sm font-medium text-blue-800">
           🏃‍♂️ 연강 이동시간 주의! {formattedWarnings.length}개 연강이 감지되었습니다
         </h3>
-        <p class="text-xs text-yellow-700 mt-1">건물 간 이동시간을 고려하여 수강신청하세요</p>
+        <p class="text-xs text-blue-700 mt-1">건물 간 이동시간을 고려하여 수강신청하세요</p>
       </div>
     </div>
     
     <div class="space-y-3">
       {#each formattedWarnings as warning}
-        <div class="bg-white rounded-lg p-3 border {warning.isImpossible ? 'border-red-300' : 'border-yellow-200'} shadow-sm">
+        <div class="bg-white rounded-lg p-3 border {warning.isImpossible ? 'border-red-300' : 'border-blue-200'} shadow-sm">
           <div class="flex items-center justify-between mb-2">
             <div class="font-medium text-gray-900 text-sm">
               {#if warning.from && warning.to}
@@ -180,13 +180,13 @@
                   안전
                 </span>
               {:else if warning.warningLevel === "caution"}
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  <span class="w-2 h-2 bg-yellow-400 rounded-full mr-1"></span>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <span class="w-2 h-2 bg-blue-400 rounded-full mr-1"></span>
                   주의 ({warning.travelTime}분)
                 </span>
               {:else if warning.warningLevel === "warning"}
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                  <span class="w-2 h-2 bg-orange-400 rounded-full mr-1"></span>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-200 text-blue-900">
+                  <span class="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
                   경고 ({warning.travelTime}분)
                 </span>
               {:else}

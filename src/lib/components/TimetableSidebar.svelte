@@ -42,28 +42,28 @@
 </script>
 
 <!-- 사이드바 전체 컨테이너 -->
-<div class="w-60 bg-white border-r border-gray-200 flex flex-col h-full">
+<div class="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
   <!-- 헤더 -->
-  <div class="p-4 border-b border-gray-100">
+  <div class="p-6 border-b border-gray-100">
     <div class="flex items-center justify-between">
-      <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+      <h3 class="font-semibold text-gray-800 flex items-center gap-2 text-lg">
         <span class="text-blue-500">🛒</span>
         장바구니
       </h3>
-      <span class="text-sm text-gray-500">장바구니 {cartCourses.length}개</span>
+      <span class="text-sm text-gray-500 bg-blue-50 px-2 py-1 rounded-full">장바구니 {cartCourses.length}개</span>
     </div>
   </div>
 
   <!-- 요일별 탭 메뉴 -->
-  <div class="px-3 py-2 border-b border-gray-100">
-    <div class="flex flex-wrap gap-1 mb-3">
+  <div class="px-4 py-3 border-b border-gray-100">
+    <div class="flex flex-wrap gap-2 mb-4">
       {#each dayTabs as tab (tab.key)}
         <button 
           type="button"
-          class="px-2 py-1 text-xs rounded-md transition-colors {
+          class="px-3 py-2 text-sm rounded-lg transition-colors font-medium {
             activeTab === tab.key 
-              ? 'bg-blue-500 text-white' 
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'bg-blue-500 text-white shadow-sm' 
+              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
           }"
           onclick={() => changeTab(tab.key)}
         >
@@ -75,30 +75,35 @@
 
   <!-- 강의 목록 -->
   <div class="flex-1 overflow-y-auto">
-    <div class="p-3">
+    <div class="p-4">
       {#if courses.length === 0}
-        <div class="text-center text-gray-500 py-8">
-          <div class="text-2xl mb-2">📚</div>
-          <div class="text-sm">선택한 요일에 강의가 없습니다</div>
+        <div class="text-center text-gray-500 py-12">
+          <div class="text-3xl mb-3">📚</div>
+          <div class="text-base">선택한 요일에 강의가 없습니다</div>
         </div>
       {:else}
         {#each courses as course (course.courseId + course.classId)}
-          <div class="mb-2 p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors {
-            course.isInCart ? 'bg-green-50 border-green-200' : ''
+          <div class="mb-4 p-4 bg-gray-50 rounded-xl border hover:bg-gray-100 transition-all duration-200 hover:shadow-md {
+            course.isInCart ? 'bg-green-50 border-green-200 shadow-sm' : 'border-gray-200'
           }">
             <!-- 과목 기본 정보 -->
-            <div class="flex items-start mb-2">
+            <div class="flex items-start mb-3">
               <div class="flex-1 min-w-0">
-                <div class="font-medium text-gray-800 text-sm flex items-center gap-1 truncate">
+                <div class="font-semibold text-gray-800 text-base flex items-center gap-2 truncate mb-2">
                   {#if course.isInCart}
-                    <span class="text-green-500 flex-shrink-0">✓</span>
+                    <span class="text-green-500 flex-shrink-0 text-lg">✓</span>
                   {/if}
                   <span class="truncate">{course.title}</span>
                 </div>
-                <div class="text-xs text-gray-500 mt-1 flex items-center gap-1 flex-wrap">
-                  <span class="truncate">{course.courseId}</span>
-                  <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs flex-shrink-0">{course.category}</span>
-                  <span class="text-sky-400 flex-shrink-0">{course.credits.lecture + (course.credits.lab || 0)}학점</span>
+                <div class="text-sm text-gray-500 mb-2 flex items-center gap-2 flex-wrap">
+                  <span class="truncate font-mono">{course.courseId}</span>
+                  <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs flex-shrink-0 font-medium">{course.category}</span>
+                  <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs flex-shrink-0 font-medium">
+                    {typeof course.credits === 'object' && course.credits !== null 
+                      ? (course.credits.lecture || 0) + (course.credits.lab || 0)
+                      : course.credits || 0
+                    }학점
+                  </span>
                 </div>
               </div>
             </div>

@@ -61,13 +61,30 @@
       const lecture = $courses.find(l => l.courseId === item.courseId && l.classId === item.classId);
       if (!lecture || !Array.isArray(lecture.schedule)) return [];
 
-      return lecture.schedule.map(schedule => ({
-        id: `${item.courseId}-${item.classId}-${schedule.day}`,
-        title: lecture.title, instructor: lecture.instructor, room: schedule.room || '', building: schedule.building || '',
-        day: schedule.day - 1, // 1~7(월~일) -> 0~6(월~일)
-        startTime: schedule.start, endTime: schedule.end,
-        color: colors[index % colors.length], courseId: item.courseId, classId: item.classId
-      }));
+      return lecture.schedule.map(schedule => {
+        // parseTimeToSlot 함수가 이미 올바르게 계산하므로 그대로 사용
+        const startTime = schedule.start;
+        const endTime = schedule.end;
+        
+        // 디버깅을 위한 로그
+        if (lecture.title.includes('뮤지컬') || lecture.title.includes('인재경영')) {
+          console.log(`🔍 강의 시간 계산 최종: ${lecture.title}`, {
+            원본스케줄: schedule,
+            계산된슬롯: `${startTime}-${endTime}`,
+            그리드위치: `row: ${startTime + 2} / ${endTime + 2}`,
+            실제시간: `${startTime + 9}:00-${endTime + 9}:00`
+          });
+        }
+        
+        return {
+          id: `${item.courseId}-${item.classId}-${schedule.day}`,
+          title: lecture.title, instructor: lecture.instructor, room: schedule.room || '', building: schedule.building || '',
+          day: schedule.day - 1, // 1~7(월~일) -> 0~6(월~일)
+          startTime: startTime, // parseTimeToSlot에서 이미 올바르게 계산됨
+          endTime: endTime, // parseTimeToSlot에서 이미 올바르게 계산됨
+          color: colors[index % colors.length], courseId: item.courseId, classId: item.classId
+        };
+      });
     });
   });
   
@@ -296,7 +313,7 @@
     on:add={handleAddToCart}
     on:remove={handleRemoveFromCart}
   />
-  <div class="flex-1 flex flex-col">
+  <div class="flex-1 flex flex-col min-w-0">
     <TimetableHeader 
       selectedSemester={selectedSemester}
       semesters={semesters}
@@ -309,7 +326,7 @@
       on:download={handleDownload}
       on:share={handleShare}
     />
-    <main class="flex-1 overflow-hidden">
+    <main class="flex-1 overflow-hidden p-4">
       <TimetableGrid
         blocks={processedTimetable.blocks}
         conflictPairs={processedTimetable.conflicts}
@@ -344,14 +361,14 @@
   />
   
   <!-- 모바일 장바구니 요약 (2-3개 과목만) -->
-  <div class="bg-white border-b border-gray-200 px-4 py-3">
-    <div class="flex items-center justify-between mb-3">
-      <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+  <div class="bg-white border-b border-gray-200 px-6 py-4">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold text-gray-800 flex items-center gap-2 text-lg">
         <span class="text-blue-500">📚</span>
         장바구니 ({sidebarData.cartCourses.length}개)
       </h3>
       <button 
-        class="text-sm text-blue-600 font-medium"
+        class="text-sm text-blue-600 font-medium px-3 py-1 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
         onclick={() => {
           // 전체 사이드바 토글 로직 추가 가능
           alert('전체 과목 보기 기능 추가 예정');
@@ -362,11 +379,11 @@
     </div>
     
     <!-- 모바일 요일 선택 버튼 -->
-    <div class="mb-3">
-      <div class="flex items-center gap-2 mb-2">
+    <div class="mb-4">
+      <div class="flex items-center gap-2 mb-3">
         <span class="text-sm font-medium text-gray-700">요일 선택:</span>
       </div>
-      <div class="flex gap-2 flex-wrap">
+      <div class="flex gap-3 flex-wrap">
         {#each ["월", "화", "수", "목", "금", "토", "일"] as day}
           <button
             class="day-select-btn {displayedDays.includes(day) ? 'day-active' : 'day-inactive'}"
@@ -377,7 +394,6 @@
                 displayedDays = [...displayedDays, day];
               }
             }}
-            aria-label="{day}요일 {displayedDays.includes(day) ? '숨기기' : '보이기'}"
           >
             {day}
           </button>
@@ -392,7 +408,12 @@
           <div class="font-medium text-xs text-gray-800 truncate mb-1">{course.title}</div>
           <div class="text-xs text-gray-500 mb-2">
             <div class="truncate">{course.courseId}</div>
-            <div class="text-orange-600">{course.credits.lecture + (course.credits.lab || 0)}학점</div>
+            <div class="text-orange-600">
+              {typeof course.credits === 'object' && course.credits !== null 
+                ? (course.credits.lecture || 0) + (course.credits.lab || 0)
+                : course.credits || 0
+              }학점
+            </div>
           </div>
           <button 
             class="mobile-remove-btn"

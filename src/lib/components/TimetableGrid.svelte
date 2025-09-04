@@ -24,10 +24,16 @@
     gaps: Gap[];
   }>();
 
+  // 시간 슬롯을 9시~18시까지 30분 간격으로 확장 (20개 슬롯)
   const timeSlots = Array.from({ length: 20 }, (_, i) => {
     const hour = 9 + Math.floor(i / 2);
     const minute = (i % 2) * 30;
-    return { slot: i, label: minute === 0 ? `${hour}:00` : '', minute: minute };
+    return { 
+      slot: i, 
+      label: minute === 0 ? `${hour}:00` : '', 
+      minute: minute,
+      hour: hour
+    };
   });
   
   const dispatch = createEventDispatcher<{
@@ -45,9 +51,8 @@
   }
 
   function formatTime(slot: number): string {
-    const hour = 9 + Math.floor(slot / 2);
-    const minute = (slot % 2) * 30;
-    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    const hour = 9 + slot;
+    return `${hour.toString().padStart(2, '0')}:00`;
   }
 
   // CSS Grid 설정
@@ -56,14 +61,16 @@
   };
 </script>
 
-<div class="p-6 bg-white" data-timetable-grid>
+<div class="p-6 bg-white flex justify-center items-start" data-timetable-grid>
   <!-- CSS Grid 기반 시간표 -->
   <div class="timetable-grid">
     <!-- 헤더 -->
     <div class="grid-header">시간</div>
-    {#each displayedDays as day}
-      <div class="grid-header day-header">{day}</div>
-    {/each}
+    <div class="grid-header day-header">월</div>
+    <div class="grid-header day-header">화</div>
+    <div class="grid-header day-header">수</div>
+    <div class="grid-header day-header">목</div>
+    <div class="grid-header day-header">금</div>
     
     <!-- 시간 슬롯들 -->
     {#each timeSlots as timeSlot, i}
@@ -73,12 +80,12 @@
         </div>
       {/if}
       
-      {#each displayedDays as day, j}
-        <div 
-          class="grid-cell {timeSlot.minute === 0 ? 'hour-start' : 'half-hour'}"
-          style="grid-column: {j + 2}; grid-row: {i + 2};"
-        ></div>
-      {/each}
+      <!-- 월화수목금 그리드 셀들 (30분 간격) -->
+      <div class="grid-cell {timeSlot.minute === 0 ? 'hour-start' : 'half-hour'}" style="grid-column: 2; grid-row: {i + 2};"></div>
+      <div class="grid-cell {timeSlot.minute === 0 ? 'hour-start' : 'half-hour'}" style="grid-column: 3; grid-row: {i + 2};"></div>
+      <div class="grid-cell {timeSlot.minute === 0 ? 'hour-start' : 'half-hour'}" style="grid-column: 4; grid-row: {i + 2};"></div>
+      <div class="grid-cell {timeSlot.minute === 0 ? 'hour-start' : 'half-hour'}" style="grid-column: 5; grid-row: {i + 2};"></div>
+      <div class="grid-cell {timeSlot.minute === 0 ? 'hour-start' : 'half-hour'}" style="grid-column: 6; grid-row: {i + 2};"></div>
     {/each}
     
     <!-- 강의 블록들 -->
@@ -131,91 +138,85 @@
       </div>
     {/each}
   </div>
-
-  <!-- 기존 경고 목록 제거 - 시간표 내부 경고만 사용 -->
 </div>
 
 <style>
   .timetable-grid {
     display: grid;
-    grid-template-columns: 80px repeat(5, 1fr);
-    grid-template-rows: 48px repeat(20, 29px);
-    gap: 1px;
-    background-color: #e5e7eb;
+    grid-template-columns: 80px repeat(5, 100px);
+    grid-template-rows: 40px repeat(20, 30px);
+    gap: 0px;
+    background-color: #ffffff;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     overflow: hidden;
-    min-height: calc(100vh - 310px);
-  }
-
-  /* 모바일 최적화 */
-  @media (max-width: 1024px) {
-    .timetable-grid {
-      grid-template-columns: 60px repeat(5, 1fr);
-      grid-template-rows: 40px repeat(20, 24px);
-      margin: 8px;
-      font-size: 0.75rem;
-      min-height: calc(100vh - 260px);
-    }
-  }
-
-  @media (max-width: 640px) {
-    .timetable-grid {
-      grid-template-columns: 50px repeat(5, 1fr);
-      grid-template-rows: 36px repeat(20, 21px);
-      margin: 4px;
-      font-size: 0.7rem;
-      min-height: calc(100vh - 230px);
-    }
+    height: 640px;
+    width: fit-content;
+    max-width: 90vw;
   }
   
   .grid-header {
     background-color: #f9fafb;
-    border: 1px solid #d1d5db;
-    padding: 8px;
+    border: none;
+    padding: 10px 6px;
     text-align: center;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: #374151;
-  }
-  
-  .day-header {
-    background-color: #dbeafe !important;
-    color: #1d4ed8 !important;
-  }
-  
-  .time-label {
-    background-color: #f9fafb;
-    border: 1px solid #d1d5db;
-    padding: 4px;
-    text-align: center;
-    font-size: 0.75rem;
-    color: #6b7280;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   
+  .day-header {
+    background-color: #3b82f6;
+    color: white;
+    font-weight: 700;
+    font-size: 0.8rem;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+  }
+  
+  .time-label {
+    background-color: #f9fafb;
+    border: none;
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+  
   .grid-cell {
-    background-color: white;
-    border: 1px solid #e5e7eb;
+    background-color: #ffffff;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
     position: relative;
+    min-height: 30px;
   }
   
   .hour-start {
-    border-top: 2px solid #d1d5db !important;
+    border-top: 1px solid #d1d5db !important;
+  }
+  
+  .half-hour {
+    border-top: none !important;
   }
   
   .lecture-block {
     position: relative;
-    margin: 2px;
-    border-radius: 6px;
+    margin: 1px;
+    border-radius: 4px;
     border-left: 4px solid #3b82f6;
-    padding: 8px;
+    padding: 6px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
+    min-height: 25px;
   }
   
   .lecture-block.conflict {
@@ -226,26 +227,26 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
   }
   
   .lecture-title {
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #1f2937;
-    line-height: 1.2;
+    line-height: 1.1;
   }
   
   .lecture-instructor {
-    font-size: 0.625rem;
+    font-size: 0.6rem;
     color: #4b5563;
-    line-height: 1.2;
+    line-height: 1.1;
   }
   
   .lecture-location {
-    font-size: 0.625rem;
+    font-size: 0.6rem;
     color: #6b7280;
-    line-height: 1.2;
+    line-height: 1.1;
   }
   
   .remove-btn {

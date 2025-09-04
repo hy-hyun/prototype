@@ -12,6 +12,31 @@ export const coursesLoading = writable(false);
 export const coursesError = writable<string | null>(null);
 export const userDataLoading = writable(false);
 
+// 찜한 과목 상태 관리
+export const favoriteCourses = writable<string[]>([]);
+
+// 찜한 과목 관련 함수들
+export function addToFavorites(courseId: string, classId: string) {
+  const courseKey = `${courseId}-${classId}`;
+  favoriteCourses.update(favorites => {
+    if (!favorites.includes(courseKey)) {
+      return [...favorites, courseKey];
+    }
+    return favorites;
+  });
+}
+
+export function removeFromFavorites(courseId: string, classId: string) {
+  const courseKey = `${courseId}-${classId}`;
+  favoriteCourses.update(favorites => favorites.filter(id => id !== courseKey));
+}
+
+export function isFavorite(courseId: string, classId: string): boolean {
+  const courseKey = `${courseId}-${classId}`;
+  const favorites = get(favoriteCourses);
+  return favorites.includes(courseKey);
+}
+
 // 전역 로딩 상태 (coursesLoading 또는 userDataLoading이 true이면 true)
 export const globalLoading = derived(
   [coursesLoading, userDataLoading],

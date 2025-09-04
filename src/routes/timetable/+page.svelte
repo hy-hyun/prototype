@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { cart, applications, courses, addLectureToCart, findLectureGaps } from "$lib/stores";
+  import { cart, applications, courses, addLectureToCart, findLectureGaps, loadCourses, favoriteCourses } from "$lib/stores";
   import { browser } from "$app/environment";
   import TimetableHeader from "$lib/components/TimetableHeader.svelte";
   import TimetableSidebar from "$lib/components/TimetableSidebar.svelte";
@@ -14,6 +14,29 @@
   let activeTab = $state("전체");
   let selectedSemester = $state("2024-2학기");
   let displayedDays = $state(["월", "화", "수", "목", "금"]); // 요일 목록을 state로 변경
+  let showFavorites = $state(false); // 찜한 과목만 보기 토글
+
+  // 데이터 로딩
+  $effect(() => {
+    if ($courses.length === 0) {
+      loadCourses();
+    }
+  });
+
+  // 찜 토글 핸들러
+  function handleToggleFavorites() {
+    showFavorites = !showFavorites;
+  }
+
+  // 찜한 과목 추가/제거 핸들러
+  function handleToggleFavorite(courseId: string, classId: string) {
+    const courseKey = `${courseId}-${classId}`;
+    if ($favoriteCourses.includes(courseKey)) {
+      favoriteCourses.update(favorites => favorites.filter(id => id !== courseKey));
+    } else {
+      favoriteCourses.update(favorites => [...favorites, courseKey]);
+    }
+  }
 
   // --- 타입 정의 ---
   type TimetableBlock = {
@@ -148,16 +171,24 @@
   // 4. 사이드바에 필요한 데이터 가공
   const sidebarData = $derived.by(() => {
     const cartIds = new Set($cart.map(item => `${item.courseId}-${item.classId}`));
-    const allCoursesWithCartStatus = $courses.map(c => ({
+    const favoriteIds = new Set($favoriteCourses);
+    
+    const allCoursesWithStatus = $courses.map(c => ({
       ...c,
-      isInCart: cartIds.has(`${c.courseId}-${c.classId}`)
+      isInCart: cartIds.has(`${c.courseId}-${c.classId}`),
+      isFavorite: favoriteIds.has(`${c.courseId}-${c.classId}`)
     }));
+
+    // 찜한 과목만 보기 필터링
+    const filteredCourses = showFavorites 
+      ? allCoursesWithStatus.filter(course => course.isFavorite)
+      : allCoursesWithStatus;
 
     const dayTabs = [ "전체", "월", "화", "수", "목", "금" ].map((day, index) => {
       const dayNum = index;
       const count = day === "전체" 
-        ? allCoursesWithCartStatus.length 
-        : allCoursesWithCartStatus.filter(c => Array.isArray(c.schedule) && c.schedule.some(s => s.day === dayNum)).length;
+        ? filteredCourses.length 
+        : filteredCourses.filter(c => Array.isArray(c.schedule) && c.schedule.some(s => s.day === dayNum)).length;
       return { key: day, label: day, count };
     });
 
@@ -167,13 +198,13 @@
     }).filter(Boolean) as (Lecture & { cartMethod: string })[];
 
     const dayMapping: Record<string, number> = { "월": 1, "화": 2, "수": 3, "목": 4, "금": 5 };
-    const filteredCourses = activeTab === "전체" 
-      ? allCoursesWithCartStatus 
-      : allCoursesWithCartStatus.filter(course => 
+    const finalFilteredCourses = activeTab === "전체" 
+      ? filteredCourses 
+      : filteredCourses.filter(course => 
           Array.isArray(course.schedule) && course.schedule.some(s => s.day === dayMapping[activeTab])
         );
 
-    return { dayTabs, cartCourses, filteredCourses };
+    return { dayTabs, cartCourses, filteredCourses: finalFilteredCourses };
   });
 
   // 5. 헤더에 필요한 데이터 가공
@@ -252,6 +283,7 @@
     activeTab = event.detail;
   }
 
+
   function handleAddToCart(event: CustomEvent<Lecture>) {
     const course = event.detail;
     // 시간 중복 검사를 포함한 강의 추가
@@ -309,9 +341,13 @@
     cartCourses={sidebarData.cartCourses}
     dayTabs={sidebarData.dayTabs}
     activeTab={activeTab}
+    {showFavorites}
+    favoriteCourses={$favoriteCourses}
     on:tabChange={handleTabChange}
     on:add={handleAddToCart}
     on:remove={handleRemoveFromCart}
+    on:toggleFavorites={handleToggleFavorites}
+    on:toggleFavorite={handleToggleFavorite}
   />
   <div class="flex-1 flex flex-col min-w-0">
     <TimetableHeader 

@@ -20,7 +20,12 @@
   // 드래그앤드롭 중인 임시 아이템들 상태
   let draggedItems = $state<any[]>([]);
 
-  // 데이터 로딩은 +layout.ts에서 전역으로 처리하므로 이 코드는 제거합니다.
+  // 데이터 로딩
+  $effect(() => {
+    if ($courses.length === 0) {
+      loadCourses();
+    }
+  });
 
   async function doApply(item: { courseId: string; classId: string; method: "FCFS" | "BID"; bidAmount?: number }) {
     if (!$isLoggedIn) {

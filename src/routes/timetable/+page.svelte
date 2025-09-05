@@ -8,6 +8,8 @@
   import TimetableGrid from "$lib/components/TimetableGrid.svelte";
   import TimetableFooter from "$lib/components/TimetableFooter.svelte";
   import ToastContainer from "$lib/components/ToastContainer.svelte";
+  import DistanceWarning from "$lib/components/DistanceWarning.svelte";
+  import { analyzeTimetableDistanceWarnings, analyzeNewLectureDistanceWarnings, type DistanceWarningResult } from "$lib/utils/distanceWarning";
 
 
   
@@ -22,6 +24,22 @@
   $effect(() => {
     if ($courses.length === 0) {
       loadCourses();
+    }
+  });
+
+  // 이동거리 경고 분석 (사용자 제공 정보만 사용)
+  const distanceWarnings = $derived(() => {
+    try {
+      const timetableLectures = baseTimetableBlocks.map(block => {
+        const lecture = $courses.find(l => l.courseId === block.courseId && l.classId === block.classId);
+        return lecture;
+      }).filter(Boolean) as Lecture[];
+      
+      // 연속된 강의들만 간단히 확인
+      return analyzeTimetableDistanceWarnings(timetableLectures);
+    } catch (error) {
+      console.warn('이동거리 경고 분석 중 오류:', error);
+      return [];
     }
   });
 
@@ -379,6 +397,20 @@
       }
     }
     
+    // 이동거리 경고 분석 (사용자 제공 정보만 사용)
+    try {
+      const distanceWarnings = analyzeNewLectureDistanceWarnings(course, existingCourses);
+      if (distanceWarnings.length > 0) {
+        distanceWarnings.forEach(warning => {
+          if (warning.info) {
+            showToast(`${warning.info.icon} ${warning.info.message}: ${warning.fromBuilding} → ${warning.toBuilding}`, "info");
+          }
+        });
+      }
+    } catch (error) {
+      console.warn('이동거리 경고 분석 중 오류:', error);
+    }
+    
     // 정상 추가
     timetableCourses = [...timetableCourses, courseKey];
     showToast(`"${course.title}" 강의가 시간표에 추가되었습니다!`, "success");
@@ -486,6 +518,7 @@
         blocks={processedTimetable.blocks}
         conflictPairs={conflictAnalysis.conflictPairs}
         consecutiveWarnings={conflictAnalysis.consecutiveWarnings}
+        distanceWarnings={distanceWarnings()}
         gaps={lectureGaps}
         displayedDays={displayedDays}
         on:remove={(e) => handleRemoveFromGrid(e)}
@@ -606,6 +639,7 @@
       blocks={processedTimetable.blocks}
       conflictPairs={conflictAnalysis.conflictPairs}
       consecutiveWarnings={conflictAnalysis.consecutiveWarnings}
+      distanceWarnings={distanceWarnings()}
       gaps={lectureGaps}
       displayedDays={displayedDays}
       on:remove={handleRemoveFromGrid}

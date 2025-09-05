@@ -174,7 +174,8 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
           if (key.toLowerCase().includes('location') || key.toLowerCase().includes('room') || 
               key.toLowerCase().includes('building') || key.toLowerCase().includes('classroom') ||
               key.toLowerCase().includes('venue') || key.toLowerCase().includes('place') ||
-              key.toLowerCase().includes('facility')) {
+              key.toLowerCase().includes('facility') || key.toLowerCase().includes('site') ||
+              key.toLowerCase().includes('campus') || key.toLowerCase().includes('area')) {
             console.log(`    ${key}: ${JSON.stringify(data[key])}`);
           }
         });
@@ -186,8 +187,38 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
           }
         });
         
+        // Animal Ethics나 다문화사회의영어교육 강의가 있으면 특별히 로깅
+        const title = data.subjectName || data.courseName || data.title || '';
+        if (title.includes('Animal Ethics') || title.includes('다문화사회의영어교육')) {
+          console.log(`\n🎯 특별 관심 강의 원본 데이터 발견!`);
+          console.log(`  📊 강의명: "${title}"`);
+          console.log(`  📄 전체 원본 데이터:`, JSON.stringify(data, null, 2));
+        }
+        
         console.log(`${'='.repeat(80)}\n`);
       }
+
+      // 스케줄 파싱 (건물 정보 추출을 위해)
+      const parsedSchedule = parseSchedule(
+        data.schedule || 
+        data.timeTable || 
+        data.classTime || 
+        data.meetingTimes || 
+        data.times || 
+        data.classSchedule ||
+        data.lectureSchedule ||
+        data.courseSchedule ||
+        data.weeklySchedule ||
+        data.lectureTimes ||
+        data.classHours ||
+        data.timeSlots ||
+        data.periods ||
+        data.sessions,
+        data.location // 최상위 레벨의 location 정보도 전달
+      );
+
+      // 스케줄에서 건물 정보 추출 (첫 번째 스케줄의 건물 정보 사용)
+      const building = parsedSchedule && parsedSchedule.length > 0 ? parsedSchedule[0].building : '미정';
 
       // Firebase 데이터 구조에 맞춰 매핑
       const mappedLecture = {
@@ -201,23 +232,8 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
           lecture: data.creditHours || data.credits || 3,
           lab: 0
         },
-        schedule: parseSchedule(
-          data.schedule || 
-          data.timeTable || 
-          data.classTime || 
-          data.meetingTimes || 
-          data.times || 
-          data.classSchedule ||
-          data.lectureSchedule ||
-          data.courseSchedule ||
-          data.weeklySchedule ||
-          data.lectureTimes ||
-          data.classHours ||
-          data.timeSlots ||
-          data.periods ||
-          data.sessions,
-          data.location // 최상위 레벨의 location 정보도 전달
-        ),
+        schedule: parsedSchedule,
+        building: building, // 건물 정보 추가
         capacity: calculateCapacity(data.enrollmentCapByYear || data.capacity),
         area: data.liberalArtsArea || data.area || data.category || '',
         limit: data.restrictions || data.prerequisites || '',
@@ -240,6 +256,14 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
           });
         } else {
           console.log(`  ❌ 스케줄 정보 없음`);
+        }
+        
+        // Animal Ethics나 다문화사회의영어교육 강의가 있으면 특별히 로깅
+        if (mappedLecture.title.includes('Animal Ethics') || mappedLecture.title.includes('다문화사회의영어교육')) {
+          console.log(`\n🎯 특별 관심 강의 발견: "${mappedLecture.title}"`);
+          console.log(`  📊 전체 강의 정보:`, JSON.stringify(mappedLecture, null, 2));
+          console.log(`  🏢 강의 건물 정보: "${mappedLecture.building}"`);
+          console.log(`  📅 스케줄별 건물 정보:`, mappedLecture.schedule?.map(s => ({ day: s.day, building: s.building, room: s.room })));
         }
         console.log(`=================================\n`);
       }
@@ -378,6 +402,7 @@ function parseSchedule(scheduleData: any, topLevelLocation?: any) {
         let room = '';
 
         console.log(`    🏢 아이템 ${index} 장소 정보 추출 시작:`, {
+          전체아이템: item,
           location: item.location,
           building: item.building,
           buildingName: item.buildingName,
@@ -386,7 +411,8 @@ function parseSchedule(scheduleData: any, topLevelLocation?: any) {
           classroom: item.classroom,
           classRoom: item.classRoom,
           lectureRoom: item.lectureRoom,
-          venue: item.venue
+          venue: item.venue,
+          모든키: Object.keys(item)
         });
 
         if (item.location) {
@@ -404,19 +430,66 @@ function parseSchedule(scheduleData: any, topLevelLocation?: any) {
           }
         } else {
           console.log(`      🔍 개별 필드에서 장소 정보 추출 중...`);
-          // 개별 필드에서 추출 - 더 많은 필드명 지원
-          building = item.building || item.buildingName || item.classroom?.building || 
-                    item.classRoom?.building || item.lectureRoom?.building || 
-                    item.venue?.building || item.place?.building || 
-                    item.facility?.building || '';
-          room = item.room || item.roomNumber || item.classroom?.room || 
-                item.classroomNumber || item.classroom?.roomNumber ||
-                item.classRoom?.room || item.classRoom?.roomNumber ||
-                item.lectureRoom?.room || item.lectureRoom?.roomNumber ||
-                item.venue?.room || item.venue?.roomNumber ||
-                item.place?.room || item.place?.roomNumber ||
-                item.facility?.room || item.facility?.roomNumber || '';
-          console.log(`      📝 개별 필드 추출 결과: building="${building}", room="${room}"`);
+          
+          // 모든 가능한 필드에서 건물 정보 추출
+          const possibleBuildingFields = [
+            'building', 'buildingName', 'buildingCode', 'facility', 'facilityName',
+            'location', 'place', 'venue', 'site', 'campus', 'area'
+          ];
+          
+          const possibleRoomFields = [
+            'room', 'roomNumber', 'roomCode', 'classroom', 'classroomNumber',
+            'lectureRoom', 'hall', 'auditorium', 'lab', 'laboratory'
+          ];
+          
+          // 건물 정보 추출
+          for (const field of possibleBuildingFields) {
+            if (item[field]) {
+              if (typeof item[field] === 'string') {
+                building = item[field];
+                console.log(`      🏢 건물 정보 발견 (${field}): "${building}"`);
+                break;
+              } else if (typeof item[field] === 'object' && item[field].name) {
+                building = item[field].name;
+                console.log(`      🏢 건물 정보 발견 (${field}.name): "${building}"`);
+                break;
+              }
+            }
+          }
+          
+          // 강의실 정보 추출
+          for (const field of possibleRoomFields) {
+            if (item[field]) {
+              if (typeof item[field] === 'string') {
+                room = item[field];
+                console.log(`      🚪 강의실 정보 발견 (${field}): "${room}"`);
+                break;
+              } else if (typeof item[field] === 'object' && item[field].number) {
+                room = item[field].number;
+                console.log(`      🚪 강의실 정보 발견 (${field}.number): "${room}"`);
+                break;
+              }
+            }
+          }
+          
+          // 기존 로직도 유지 (하위 호환성)
+          if (!building) {
+            building = item.building || item.buildingName || item.classroom?.building || 
+                      item.classRoom?.building || item.lectureRoom?.building || 
+                      item.venue?.building || item.place?.building || 
+                      item.facility?.building || '';
+          }
+          if (!room) {
+            room = item.room || item.roomNumber || item.classroom?.room || 
+                  item.classroomNumber || item.classroom?.roomNumber ||
+                  item.classRoom?.room || item.classRoom?.roomNumber ||
+                  item.lectureRoom?.room || item.lectureRoom?.roomNumber ||
+                  item.venue?.room || item.venue?.roomNumber ||
+                  item.place?.room || item.place?.roomNumber ||
+                  item.facility?.room || item.facility?.roomNumber || '';
+          }
+          
+          console.log(`      📝 최종 추출 결과: building="${building}", room="${room}"`);
         }
 
         // Firebase 데이터에 없으면 미정으로 표시

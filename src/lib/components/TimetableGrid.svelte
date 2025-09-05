@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import type { Lecture, Gap } from "$lib/types";
   import { getRiskIcon, getGapStyle } from "$lib/stores";
+  import type { DistanceWarningResult } from "$lib/utils/distanceWarning";
 
   type TimetableBlock = {
     id: string; title: string; instructor: string; room: string; building: string;
@@ -15,12 +16,14 @@
     displayedDays = ["월", "화", "수", "목", "금"],
     conflictPairs = [],
     consecutiveWarnings = [],
+    distanceWarnings = [],
     gaps = []
   } = $props<{
     blocks: TimetableBlock[];
     displayedDays: string[];
     conflictPairs: Array<[TimetableBlock, TimetableBlock]>;
     consecutiveWarnings: Array<{ from: TimetableBlock; to: TimetableBlock; travelTime: number; isImpossible: boolean; }>;
+    distanceWarnings: DistanceWarningResult[];
     gaps: Gap[];
   }>();
 
@@ -138,6 +141,35 @@
       </div>
     {/each}
   </div>
+  
+  <!-- 이동거리 경고 섹션 -->
+  {#if distanceWarnings.length > 0}
+    <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+      <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+        <span class="text-lg">🚶‍♂️</span>
+        이동거리 경고
+      </h3>
+      <div class="space-y-2">
+        {#each distanceWarnings as warning}
+          {#if warning.info}
+            <div class="distance-warning {warning.info.bgColor} {warning.info.borderColor} border rounded-lg p-3">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">{warning.info.icon}</span>
+                <div class="flex-1">
+                  <div class="text-sm font-medium {warning.info.color}">
+                    {warning.info.message}
+                  </div>
+                  <div class="text-xs text-gray-600 mt-1">
+                    {warning.fromBuilding} → {warning.toBuilding}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {/if}
+        {/each}
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -300,4 +332,13 @@
   .bg-indigo-100 { background-color: #e0e7ff; }
   .bg-red-100 { background-color: #fee2e2; }
   .bg-orange-100 { background-color: #fed7aa; }
+  
+  .distance-warning {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .distance-warning:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
 </style>

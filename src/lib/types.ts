@@ -10,6 +10,7 @@ export type Lecture = {
   instructor: string;
   credits: Credit;
   schedule: Meeting[];
+  building?: string;     // 건물 정보 (첫 번째 스케줄의 건물)
   capacity: number;
   area?: string;
   limit?: string;

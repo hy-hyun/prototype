@@ -9,7 +9,7 @@
   // Svelte 5 룬모드 상태 변수들
   let keyword = $state("");
   let filters = $state({ 
-    term: "", 
+    term: "2025-2", // 2025-2학기로 기본값 설정
     grade: "", 
     dept: "",
     category: "",
@@ -87,7 +87,7 @@
   function resetFilters() {
     keyword = "";
     filters = { 
-      term: "", 
+      term: "2025-2", // 학기는 2025-2학기로 고정 유지
       grade: "", 
       dept: "",
       category: "",
@@ -128,7 +128,13 @@
     showDetail = true;
   }
 
-  function formatSchedule(schedule: any[]) {
+  // 베팅 과목인지 확인하는 함수
+  function isBettingCourse(lecture: Lecture): boolean {
+    return (lecture.method ?? "FCFS") === "BID";
+  }
+
+  // 수업시간만 포맷팅하는 함수
+  function formatTime(schedule: any[]) {
     const days = ["", "월", "화", "수", "목", "금", "토", "일"];
     
     if (!schedule || schedule.length === 0) {
@@ -146,28 +152,52 @@
         const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
         const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
         
-        // 장소 정보 포맷팅 개선
+        const dayName = days[s.day] || "월";
+        return `${dayName} ${startTime}~${endTime}`;
+      })
+      .join(", ");
+  }
+
+  // 강의실 정보만 포맷팅하는 함수
+  function formatLocation(schedule: any[]) {
+    if (!schedule || schedule.length === 0) {
+      return "장소 정보 없음";
+    }
+    
+    return schedule
+      .map((s) => {
+        // 장소 정보 포맷팅
         const building = s.building || '';
         const room = s.room || '';
-        let location = '';
         
         if (building && room) {
           // 둘 다 "미정"인 경우 하나만 표시
           if (building === '미정' && room === '미정') {
-            location = ` 미정`;
+            return '미정';
           } else {
-            location = ` ${building} ${room}`;
+            return `${building} ${room}`;
           }
         } else if (building) {
-          location = ` ${building}`;
+          return building;
         } else if (room) {
-          location = ` ${room}`;
+          return room;
+        } else {
+          return '미정';
         }
-        
-        const dayName = days[s.day] || "월";
-        return `${dayName} ${startTime}~${endTime}${location}`;
       })
       .join(", ");
+  }
+
+  // 기존 formatSchedule 함수 (호환성을 위해 유지)
+  function formatSchedule(schedule: any[]) {
+    const timeInfo = formatTime(schedule);
+    const locationInfo = formatLocation(schedule);
+    
+    if (timeInfo === "시간 정보 없음") {
+      return "시간 정보 없음";
+    }
+    
+    return `${timeInfo} ${locationInfo}`;
   }
 
   // 컴포넌트 마운트 시 더 이상 여기서 데이터를 로드하지 않습니다.
@@ -203,28 +233,8 @@
       </button>
     </div>
     
-    <!-- 첫 번째 필터 행: 학기, 학년, 이수구분, 학과 -->
+    <!-- 첫 번째 필터 행: 이수구분, 학기, 학년, 학과 -->
     <div class="grid gap-3 md:grid-cols-4">
-      <div>
-        <p class="text-xs text-gray-500 mb-2">학기</p>
-        <select class="border rounded p-2 bg-white w-full" bind:value={filters.term} onchange={() => performRealTimeSearch()}>
-          <option value="">전체 학기</option>
-          {#each STATIC_FILTER_OPTIONS.terms as term}
-            <option value={term.value}>{term.label}</option>
-          {/each}
-        </select>
-      </div>
-
-      <div>
-        <p class="text-xs text-gray-500 mb-2">학년</p>
-        <select class="border rounded p-2 bg-white w-full" bind:value={filters.grade} onchange={() => performRealTimeSearch()}>
-          <option value="">전체 학년</option>
-          {#each STATIC_FILTER_OPTIONS.grades as grade}
-            <option value={grade.value}>{grade.label}</option>
-          {/each}
-        </select>
-      </div>
-
       <div>
         <p class="text-xs text-gray-500 mb-2">이수구분</p>
         <select 
@@ -241,6 +251,23 @@
           <option value="">전체 구분</option>
           {#each $filterOptions.categories as category}
             <option value={category.value}>{category.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div>
+        <p class="text-xs text-gray-500 mb-2">학기</p>
+        <div class="border rounded p-2 bg-gray-100 w-full text-gray-700 cursor-not-allowed">
+          2025-2학기
+        </div>
+      </div>
+
+      <div>
+        <p class="text-xs text-gray-500 mb-2">학년</p>
+        <select class="border rounded p-2 bg-white w-full" bind:value={filters.grade} onchange={() => performRealTimeSearch()}>
+          <option value="">전체 학년</option>
+          {#each STATIC_FILTER_OPTIONS.grades as grade}
+            <option value={grade.value}>{grade.label}</option>
           {/each}
         </select>
       </div>
@@ -400,33 +427,53 @@
             </div>
             
             <!-- 상세 정보 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600">
-              <div class="flex items-center gap-2">
-                <span class="font-medium">정원:</span>
-                <span>{l.capacity}명</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="font-medium">과목코드:</span>
-                <span class="text-xs font-mono">{l.courseId}</span>
-              </div>
-              <!-- 교양영역 표시 (핵심교양, 교양인 경우) -->
-              {#if (l.category === '핵심교양' || l.category === '교양') && l.area}
+            <div class="space-y-2 text-sm text-gray-600">
+              <!-- 1행: 정원, 과목코드 (항상 표시) -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div class="flex items-center gap-2">
-                  <span class="font-medium">교양영역:</span>
-                  <span class="text-xs">{l.area}</span>
+                  <span class="font-medium">정원:</span>
+                  <span>{l.capacity}명</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">과목코드:</span>
+                  <span class="text-xs font-mono">{l.courseId}</span>
+                </div>
+              </div>
+              
+              <!-- 2행: 수업시간, 강의실 (항상 표시) -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">수업시간:</span>
+                  <span class="text-xs">{formatTime(l.schedule)}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">강의실:</span>
+                  <span class="text-xs">{formatLocation(l.schedule)}</span>
+                </div>
+              </div>
+              
+              <!-- 3행: 단위(조건부), 교양영역(조건부) -->
+              {#if ((l.category === '핵심교양' || l.category === '교양') && l.area) || l.courseLevel}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <!-- 단위 표시 (courseLevel이 있는 경우만) -->
+                  {#if l.courseLevel}
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium">단위:</span>
+                      <span class="text-xs">{Math.floor(parseInt(l.courseLevel) / 100) * 100}단위</span>
+                    </div>
+                  {:else}
+                    <div></div> <!-- 빈 공간 유지 -->
+                  {/if}
+                  
+                  <!-- 교양영역 표시 (핵심교양, 교양인 경우만) -->
+                  {#if (l.category === '핵심교양' || l.category === '교양') && l.area}
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium">교양영역:</span>
+                      <span class="text-xs">{l.area}</span>
+                    </div>
+                  {/if}
                 </div>
               {/if}
-              <!-- 모든 강의에 대해 단위 표시 (courseLevel이 있는 경우) -->
-              {#if l.courseLevel}
-                <div class="flex items-center gap-2">
-                  <span class="font-medium">단위:</span>
-                  <span class="text-xs">{Math.floor(parseInt(l.courseLevel) / 100) * 100}단위</span>
-                </div>
-              {/if}
-              <div class="flex items-center gap-2 md:col-span-2">
-                <span class="font-medium">시간:</span>
-                <span class="text-xs">{formatSchedule(l.schedule)}</span>
-              </div>
             </div>
             
             <!-- 키워드 태그 -->
@@ -458,8 +505,10 @@
               {isInCart(l.courseId, l.classId) ? '🛒 장바구니에 있음' : '장바구니'}
             </button>
             <button 
-              class="bg-blue-500 hover:bg-blue-600 text-white rounded px-3 py-1 text-sm transition-colors"
-              onclick={() => onApply(l)}
+              class="rounded px-3 py-1 text-sm transition-colors {isBettingCourse(l) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}"
+              onclick={() => !isBettingCourse(l) && onApply(l)}
+              disabled={isBettingCourse(l)}
+              title={isBettingCourse(l) ? '베팅 과목은 수강신청 페이지에서 신청하세요' : ''}
             >
               강의신청
             </button>
@@ -537,8 +586,21 @@
           
           <!-- 강의시간 섹션 -->
           <div>
-            <h3 class="font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">강의시간</h3>
-            <p class="text-sm text-gray-600 bg-gray-50 p-3 rounded">{formatSchedule(selectedLecture.schedule)}</p>
+            <h3 class="font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">수업시간 및 강의실</h3>
+            <div class="space-y-3">
+              <div class="bg-gray-50 p-3 rounded">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="font-medium text-gray-700">수업시간:</span>
+                </div>
+                <p class="text-sm text-gray-600">{formatTime(selectedLecture.schedule)}</p>
+              </div>
+              <div class="bg-gray-50 p-3 rounded">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="font-medium text-gray-700">강의실:</span>
+                </div>
+                <p class="text-sm text-gray-600">{formatLocation(selectedLecture.schedule)}</p>
+              </div>
+            </div>
           </div>
           
           <!-- 키워드 섹션 -->
@@ -584,8 +646,10 @@
             장바구니 담기
           </button>
           <button 
-            class="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded py-2 transition-colors"
-            onclick={() => selectedLecture && onApply(selectedLecture)}
+            class="flex-1 rounded py-2 transition-colors {selectedLecture && isBettingCourse(selectedLecture) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}"
+            onclick={() => selectedLecture && !isBettingCourse(selectedLecture) && onApply(selectedLecture)}
+            disabled={selectedLecture && isBettingCourse(selectedLecture)}
+            title={selectedLecture && isBettingCourse(selectedLecture) ? '베팅 과목은 수강신청 페이지에서 신청하세요' : ''}
           >
             강의신청
           </button>

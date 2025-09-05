@@ -7,12 +7,17 @@ import { getDistanceWarning, getDistanceWarningInfo, type DistanceWarning } from
 import type { Lecture } from '$lib/types';
 
 export interface DistanceWarningResult {
+  fromLecture: Lecture;
+  toLecture: Lecture;
   fromBuilding: string;
   toBuilding: string;
   fromGroup: string;
   toGroup: string;
   warning: DistanceWarning;
   info: ReturnType<typeof getDistanceWarningInfo>;
+  day?: number;
+  startTime?: number; // slot index
+  endTime?: number; // slot index
 }
 
 /**
@@ -88,6 +93,8 @@ export function analyzeDistanceWarning(fromLecture: Lecture, toLecture: Lecture)
   const info = getDistanceWarningInfo(warning);
   
   const result = {
+    fromLecture,
+    toLecture,
     fromBuilding,
     toBuilding,
     fromGroup,
@@ -127,99 +134,97 @@ export function analyzeTimetableDistanceWarnings(lectures: Lecture[]): DistanceW
   }
   
   // 같은 요일의 강의들만 그룹화
-  const lecturesByDay: { [day: number]: Lecture[] } = {};
-  
+  const meetingsByDay: { [day: number]: { lecture: Lecture; start: number; end: number }[] } = {};
+
   for (const lecture of lectures) {
     if (!lecture.schedule || !lecture.building) {
       console.log('⚠️ 스케줄 또는 건물 정보 없음:', lecture.title);
       continue;
     }
-    const day = lecture.schedule[0]?.day;
-    if (day) {
-      if (!lecturesByDay[day]) lecturesByDay[day] = [];
-      lecturesByDay[day].push(lecture);
+    for (const meeting of lecture.schedule) {
+      const day = meeting.day;
+      if (day) {
+        if (!meetingsByDay[day]) meetingsByDay[day] = [];
+        meetingsByDay[day].push({
+          lecture,
+          start: meeting.start,
+          end: meeting.end,
+        });
+      }
     }
   }
   
-  console.log('📊 요일별 강의 그룹화:', Object.keys(lecturesByDay).map(day => ({
+  console.log('📊 요일별 강의 그룹화:', Object.keys(meetingsByDay).map(day => ({
     day: day,
-    count: lecturesByDay[parseInt(day)].length,
-    lectures: lecturesByDay[parseInt(day)].map(l => l.title)
+    count: meetingsByDay[parseInt(day)].length,
+    lectures: meetingsByDay[parseInt(day)].map(m => m.lecture.title)
   })));
   
   // 각 요일별로 연속된 강의들만 확인
-  for (const [dayStr, dayLectures] of Object.entries(lecturesByDay)) {
+  for (const [dayStr, dayMeetings] of Object.entries(meetingsByDay)) {
     const day = parseInt(dayStr);
     console.log(`📅 ${day}요일 분석 시작:`, {
       day,
-      lectureCount: dayLectures.length,
-      lectures: dayLectures.map(l => ({
-        title: l.title,
-        start: l.schedule![0]?.start,
-        end: l.schedule![0]?.end
+      lectureCount: dayMeetings.length,
+      lectures: dayMeetings.map(m => ({
+        title: m.lecture.title,
+        start: m.start,
+        end: m.end
       }))
     });
     
-    if (dayLectures.length < 2) {
+    if (dayMeetings.length < 2) {
       console.log(`❌ ${day}요일 강의 수가 2개 미만`);
       continue;
     }
     
     // 시간순 정렬
-    dayLectures.sort((a, b) => {
-      const aStart = a.schedule![0]?.start || '';
-      const bStart = b.schedule![0]?.start || '';
-      return aStart.localeCompare(bStart);
-    });
+    dayMeetings.sort((a, b) => a.start - b.start);
     
-    console.log(`⏰ ${day}요일 시간순 정렬 완료:`, dayLectures.map(l => ({
-      title: l.title,
-      start: l.schedule![0]?.start,
-      end: l.schedule![0]?.end
+    console.log(`⏰ ${day}요일 시간순 정렬 완료:`, dayMeetings.map(m => ({
+      title: m.lecture.title,
+      start: m.start,
+      end: m.end
     })));
     
     // 연속된 강의들만 확인
-    for (let i = 0; i < dayLectures.length - 1; i++) {
-      const current = dayLectures[i];
-      const next = dayLectures[i + 1];
+    for (let i = 0; i < dayMeetings.length - 1; i++) {
+      const current = dayMeetings[i];
+      const next = dayMeetings[i + 1];
       
-      const currentEnd = current.schedule![0]?.end;
-      const nextStart = next.schedule![0]?.start;
+      const currentEnd = current.end;
+      const nextStart = next.start;
+      const timeDiffSlots = nextStart - currentEnd;
       
-      console.log(`🔗 연속 강의 확인 ${i + 1}/${dayLectures.length - 1}:`, {
-        current: {
-          title: current.title,
-          end: currentEnd
-        },
-        next: {
-          title: next.title,
-          start: nextStart
-        },
-        isConsecutive: currentEnd === nextStart
-      });
-      
-      // 연속된 강의인지 확인
-      if (currentEnd === nextStart) {
-        console.log(`✅ 연속 강의 발견! 이동거리 경고 분석 시작`);
-        console.log(`  📍 연속 강의 상세 정보:`, {
+      // 0 (연강) 또는 1 (30분 공강) 슬롯 차이만 확인
+      if (timeDiffSlots >= 0 && timeDiffSlots <= 1) {
+        // 동일한 강의인 경우 건너뛰기 (예: 한 강의가 10-11시, 11-12시 연속으로 있는 경우)
+        if (current.lecture.courseId === next.lecture.courseId && current.lecture.classId === next.lecture.classId) {
+          continue;
+        }
+
+        console.log(`🔗 연속 또는 짧은 공강 확인 ${i + 1}/${dayMeetings.length - 1}:`, {
           current: {
-            title: current.title,
-            building: current.building,
-            endTime: currentEnd,
-            schedule: current.schedule
+            title: current.lecture.title,
+            end: currentEnd
           },
           next: {
-            title: next.title,
-            building: next.building,
-            startTime: nextStart,
-            schedule: next.schedule
-          }
+            title: next.lecture.title,
+            start: nextStart
+          },
+          isConsecutive: timeDiffSlots === 0,
+          isShortGap: timeDiffSlots === 1,
         });
-        
-        const warning = analyzeDistanceWarning(current, next);
+
+        const warning = analyzeDistanceWarning(current.lecture, next.lecture);
         if (warning) {
           console.log(`⚠️ 이동거리 경고 추가:`, warning);
-          warnings.push(warning);
+          warnings.push({
+            ...warning,
+            day: day,
+            startTime: current.end,
+            endTime: next.start
+          });
         } else {
           console.log(`✅ 이동거리 경고 없음`);
         }
@@ -232,11 +237,16 @@ export function analyzeTimetableDistanceWarnings(lectures: Lecture[]): DistanceW
     warnings: warnings.map(w => ({
       from: w.fromBuilding,
       to: w.toBuilding,
+      fromLecture: w.fromLecture.title,
+      toLecture: w.toLecture.title,
       fromGroup: w.fromGroup,
       toGroup: w.toGroup,
       groupCombination: `${w.fromGroup} → ${w.toGroup}`,
       matrixKey: `${w.fromGroup}'${w.toGroup}`,
-      warning: w.warning
+      warning: w.warning,
+      day: w.day,
+      startTime: w.startTime,
+      endTime: w.endTime
     }))
   });
   
@@ -308,10 +318,10 @@ export function analyzeNewLectureDistanceWarnings(
   
   // 연속된 강의만 확인 (시간이 바로 이어지는 경우만)
   for (const existingLecture of sameDayLectures) {
-    const existingStart = existingLecture.schedule![0]?.start;
-    const existingEnd = existingLecture.schedule![0]?.end;
+    const existingStart = existingLecture.schedule?.[0]?.start;
+    const existingEnd = existingLecture.schedule?.[0]?.end;
     
-    if (!existingStart || !existingEnd) {
+    if (existingStart === undefined || existingEnd === undefined) {
       console.log('⚠️ 기존 강의 시간 정보 불완전:', existingLecture.title);
       continue;
     }
@@ -350,7 +360,12 @@ export function analyzeNewLectureDistanceWarnings(
       const warning = analyzeDistanceWarning(newLecture, existingLecture);
       if (warning) {
         console.log('⚠️ 이동거리 경고 추가 (새→기존):', warning);
-        warnings.push(warning);
+        warnings.push({
+            ...warning,
+            day: newLectureDay,
+            startTime: newLectureEnd,
+            endTime: existingStart
+        });
       }
     }
     
@@ -375,7 +390,12 @@ export function analyzeNewLectureDistanceWarnings(
       const warning = analyzeDistanceWarning(existingLecture, newLecture);
       if (warning) {
         console.log('⚠️ 이동거리 경고 추가 (기존→새):', warning);
-        warnings.push(warning);
+        warnings.push({
+            ...warning,
+            day: newLectureDay,
+            startTime: existingEnd,
+            endTime: newLectureStart,
+        });
       }
     }
   }
@@ -389,7 +409,10 @@ export function analyzeNewLectureDistanceWarnings(
       toGroup: w.toGroup,
       groupCombination: `${w.fromGroup} → ${w.toGroup}`,
       matrixKey: `${w.fromGroup}'${w.toGroup}`,
-      warning: w.warning
+      warning: w.warning,
+      day: w.day,
+      startTime: w.startTime,
+      endTime: w.endTime
     }))
   });
   

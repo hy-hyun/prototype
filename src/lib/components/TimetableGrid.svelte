@@ -16,15 +16,13 @@
     displayedDays = ["월", "화", "수", "목", "금"],
     conflictPairs = [],
     consecutiveWarnings = [],
-    distanceWarnings = [],
-    gaps = []
+    distanceWarnings = []
   } = $props<{
     blocks: TimetableBlock[];
     displayedDays: string[];
     conflictPairs: Array<[TimetableBlock, TimetableBlock]>;
     consecutiveWarnings: Array<{ from: TimetableBlock; to: TimetableBlock; travelTime: number; isImpossible: boolean; }>;
     distanceWarnings: DistanceWarningResult[];
-    gaps: Gap[];
   }>();
 
   // 시간 슬롯을 9시~21시까지 30분 간격으로 확장 (24개 슬롯)
@@ -57,6 +55,14 @@
     const hour = 9 + slot;
     return `${hour.toString().padStart(2, '0')}:00`;
   }
+
+  function formatSlotTime(slot: number): string {
+    const hour = 9 + Math.floor(slot / 2);
+    const minute = (slot % 2) * 30;
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  }
+
+  const dayIndexToName = ["일", "월", "화", "수", "목", "금", "토"];
 
   // CSS Grid 설정
   const DAY_TO_COLUMN: Record<string, number> = {
@@ -114,32 +120,28 @@
       </div>
     {/each}
     
-    <!-- 연강 경고 블록들 -->
-    {#each gaps as gap}
-      <div 
-        style={getGapStyle(gap)}
-        class="gap-block relative group hover:scale-125 transition-all duration-200"
-        title={`${gap.fromLecture} → ${gap.toLecture}\n이동시간: ${gap.requiredTime}분\n상태: ${gap.warningMessage}`}
-      >
-        <!-- 간격 표시 내용 -->
-        <div class="flex items-center justify-center gap-1 text-xs">
-          <span class="text-xs">{getRiskIcon(gap.risk)}</span>
-          <span class="text-xs font-bold">{gap.warningMessage}</span>
-        </div>
-        
-        <!-- 호버 툴팁 -->
-        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
-          <div class="font-semibold mb-1">🚨 이동 안내</div>
-          <div class="space-y-1">
-            <div>📚 {gap.fromLecture} → {gap.toLecture}</div>
-            <div>🏫 {gap.from} → {gap.to}</div>
-            <div>⏱️ 이동시간: {gap.requiredTime}분</div>
-            <div>📊 간격: {gap.gapMinutes}분</div>
-            <div>🎯 상태: {gap.warningMessage}</div>
-          </div>
-        </div>
-      </div>
+    <!-- 이동거리 경고 구분선 -->
+    {#each distanceWarnings as warning}
+      {@const fromLecture = warning.fromLecture}
+      {@const toLecture = warning.toLecture}
+      {@const fromBlock = blocks.find(b => b.courseId === fromLecture.courseId && b.classId === fromLecture.classId)}
+      {@const toBlock = blocks.find(b => b.courseId === toLecture.courseId && b.classId === toLecture.classId)}
+      
+      {#if fromBlock && toBlock && fromBlock.day === toBlock.day && fromBlock.endTime === toBlock.startTime}
+        <div
+          class="distance-warning-indicator"
+          style="
+            grid-column: {fromBlock.day + 2};
+            grid-row: {fromBlock.endTime + 2};
+            background-color: {warning.info.color};
+          "
+          title="{warning.fromBuilding} → {warning.toBuilding}: {warning.info.message}"
+        ></div>
+      {/if}
     {/each}
+    
+    <!-- 연강 경고 블록들 -->
+    
   </div>
   
   <!-- 이동거리 경고 섹션 -->
@@ -147,19 +149,25 @@
     <div class="mt-4 p-4 bg-gray-50 rounded-lg">
       <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
         <span class="text-lg">🚶‍♂️</span>
-        이동거리 경고
+        연강 안내
       </h3>
       <div class="space-y-2">
         {#each distanceWarnings as warning}
           {#if warning.info}
             <div class="distance-warning {warning.info.bgColor} {warning.info.borderColor} border rounded-lg p-3">
-              <div class="flex items-center gap-2">
-                <span class="text-lg">{warning.info.icon}</span>
+              <div class="flex items-start gap-2">
+                <span class="text-lg mt-1">{warning.info.icon}</span>
                 <div class="flex-1">
                   <div class="text-sm font-medium {warning.info.color}">
                     {warning.info.message}
+                    {#if warning.day !== undefined && warning.startTime !== undefined}
+                      <span class="font-sans font-medium ml-2">[{dayIndexToName[warning.day]} {formatSlotTime(warning.startTime)}]</span>
+                    {/if}
                   </div>
                   <div class="text-xs text-gray-600 mt-1">
+                    <span class="font-semibold">{warning.fromLecture.title}</span> → <span class="font-semibold">{warning.toLecture.title}</span>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">
                     {warning.fromBuilding} → {warning.toBuilding}
                   </div>
                 </div>
@@ -306,23 +314,14 @@
     background-color: #dc2626;
   }
   
-  .gap-block {
-    margin: 2px;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    cursor: pointer;
-    transition: transform 0.2s;
+  .distance-warning-indicator {
+    height: 4px;
+    margin: -2px 4px 0 4px;
+    border-radius: 2px;
+    z-index: 15;
+    align-self: start;
   }
-  
-  .gap-block:hover {
-    transform: scale(1.25);
-  }
-  
+
   /* 색상 클래스들 (기존 유지) */
   .bg-blue-100 { background-color: #dbeafe; }
   .bg-green-100 { background-color: #dcfce7; }

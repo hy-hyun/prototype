@@ -107,7 +107,7 @@ export function getDistanceWarningInfo(warning: DistanceWarning) {
     case '0':
       return {
         icon: '🏢',
-        message: '동일 건물',
+        message: '동일 건물군',
         color: 'text-green-600',
         bgColor: 'bg-green-50',
         borderColor: 'border-green-200'
@@ -115,7 +115,7 @@ export function getDistanceWarningInfo(warning: DistanceWarning) {
     case '주의':
       return {
         icon: '⚠️',
-        message: '경사 (배리어프리) 주의',
+        message: '경사 주의',
         color: 'text-yellow-600',
         bgColor: 'bg-yellow-50',
         borderColor: 'border-yellow-200'
@@ -123,7 +123,7 @@ export function getDistanceWarningInfo(warning: DistanceWarning) {
     case '경고':
       return {
         icon: '⏰',
-        message: '시간 소요 多',
+        message: '이동 시간 경고',
         color: 'text-red-600',
         bgColor: 'bg-red-50',
         borderColor: 'border-red-200'
@@ -137,7 +137,12 @@ export function getDistanceWarningInfo(warning: DistanceWarning) {
         borderColor: 'border-blue-200'
       };
     case '-':
-    default:
-      return null;
+      return {
+        icon: '🚶',
+        message: '이동 필요',
+        color: 'text-darkgray-600',
+        bgColor: 'bg-darkgray-50',
+        borderColor: 'border-blue-200'
+      };
   }
 }

@@ -90,7 +90,7 @@
         <div class="space-y-6">
           <!-- 특별 이벤트 라벨 -->
           <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-            <span class="text-white text-sm font-semibold tracking-wide">SPECIAL EVENT</span>
+            <span class="text-white text-sm font-semibold tracking-wide">SYSTEM UPDATE</span>
           </div>
           
           <!-- 메인 타이틀 -->
@@ -100,7 +100,7 @@
               <span class="text-white/90">시스템</span>
             </h1>
             <p class="text-white/80 text-lg font-medium">
-              스마트한 AI 추천 기능과 함께
+              러닝저니 기능을 통한 학업 설계
             </p>
           </div>
           
@@ -134,16 +134,16 @@
               
               <!-- 시간표 블록들 -->
               <div class="bg-blue-100 text-blue-800 rounded p-2 font-medium">
-                프로그래밍
+                말과글
               </div>
               <div class="bg-green-100 text-green-800 rounded p-2 font-medium">
-                수학
+                전문학술영어
               </div>
               <div class="bg-purple-100 text-purple-800 rounded p-2 font-medium">
-                영어
+                분석과비판
               </div>
-              <div class="bg-orange-100 text-orange-800 rounded p-2 font-medium">
-                물리학
+              <div class="bg-white-100 text-orange-800 rounded p-2 font-medium">
+                
               </div>
               <div class="bg-pink-100 text-pink-800 rounded p-2 font-medium">
                 화학
@@ -193,70 +193,100 @@
         <p class="text-sm text-gray-600">수강신청 일정</p>
       </div>
       
-      <div class="grid grid-cols-7 text-sm" style="gap: 1px 0;">
-        <div class="text-center py-3 font-bold">일</div>
+      <div class="grid grid-cols-7 text-sm">
+        <div class="text-center py-3 font-bold text-red-600 dark:text-red-400">일</div>
         <div class="text-center py-3 font-bold">월</div>
         <div class="text-center py-3 font-bold">화</div>
         <div class="text-center py-3 font-bold">수</div>
         <div class="text-center py-3 font-bold">목</div>
         <div class="text-center py-3 font-bold">금</div>
-        <div class="text-center py-3 font-bold">토</div>
+        <div class="text-center py-3 font-bold text-blue-600 dark:text-blue-400">토</div>
         
-        <div class="text-center py-3 text-gray-300">28</div>
-        <div class="text-center py-3 text-gray-300">29</div>
-        <div class="text-center py-3 text-gray-300">30</div>
-        <div class="text-center py-3 text-gray-300">31</div>
-        <div class="text-center py-3">1</div>
-        <div class="text-center py-3">2</div>
-        <div class="text-center py-3">3</div>
-        <div class="text-center py-3">4</div>
-        <div class="text-center py-3">5</div>
-        <div class="text-center py-3">6</div>
-        <div class="text-center py-3">7</div>
-        <div class="text-center py-3">8</div>
-        <div class="text-center py-3">9</div>
-        <div class="text-center py-3">10</div>
-        <div class="text-center py-3">11</div>
+        <!-- Empty cells for previous month -->
+        <div class="border-t"></div>
+        <div class="border-t"></div>
+        <div class="border-t"></div>
+        <div class="border-t"></div>
+        <div class="border-t"></div>
+
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">1</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">2</div>
         
-                 <!-- 수강신청 기간 날짜들 -->
-         <div class="text-center py-3 relative">
-           <div class="font-bold mb-1">12</div>
-           <div class="h-5 bg-hanyang-blue rounded-l -mr-px"></div>
-         </div>
-         <div class="text-center py-3 relative">
-           <div class="font-bold mb-1">13</div>
-           <div class="h-5 bg-hanyang-blue -mr-px -ml-px"></div>
-         </div>
-         <div class="text-center py-3 relative">
-           <div class="font-bold mb-1">14</div>
-           <div class="h-5 bg-hanyang-blue flex items-center justify-center -mr-px -ml-px">
-             <span class="text-xs text-white font-bold">2025-2학기 수강신청 기간</span>
-           </div>
-         </div>
-         <div class="text-center py-3 relative">
-           <div class="font-bold mb-1">15</div>
-           <div class="h-5 bg-hanyang-blue -mr-px -ml-px"></div>
-         </div>
-         <div class="text-center py-3 relative">
-           <div class="font-bold mb-1">16</div>
-           <div class="h-5 bg-hanyang-blue rounded-r -ml-px"></div>
-         </div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">3</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">4</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">5</div>
+
+        <!-- 6일(수) -->
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-blue-50/50">
+          <div class="font-bold mb-1">6</div>
+          <div class="space-y-1 text-xs">
+            <div class="bg-blue-100 text-blue-800 p-1 rounded-md cursor-pointer" title="교환학생 수강신청&#10;11:00 – 24:00">교환학생</div>
+            <div class="bg-blue-100 text-blue-800 p-1 rounded-md cursor-pointer" title="1학년 수강신청&#10;13:00 – 24:00">1학년</div>
+            <div class="bg-blue-100 text-blue-800 p-1 rounded-md cursor-pointer" title="2학년 수강신청&#10;15:00 – 24:00">2학년</div>
+          </div>
+        </div>
+        <!-- 7일(목) -->
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-blue-50/50">
+          <div class="font-bold mb-1">7</div>
+          <div class="space-y-1 text-xs">
+            <div class="bg-blue-100 text-blue-800 p-1 rounded-md cursor-pointer" title="3학년 수강신청&#10;11:00 – 24:00">3학년</div>
+            <div class="bg-blue-100 text-blue-800 p-1 rounded-md cursor-pointer" title="4,5학년 수강신청&#10;13:00 – 24:00">4,5학년</div>
+          </div>
+        </div>
+        <!-- 8일(금) -->
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-green-50/50">
+          <div class="font-bold mb-1">8</div>
+          <div class="text-xs bg-green-100 text-green-800 p-1 rounded-md cursor-pointer" title="베팅 1R 포인트 입력 시작&#10;09:00 ~">베팅 1R 시작</div>
+        </div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px] bg-green-50 dark:bg-green-950/20">9</div>
+
+        <div class="border-t py-2 px-1 text-center min-h-[100px] bg-green-50 dark:bg-green-950/20">10</div>
+        <!-- 11일(월) -->
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-green-50/50">
+          <div class="font-bold mb-1">11</div>
+          <div class="space-y-1 text-xs">
+            <div class="bg-green-100 text-green-800 p-1 rounded-md cursor-pointer" title="베팅 1R 포인트 입력 마감&#10;~ 14:00">1R 마감</div>
+            <div class="bg-green-200 text-green-900 p-1 rounded-md cursor-pointer" title="베팅 1R 결과 열람&#10;15:00">1R 결과</div>
+          </div>
+        </div>
+        <!-- 12일(화) -->
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-green-50/50">
+          <div class="font-bold mb-1">12</div>
+          <div class="text-xs bg-green-100 text-green-800 p-1 rounded-md cursor-pointer" title="베팅 2R 포인트 입력 시작&#10;09:00 ~">베팅 2R 시작</div>
+        </div>
+        <!-- 13일(수) -->
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-green-50/50">
+          <div class="font-bold mb-1">13</div>
+          <div class="space-y-1 text-xs">
+            <div class="bg-green-100 text-green-800 p-1 rounded-md cursor-pointer" title="베팅 2R 포인트 입력 마감&#10;~ 14:00">2R 마감</div>
+            <div class="bg-green-200 text-green-900 p-1 rounded-md cursor-pointer" title="베팅 2R 결과 열람&#10;15:00">2R 결과</div>
+          </div>
+        </div>
+        <!-- 14일(목) -->
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-yellow-50/50">
+          <div class="font-bold mb-1">14</div>
+          <div class="text-xs bg-yellow-100 text-yellow-800 p-1 rounded-md cursor-pointer" title="개강 전 정정&#10;11:00 – 24:00&#10;* 0~11시 수강정정 불가">개강 전 정정</div>
+        </div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">15</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">16</div>
+
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">17</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">18</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">19</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">20</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">21</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">22</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">23</div>
+
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">24</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">25</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">26</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">27</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">28</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">29</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">30</div>
         
-        <div class="text-center py-3">17</div>
-        <div class="text-center py-3">18</div>
-        <div class="text-center py-3">19</div>
-        <div class="text-center py-3">20</div>
-        <div class="text-center py-3">21</div>
-        <div class="text-center py-3">22</div>
-        <div class="text-center py-3">23</div>
-        <div class="text-center py-3">24</div>
-        <div class="text-center py-3">25</div>
-        <div class="text-center py-3">26</div>
-        <div class="text-center py-3">27</div>
-        <div class="text-center py-3">28</div>
-        <div class="text-center py-3">29</div>
-        <div class="text-center py-3">30</div>
-        <div class="text-center py-3">31</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px]">31</div>
       </div>
     </div>
   </section>

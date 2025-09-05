@@ -345,8 +345,7 @@ function parseSchedule(scheduleData: any, topLevelLocation?: any) {
   const dayMap: { [key: string]: number } = {
     '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6, '일': 7,
     'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 7,
-    'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6, 'sun': 7,
-    '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7
+    'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6, 'sun': 7
   };
 
 
@@ -817,8 +816,10 @@ export function refreshCourseData() {
 
 export function refreshNotices() {
   LocalStorageCache.remove(CACHE_KEYS.NOTICES);
-  notices.set(MOCK_NOTICES);
-  LocalStorageCache.set(CACHE_KEYS.NOTICES, MOCK_NOTICES, LocalStorageCache.EXPIRY_TIMES.MEDIUM);
+  // MOCK_NOTICES에서 직접 데이터를 가져와 스토어를 업데이트합니다.
+  const newNotices = MOCK_NOTICES;
+  notices.set(newNotices);
+  LocalStorageCache.set(CACHE_KEYS.NOTICES, newNotices, LocalStorageCache.EXPIRY_TIMES.MEDIUM);
   console.log('💾 공지사항 캐시 갱신 완료');
 }
 
@@ -849,6 +850,21 @@ if (typeof window !== 'undefined') {
     LocalStorageCache.cleanupExpired();
   }, 10 * 60 * 1000);
 }
+
+// HMR을 위한 개발 환경 코드
+if (import.meta.hot) {
+  // data.ts 모듈이 변경되면 stores.ts 모듈을 다시 실행하도록 설정합니다.
+  // 이렇게 하면 최신 MOCK_NOTICES로 notices 스토어가 업데이트됩니다.
+  import.meta.hot.accept((newModule) => {
+    if (newModule) {
+      // 새 모듈의 데이터로 스토어를 직접 업데이트합니다.
+      console.log('🔥 HMR update for stores.ts accepted. Updating notices...');
+      newModule.notices.set(MOCK_NOTICES);
+      LocalStorageCache.set(CACHE_KEYS.NOTICES, MOCK_NOTICES, LocalStorageCache.EXPIRY_TIMES.MEDIUM);
+    }
+  });
+}
+
 
 // === Toast 시스템 함수들 ===
 export function showToast(type: 'success' | 'error', message: string, duration: number = 3000) {
@@ -1055,7 +1071,7 @@ export function findLectureGaps(cartLectures: Lecture[]): Gap[] {
       }
     });
     
-    console.log(`🔍 ${dayName}요일 총 미팅 수:`, dayMeetings.length);
+    // console.log(`🔍 ${dayName}요일 총 미팅 수:`, dayMeetings.length);
     
     // 시간 순으로 정렬
     dayMeetings.sort((a, b) => a.start - b.start);
@@ -1143,4 +1159,3 @@ export function getGapStyle(gap: Gap): string {
     z-index: 10;
   `;
 }
-

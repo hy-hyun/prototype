@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { courses, addToCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading, coursesError, refreshCourseData } from "$lib/stores";
+  import { courses, addToCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading, coursesError, refreshCourseData, favoriteCourses, addToFavorites, removeFromFavorites, isFavorite } from "$lib/stores";
   import { showToast } from "$lib/toast";
   import Loading from "$lib/components/Loading.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
@@ -100,8 +100,9 @@
   }
 
   function onAddToCart(l: Lecture) {
-    addToCart({ courseId: l.courseId, classId: l.classId, method: l.method ?? "FCFS" });
-    showToast("장바구니에 담았습니다", "success");
+    // 찜한 과목으로만 저장 (시간표에 바로 표시되지 않음)
+    addToFavorites(l.courseId, l.classId);
+    showToast("찜한 과목에 추가되었습니다", "success");
   }
 
   function onApply(l: Lecture) {
@@ -484,10 +485,12 @@
               상세보기
             </button>
             <button 
-              class="border border-blue-500 text-blue-500 hover:bg-blue-50 rounded px-3 py-1 text-sm transition-colors"
+              class="border border-blue-500 text-blue-500 hover:bg-blue-50 rounded px-3 py-1 text-sm transition-colors {
+                isFavorite(l.courseId, l.classId) ? 'bg-pink-100 border-pink-400 text-pink-500' : ''
+              }"
               onclick={() => onAddToCart(l)}
             >
-              장바구니
+              {isFavorite(l.courseId, l.classId) ? '❤️ 찜됨' : '장바구니'}
             </button>
             <button 
               class="rounded px-3 py-1 text-sm transition-colors {isBettingCourse(l) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}"

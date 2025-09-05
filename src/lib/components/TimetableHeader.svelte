@@ -8,15 +8,11 @@
 
   // 부모로부터 모든 데이터를 props로 받습니다.
   let {
-    selectedSemester = "2024-2학기",
-    semesters = [],
     totalCredits = 0,
     creditStatus = { status: "success", message: "적정 학점" },
     minCredits = 12,
     maxCredits = 21
   } = $props<{
-    selectedSemester: string;
-    semesters: string[];
     totalCredits: number;
     creditStatus: CreditStatus;
     minCredits: number;
@@ -136,24 +132,8 @@
           </h1>
         </div>
 
-        <!-- 3. 학기 선택과 4. 리셋 버튼 -->
+        <!-- 3. 리셋 버튼 -->
         <div class="flex items-center gap-4 flex-wrap">
-          <!-- 글래스모피즘 학기 선택 -->
-          <div class="glass-select">
-            <select 
-              class="bg-transparent text-gray-700 font-medium px-4 py-2 pr-8 outline-none cursor-pointer appearance-none"
-              value={selectedSemester}
-              onchange={onSemesterChange}
-            >
-              {#each semesters as semester}
-                <option value={semester}>{semester}</option>
-              {/each}
-            </select>
-            <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </div>
-
           <!-- 초기화 버튼 -->
           <div class="relative group">
             <button 

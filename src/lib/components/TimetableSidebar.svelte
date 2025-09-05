@@ -8,18 +8,24 @@
     courses = [],
     cartCourses = [],
     dayTabs = [],
-    activeTab = "전체"
+    activeTab = "전체",
+    showFavorites = false,
+    favoriteCourses = []
   } = $props<{
-    courses: (Lecture & { isInCart: boolean })[];
+    courses: (Lecture & { isInCart: boolean; isFavorite: boolean })[];
     cartCourses: (Lecture & { cartMethod: string })[];
     dayTabs: DayTab[];
     activeTab: string;
+    showFavorites: boolean;
+    favoriteCourses: string[];
   }>();
 
   const dispatch = createEventDispatcher<{
     tabChange: string;
     add: Lecture;
     remove: Lecture;
+    toggleFavorites: void;
+    toggleFavorite: { courseId: string; classId: string };
   }>();
 
   function changeTab(tabKey: string) {
@@ -57,6 +63,23 @@
   <!-- 요일별 탭 메뉴 -->
   <div class="px-4 py-3 border-b border-gray-100">
     <div class="flex flex-col gap-2 mb-4">
+      <!-- 찜 토글 (최상단) -->
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-gray-700">찜한 과목만 보기</span>
+        <button 
+          type="button"
+          class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 {
+            showFavorites ? 'bg-pink-500' : 'bg-gray-200'
+          }"
+          onclick={() => dispatch('toggleFavorites')}
+        >
+          <span class="sr-only">찜한 과목만 보기</span>
+          <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform {
+            showFavorites ? 'translate-x-6' : 'translate-x-1'
+          }"></span>
+        </button>
+      </div>
+      
       <!-- 전체 버튼 (윗줄) -->
       {#each dayTabs as tab (tab.key)}
         {#if tab.key === "전체"}
@@ -152,8 +175,23 @@
               </div>
             </div>
 
-            <!-- 추가/삭제 버튼 (왼쪽 정렬, 최소 너비) -->
-            <div class="flex justify-start">
+            <!-- 찜 버튼과 장바구니 버튼 -->
+            <div class="flex justify-between items-center">
+              <!-- 찜 버튼 -->
+              <button 
+                type="button"
+                class="px-3 py-1.5 text-xs rounded-lg transition-colors font-medium {
+                  course.isFavorite 
+                    ? 'bg-pink-100 text-pink-500 hover:bg-pink-200' 
+                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                }"
+                onclick={() => dispatch('toggleFavorite', { courseId: course.courseId, classId: course.classId })}
+                title={course.isFavorite ? "찜 해제" : "찜하기"}
+              >
+                {course.isFavorite ? "❤️" : "🤍"}
+              </button>
+              
+              <!-- 장바구니 버튼 -->
               {#if course.isInCart}
                 <button 
                   type="button"
@@ -165,6 +203,18 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
                   </svg>
                   제거
+                </button>
+              {:else if course.isFavorite}
+                <button 
+                  type="button"
+                  class="cart-btn add"
+                  onclick={() => addToCart(course)}
+                  title="찜한 과목을 장바구니에 추가"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                  추가
                 </button>
               {:else}
                 <button 

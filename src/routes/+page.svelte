@@ -217,7 +217,7 @@
         <div class="border-t py-2 px-1 text-center min-h-[100px]">5</div>
 
         <!-- 6일(수) -->
-        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-blue-50/50">
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-blue-100/35">
           <div class="font-bold mb-1">6</div>
           <div class="space-y-1 text-xs">
             <div class="bg-blue-100 text-blue-800 p-1 rounded-md cursor-pointer" title="교환학생 수강신청&#10;11:00 – 24:00">교환학생</div>
@@ -226,7 +226,7 @@
           </div>
         </div>
         <!-- 7일(목) -->
-        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-blue-50/50">
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-blue-100/35">
           <div class="font-bold mb-1">7</div>
           <div class="space-y-1 text-xs">
             <div class="bg-blue-100 text-blue-800 p-1 rounded-md cursor-pointer" title="3학년 수강신청&#10;11:00 – 24:00">3학년</div>
@@ -234,15 +234,15 @@
           </div>
         </div>
         <!-- 8일(금) -->
-        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-green-50/50">
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-green-100/35">
           <div class="font-bold mb-1">8</div>
           <div class="text-xs bg-green-100 text-green-800 p-1 rounded-md cursor-pointer" title="베팅 1R 포인트 입력 시작&#10;09:00 ~">베팅 1R 시작</div>
         </div>
-        <div class="border-t py-2 px-1 text-center min-h-[100px] bg-green-50 dark:bg-green-950/20">9</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px] bg-green-100/35 dark:bg-green-50/50">9</div>
 
-        <div class="border-t py-2 px-1 text-center min-h-[100px] bg-green-50 dark:bg-green-950/20">10</div>
+        <div class="border-t py-2 px-1 text-center min-h-[100px] bg-green-100/35 dark:bg-green-50/50">10</div>
         <!-- 11일(월) -->
-        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-green-50/50">
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-green-100/35">
           <div class="font-bold mb-1">11</div>
           <div class="space-y-1 text-xs">
             <div class="bg-green-100 text-green-800 p-1 rounded-md cursor-pointer" title="베팅 1R 포인트 입력 마감&#10;~ 14:00">1R 마감</div>
@@ -250,12 +250,12 @@
           </div>
         </div>
         <!-- 12일(화) -->
-        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-green-50/50">
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-green-100/35">
           <div class="font-bold mb-1">12</div>
           <div class="text-xs bg-green-100 text-green-800 p-1 rounded-md cursor-pointer" title="베팅 2R 포인트 입력 시작&#10;09:00 ~">베팅 2R 시작</div>
         </div>
         <!-- 13일(수) -->
-        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-green-50/50">
+        <div class="border-t py-2 px-1 text-center relative min-h-[100px] bg-green-100/35">
           <div class="font-bold mb-1">13</div>
           <div class="space-y-1 text-xs">
             <div class="bg-green-100 text-green-800 p-1 rounded-md cursor-pointer" title="베팅 2R 포인트 입력 마감&#10;~ 14:00">2R 마감</div>

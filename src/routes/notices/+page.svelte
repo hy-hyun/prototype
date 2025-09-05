@@ -7,7 +7,9 @@
   const itemsPerPage = 10;
   
   const pinnedNotices = derived(notices, ($n) => $n.filter((x) => x.pinned));
-  const regularNotices = derived(notices, ($n) => $n.filter((x) => !x.pinned));
+  const regularNotices = derived(notices, ($n) => 
+    $n.filter((x) => !x.pinned).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  );
   
   // Svelte 5 룬모드로 변환
   const paginatedRegularNotices = $derived.by(() => {
@@ -28,9 +30,9 @@
     return `${year}.${month}.${day}`;
   }
 
-  // 공지사항 번호 계산 (고정 공지 제외하고 역순)
+  // 공지사항 번호 계산 (정순으로 변경)
   function getNoticeNumber(index: number): number {
-    return $regularNotices.length - ((currentPage - 1) * itemsPerPage + index);
+    return (currentPage - 1) * itemsPerPage + index + 1;
   }
   
   function goToPage(page: number) {

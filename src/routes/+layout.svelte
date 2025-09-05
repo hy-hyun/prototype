@@ -63,9 +63,9 @@
 
 <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-hanyang-blue/20 shadow-sm">
   <div class="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
-    <a class="text-2xl font-bold hanyang-navy hover:hanyang-blue transition-colors duration-200" href="/">
+    <a class="text-2xl font-black text-center hanyang-navy hover:hanyang-blue transition-colors duration-200" href="/">
       HY-PATH
-      <span class="text-sm font-normal hanyang-blue block -mt-1">수강신청 시스템</span>
+      <span class="text-sm hanyang-blue block -mt-1">수강신청 시스템</span>
     </a>
     <div class="flex items-center gap-4 sm:gap-6">
       {#each navItems as item}

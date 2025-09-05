@@ -15,6 +15,13 @@
   font-style: normal;
 }
 
+@font-face {
+  font-family: 'NanumSquare Neo';
+  src: url('/fonts/NanumSquareNeoTTF-eHv.woff2') format('woff2');
+  font-weight: 900; /* Heavy (가장 굵은 굵기로 사용) */
+  font-style: normal;
+}
+
 /* tw-animate-css 제거 - Tailwind CSS 기본 애니메이션 사용 */
 
 @custom-variant dark (&:is(.dark *));

@@ -70,10 +70,10 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
         <div class="flex flex-col">
-          <h1 class="text-2xl font-bold" style="color: #3b82f6; font-family: 'Poppins', 'Nunito', 'Roboto', system-ui, sans-serif;">
-            2025학년 2학기
+          <h1 class="text-2xl font-bold" style="color: #3b82f6;">
+            2025-2학기
           </h1>
-          <span class="text-lg font-semibold text-black" style="font-family: 'Poppins', 'Nunito', 'Roboto', system-ui, sans-serif;">
+          <span class="text-lg font-semibold text-black">
             시간표
           </span>
         </div>

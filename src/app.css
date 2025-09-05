@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+/* 나눔스퀘어 네오 폰트 정의 */
+@font-face {
+  font-family: 'NanumSquare Neo';
+  src: url('/fonts/NanumSquareNeoTTF-cBd.woff2') format('woff2');
+  font-weight: 400; /* Bold (기본 굵기로 사용) */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'NanumSquare Neo';
+  src: url('/fonts/NanumSquareNeoTTF-dEb.woff2') format('woff2');
+  font-weight: 700; /* ExtraBold (굵은 굵기로 사용) */
+  font-style: normal;
+}
+
 /* tw-animate-css 제거 - Tailwind CSS 기본 애니메이션 사용 */
 
 @custom-variant dark (&:is(.dark *));
@@ -124,5 +139,6 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'NanumSquare Neo', sans-serif; /* 나눔스퀘어 네오 폰트 적용 */
   }
 }

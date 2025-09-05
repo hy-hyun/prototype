@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { cart, applications, courses, addLectureToCart, hasTimeConflict, showReplaceToast, confirmReplaceInTimetable, removeFromCart } from "$lib/stores";
+  import { cart, applications, courses, addLectureToCart, hasTimeConflict, showReplaceToast, confirmReplaceInTimetable, removeFromCart, loadCourses } from "$lib/stores";
   import { showToast } from "$lib/toast";
   import { browser } from "$app/environment";
   import TimetableHeader from "$lib/components/TimetableHeader.svelte";
@@ -17,7 +17,7 @@
   let activeTab = $state("전체");
   let selectedSemester = $state("2024-2학기");
   let displayedDays = $state(["월", "화", "수", "목", "금"]); // 요일 목록을 state로 변경
-  let showCartOnly = $state(false); // 장바구니에 넣은 과목만 보기 토글
+  let showCartOnly = $state(true); // 장바구니에 넣은 과목만 보기 토글
   let timetableCourses = $state<string[]>([]); // 시간표에 표시할 과목들 (장바구니에서 추가 버튼을 눌렀을 때만)
 
   // 데이터 로딩

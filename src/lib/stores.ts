@@ -778,21 +778,14 @@ export function applyBid(courseId: string, classId: string, bidAmount: number) {
     const key = `${courseId}-${classId}`;
     const minWin = seededInt(key + ":min", 15, 25);
     
-    // 베팅 결과 결정: 최저값-1까지 당첨, 최저값-2부터 탈락
-    let bidResult: "WAITING" | "WON" | "LOST";
-    if (bidAmount >= minWin - 1) {
-      bidResult = "WON";
-    } else {
-      bidResult = "LOST";
-    }
-    
+    // 베팅 확정 시 항상 WAITING 상태로 생성
     return [{ 
       courseId, 
       classId, 
-      status: bidResult === "WON" ? "CONFIRMED" : "FAILED", 
+      status: "PENDING", 
       method: "BID", 
       bidAmount, 
-      bidResult
+      bidResult: "WAITING"
     }, ...a];
   });
 }

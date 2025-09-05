@@ -9,9 +9,9 @@
   // Svelte 5 룬모드 상태 변수들
   let keyword = $state("");
   let filters = $state({ 
-    term: "2025-2", // 2025-2학기로 기본값 설정
     grade: "", 
     dept: "",
+    college: "", // 단과대학 필드 추가
     category: "",
     liberalArtsArea: "",
     instructor: "",
@@ -21,6 +21,20 @@
   let results = $state<Lecture[]>([]);
   let selectedLecture = $state<Lecture | null>(null);
   let showDetail = $state(false);
+  
+  // 페이지네이션 상태
+  let currentPage = $state(1);
+  const itemsPerPage = 10;
+  
+  // 페이지네이션된 결과를 계산하는 파생 상태
+  let paginatedResults = $derived.by(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return results.slice(startIndex, endIndex);
+  });
+  
+  // 총 페이지 수 계산
+  let totalPages = $derived(Math.ceil(results.length / itemsPerPage));
 
   function search() {
     const searchTerm = keyword.trim().toLowerCase();
@@ -53,9 +67,9 @@
       }
       
       // 2. 필터 조건들 검사
-      const termMatch = !filters.term || course.courseId.includes(filters.term);
       const gradeMatch = !filters.grade || course.courseLevel?.startsWith(filters.grade + "00");
       const deptMatch = !filters.dept || course.dept === filters.dept;
+      const collegeMatch = !filters.college; // 단과대학 필터는 현재 비활성화 상태이므로 항상 true
       const categoryMatch = !filters.category || course.category === filters.category;
       // 교양영역 필터는 이수구분이 '교양' 또는 '핵심교양'인 경우에만 적용
       const liberalArtsAreaMatch = !filters.liberalArtsArea || 
@@ -64,10 +78,13 @@
       const courseLevelMatch = !filters.courseLevel || course.courseLevel === filters.courseLevel;
       const creditHoursMatch = !filters.creditHours || course.credits.lecture.toString() === filters.creditHours;
       
-      return keywordMatch && termMatch && gradeMatch && deptMatch && 
+      return keywordMatch && gradeMatch && deptMatch && collegeMatch && 
              categoryMatch && liberalArtsAreaMatch && instructorMatch && 
              courseLevelMatch && creditHoursMatch;
     });
+    
+    // 검색 후 첫 페이지로 이동
+    currentPage = 1;
   }
 
   // 실시간 검색 함수
@@ -87,9 +104,9 @@
   function resetFilters() {
     keyword = "";
     filters = { 
-      term: "2025-2", // 학기는 2025-2학기로 고정 유지
       grade: "", 
       dept: "",
+      college: "",
       category: "",
       liberalArtsArea: "",
       instructor: "",
@@ -97,6 +114,13 @@
       creditHours: ""
     };
     search(); // 검색 함수 호출로 전체 목록 표시
+  }
+  
+  // 페이지 변경 함수
+  function goToPage(page: number) {
+    if (page >= 1 && page <= totalPages) {
+      currentPage = page;
+    }
   }
 
   function onAddToCart(l: Lecture) {
@@ -196,6 +220,7 @@
     if ($courses.length > 0 && results.length === 0 && !keyword) {
       console.log('🔍 초기 데이터 로드 완료 - 전체 목록 표시');
       results = $courses; // 직접 할당으로 무한 루프 방지
+      currentPage = 1; // 첫 페이지로 설정
     }
   });
 </script>
@@ -221,7 +246,7 @@
       </button>
     </div>
     
-    <!-- 첫 번째 필터 행: 이수구분, 학기, 학년, 학과 -->
+    <!-- 첫 번째 필터 행: 이수구분, 학년, 단과대학, 학과 -->
     <div class="grid gap-3 md:grid-cols-4">
       <div>
         <p class="text-xs text-gray-500 mb-2">이수구분</p>
@@ -244,18 +269,26 @@
       </div>
 
       <div>
-        <p class="text-xs text-gray-500 mb-2">학기</p>
-        <div class="border rounded p-2 bg-gray-100 w-full text-gray-700 cursor-not-allowed">
-          2025-2학기
-        </div>
-      </div>
-
-      <div>
         <p class="text-xs text-gray-500 mb-2">학년</p>
         <select class="border rounded p-2 bg-white w-full" bind:value={filters.grade} onchange={() => performRealTimeSearch()}>
           <option value="">전체 학년</option>
           {#each STATIC_FILTER_OPTIONS.grades as grade}
             <option value={grade.value}>{grade.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div>
+        <p class="text-xs text-gray-500 mb-2">단과대학</p>
+        <select 
+          class="border rounded p-2 w-full cursor-not-allowed opacity-50" 
+          bind:value={filters.college} 
+          disabled
+          title="단과대학 필터는 준비 중입니다"
+        >
+          <option value="">준비 중</option>
+          {#each STATIC_FILTER_OPTIONS.colleges as college}
+            <option value={college.value}>{college.label}</option>
           {/each}
         </select>
       </div>
@@ -325,9 +358,15 @@
   
   <!-- 필터 초기화 버튼 -->
   <div class="flex justify-between items-center">
-    <p class="text-sm text-gray-600">
-      검색 결과: <span class="font-semibold text-blue-600">{results.length}</span>개
-    </p>
+    <div class="text-sm text-gray-600">
+      <p>검색 결과: <span class="font-semibold text-blue-600">{results.length}</span>개</p>
+      {#if results.length > itemsPerPage}
+        <p class="text-xs text-gray-500 mt-1">
+          {currentPage}페이지 / 총 {totalPages}페이지 
+          ({(currentPage - 1) * itemsPerPage + 1}~{Math.min(currentPage * itemsPerPage, results.length)}번째 강의)
+        </p>
+      {/if}
+    </div>
     <div class="flex gap-2">
       <button 
         type="button"
@@ -387,7 +426,7 @@
       </div>
     {/if}
   {:else}
-    {#each results as l}
+    {#each paginatedResults as l}
       <div class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
         <div class="flex items-start justify-between">
           <div class="flex-1">
@@ -506,6 +545,73 @@
     {/each}
   {/if}
 </section>
+
+<!-- 페이지네이션 -->
+{#if results.length > itemsPerPage}
+  <div class="mt-8 flex justify-center">
+    <nav class="flex items-center gap-2">
+      <!-- 이전 버튼 -->
+      <button 
+        class="px-3 py-2 rounded border {currentPage <= 1 ? 'border-gray-300 text-gray-400 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}"
+        onclick={() => goToPage(currentPage - 1)}
+        disabled={currentPage <= 1}
+      >
+        이전
+      </button>
+      
+      <!-- 첫 페이지 -->
+      {#if totalPages > 1}
+        <button 
+          class="px-3 py-2 rounded {currentPage === 1 ? 'bg-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}"
+          onclick={() => goToPage(1)}
+        >
+          1
+        </button>
+      {/if}
+      
+      <!-- 시작 생략 표시 -->
+      {#if currentPage > 3}
+        <span class="px-2 text-gray-500">...</span>
+      {/if}
+      
+      <!-- 현재 페이지 주변 페이지들 -->
+      {#each Array.from({length: totalPages}, (_, i) => i + 1) as page}
+        {#if page > 1 && page < totalPages && Math.abs(page - currentPage) <= 1}
+          <button 
+            class="px-3 py-2 rounded {currentPage === page ? 'bg-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}"
+            onclick={() => goToPage(page)}
+          >
+            {page}
+          </button>
+        {/if}
+      {/each}
+      
+      <!-- 끝 생략 표시 -->
+      {#if currentPage < totalPages - 2}
+        <span class="px-2 text-gray-500">...</span>
+      {/if}
+      
+      <!-- 마지막 페이지 -->
+      {#if totalPages > 1}
+        <button 
+          class="px-3 py-2 rounded {currentPage === totalPages ? 'bg-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}"
+          onclick={() => goToPage(totalPages)}
+        >
+          {totalPages}
+        </button>
+      {/if}
+      
+      <!-- 다음 버튼 -->
+      <button 
+        class="px-3 py-2 rounded border {currentPage >= totalPages ? 'border-gray-300 text-gray-400 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}"
+        onclick={() => goToPage(currentPage + 1)}
+        disabled={currentPage >= totalPages}
+      >
+        다음
+      </button>
+    </nav>
+  </div>
+{/if}
 
 <!-- 강의 상세 모달 -->
 {#if showDetail && selectedLecture}

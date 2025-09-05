@@ -134,6 +134,16 @@ export const STATIC_FILTER_OPTIONS = {
     { value: "3", label: "3학년" },
     { value: "4", label: "4학년" }
   ],
+  colleges: [
+    { value: "engineering", label: "공과대학" },
+    { value: "business", label: "경영대학" },
+    { value: "humanities", label: "인문대학" },
+    { value: "social", label: "사회과학대학" },
+    { value: "natural", label: "자연과학대학" },
+    { value: "arts", label: "예술대학" },
+    { value: "medicine", label: "의과대학" },
+    { value: "education", label: "사범대학" }
+  ],
   courseLevels: [
     { value: "100", label: "100단계 (1학년)" },
     { value: "200", label: "200단계 (2학년)" },

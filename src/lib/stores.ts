@@ -918,6 +918,22 @@ export function confirmReplace(toastId: string, existingLecture: Lecture, newLec
   showToast('success', `"${existingLecture.title}"이(가) "${newLecture.title}"로(으) 교체되었습니다!`);
 }
 
+// 시간표에서 교체 확인 함수
+export function confirmReplaceInTimetable(toastId: string, existingLecture: Lecture, newLecture: Lecture, timetableCourses: string[]) {
+  // 기존 강의를 시간표에서 제거
+  const existingKey = `${existingLecture.courseId}-${existingLecture.classId}`;
+  const newKey = `${newLecture.courseId}-${newLecture.classId}`;
+  
+  const updatedCourses = timetableCourses
+    .filter(key => key !== existingKey)
+    .concat(newKey);
+  
+  removeToast(toastId);
+  showToast('success', `"${existingLecture.title}"이(가) "${newLecture.title}"로(으) 교체되었습니다!`);
+  
+  return updatedCourses;
+}
+
 // 강의 중복 검사 함수
 export function hasTimeConflict(lecture1: Lecture, lecture2: Lecture): boolean {
   if (!lecture1.schedule || !lecture2.schedule) return false;

@@ -12,7 +12,7 @@
     showFavorites = false,
     favoriteCourses = []
   } = $props<{
-    courses: (Lecture & { isInCart: boolean; isFavorite: boolean })[];
+    courses: (Lecture & { isInCart: boolean; isFavorite: boolean; isInTimetable: boolean })[];
     cartCourses: (Lecture & { cartMethod: string })[];
     dayTabs: DayTab[];
     activeTab: string;
@@ -65,7 +65,7 @@
     <div class="flex flex-col gap-2 mb-4">
       <!-- 찜 토글 (최상단) -->
       <div class="flex items-center justify-between">
-        <span class="text-sm font-medium text-gray-700">찜한 과목만 보기</span>
+        <span class="text-sm font-medium text-gray-700">장바구니에 넣은 과목만 보기</span>
         <button 
           type="button"
           class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 {
@@ -188,23 +188,38 @@
                 onclick={() => dispatch('toggleFavorite', { courseId: course.courseId, classId: course.classId })}
                 title={course.isFavorite ? "찜 해제" : "찜하기"}
               >
-                {course.isFavorite ? "❤️" : "🤍"}
+                {course.isFavorite ? "🛒" : "🛒"}
               </button>
               
               <!-- 장바구니 버튼 -->
-              {#if course.isInCart}
+              {#if course.isInCart && course.isInTimetable}
+                <!-- 장바구니에 있고 시간표에도 표시된 과목: 제거 버튼 -->
                 <button 
                   type="button"
                   class="cart-btn remove"
                   onclick={() => removeFromCart(course)}
-                  title="장바구니에서 제거"
+                  title="시간표에서 제거"
                 >
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
                   </svg>
                   제거
                 </button>
+              {:else if course.isInCart}
+                <!-- 장바구니에 있지만 시간표에 표시되지 않은 과목: 추가 버튼 -->
+                <button 
+                  type="button"
+                  class="cart-btn add"
+                  onclick={() => addToCart(course)}
+                  title="시간표에 추가"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                  추가
+                </button>
               {:else if course.isFavorite}
+                <!-- 찜한 과목: 추가 버튼 -->
                 <button 
                   type="button"
                   class="cart-btn add"
@@ -217,6 +232,7 @@
                   추가
                 </button>
               {:else}
+                <!-- 일반 과목: 추가 버튼 -->
                 <button 
                   type="button"
                   class="cart-btn add"

@@ -62,7 +62,7 @@
 <div class="relative">
   <!-- 헤더 배경 -->
   <div class="glass-header backdrop-blur-xl bg-white/80 border-b border-white/20 shadow-lg">
-    <div class="px-6 py-2 max-w-7xl mx-auto">
+    <div class="px-6 py-2 w-full">
       <div class="flex items-center justify-between flex-wrap gap-4">
         <!-- 1. 총학점 게이지 -->
         <div class="flex items-center gap-4">

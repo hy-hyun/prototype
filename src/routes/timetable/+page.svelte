@@ -320,9 +320,11 @@
 
   function handleRemoveFromGrid(event: CustomEvent<{ courseId: string; classId: string }>) {
     const { courseId, classId } = event.detail;
-    cart.update(items => items.filter(item => 
-      !(item.courseId === courseId && item.classId === classId)
-    ));
+    const courseKey = `${courseId}-${classId}`;
+    
+    // 시간표에서만 제거 (장바구니는 유지)
+    timetableCourses = timetableCourses.filter(key => key !== courseKey);
+    showToast("시간표에서 제거했습니다", "success");
   }
 
   function handleSuggestFromGrid(event: CustomEvent<{ block: TimetableBlock }>) {
@@ -477,7 +479,7 @@
       on:download={handleDownload}
       on:share={handleShare}
     />
-    <main class="flex-1 overflow-hidden p-4">
+    <main class="flex-1 overflow-hidden px-4 py-2">
       <TimetableGrid
         blocks={processedTimetable.blocks}
         conflictPairs={conflictAnalysis.conflictPairs}
@@ -597,7 +599,7 @@
   </div>
   
   <!-- 모바일 시간표 -->
-  <main class="flex-1 overflow-y-auto">
+  <main class="flex-1 overflow-y-auto px-2 py-2">
     <TimetableGrid
       blocks={processedTimetable.blocks}
       conflictPairs={conflictAnalysis.conflictPairs}

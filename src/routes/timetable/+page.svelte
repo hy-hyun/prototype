@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { cart, applications, courses, addLectureToCart, findLectureGaps, loadCourses, favoriteCourses } from "$lib/stores";
+  import { cart, applications, courses, addLectureToCart, findLectureGaps, loadCourses, favoriteCourses, hasTimeConflict, showReplaceToast, confirmReplaceInTimetable } from "$lib/stores";
+  import { showToast } from "$lib/toast";
   import { browser } from "$app/environment";
   import TimetableHeader from "$lib/components/TimetableHeader.svelte";
   import TimetableSidebar from "$lib/components/TimetableSidebar.svelte";
@@ -14,7 +15,8 @@
   let activeTab = $state("전체");
   let selectedSemester = $state("2024-2학기");
   let displayedDays = $state(["월", "화", "수", "목", "금"]); // 요일 목록을 state로 변경
-  let showFavorites = $state(false); // 찜한 과목만 보기 토글
+  let showFavorites = $state(false); // 장바구니에 넣은 과목만 보기 토글
+  let timetableCourses = $state<string[]>([]); // 시간표에 표시할 과목들 (장바구니에서 추가 버튼을 눌렀을 때만)
 
   // 데이터 로딩
   $effect(() => {
@@ -22,6 +24,30 @@
       loadCourses();
     }
   });
+
+  // 충돌 경고 감지 및 토스트 메시지 표시
+  $effect(() => {
+    if (conflictAnalysis.conflictPairs.length > 0) {
+      showToast(`시간 충돌이 감지되었습니다! (${conflictAnalysis.conflictPairs.length}개)`, "error");
+    }
+    if (conflictAnalysis.consecutiveWarnings.length > 0) {
+      const impossibleCount = conflictAnalysis.consecutiveWarnings.filter(w => w.isImpossible).length;
+      if (impossibleCount > 0) {
+        showToast(`연속 강의 이동 불가능! (${impossibleCount}개)`, "warning");
+      }
+    }
+  });
+
+  // 교체 Toast 처리 핸들러
+  function handleReplaceToast(event: CustomEvent<{ toastId: string; existingLecture: Lecture; newLecture: Lecture }>) {
+    const { toastId, existingLecture, newLecture } = event.detail;
+    console.log('🔄 교체 이벤트 수신:', { toastId, existingLecture: existingLecture.title, newLecture: newLecture.title });
+    console.log('🔄 교체 전 timetableCourses:', timetableCourses);
+    
+    timetableCourses = confirmReplaceInTimetable(toastId, existingLecture, newLecture, timetableCourses);
+    
+    console.log('🔄 교체 후 timetableCourses:', timetableCourses);
+  }
 
   // 찜 토글 핸들러
   function handleToggleFavorites() {
@@ -73,9 +99,13 @@
   const baseTimetableBlocks = $derived.by(() => {
     if ($courses.length === 0) return [];
     
+    // 시간표에는 신청된 과목과 장바구니에서 추가 버튼을 눌러서 시간표에 추가된 과목만 표시
     const allItems = [
-      ...$cart,
-      ...$applications.map(app => ({ courseId: app.courseId, classId: app.classId, method: "FCFS" as const }))
+      ...$applications.map(app => ({ courseId: app.courseId, classId: app.classId, method: "FCFS" as const })),
+      ...timetableCourses.map(courseKey => {
+        const [courseId, classId] = courseKey.split('-');
+        return { courseId, classId, method: "FCFS" as const };
+      })
     ];
     
     const colors = ["bg-blue-100 border-blue-300", "bg-green-100 border-green-300", "bg-purple-100 border-purple-300", "bg-orange-100 border-orange-300", "bg-pink-100 border-pink-300", "bg-indigo-100 border-indigo-300", "bg-gray-100 border-gray-300"];
@@ -168,20 +198,72 @@
     return { blocks, conflicts, consecutives };
   });
 
+  // 3. 시간 충돌 및 연속 강의 경고 검사
+  const conflictAnalysis = $derived.by(() => {
+    if (baseTimetableBlocks.length === 0) return { conflictPairs: [], consecutiveWarnings: [] };
+    
+    const conflicts: Array<[TimetableBlock, TimetableBlock]> = [];
+    const consecutiveWarnings: Array<{ from: TimetableBlock; to: TimetableBlock; travelTime: number; isImpossible: boolean; }> = [];
+    
+    // 시간 충돌 검사
+    for (let i = 0; i < baseTimetableBlocks.length; i++) {
+      for (let j = i + 1; j < baseTimetableBlocks.length; j++) {
+        const block1 = baseTimetableBlocks[i];
+        const block2 = baseTimetableBlocks[j];
+        
+        // 같은 요일이고 시간이 겹치는지 확인
+        if (block1.day === block2.day && 
+            Math.max(block1.startTime, block2.startTime) < Math.min(block1.endTime, block2.endTime)) {
+          conflicts.push([block1, block2]);
+        }
+      }
+    }
+    
+    // 연속 강의 경고 검사
+    for (let i = 0; i < baseTimetableBlocks.length; i++) {
+      for (let j = 0; j < baseTimetableBlocks.length; j++) {
+        if (i === j) continue;
+        
+        const fromBlock = baseTimetableBlocks[i];
+        const toBlock = baseTimetableBlocks[j];
+        
+        // 같은 요일이고 연속 강의인지 확인
+        if (fromBlock.day === toBlock.day && fromBlock.endTime === toBlock.startTime) {
+          const fromBuilding = fromBlock.building || 'IT';
+          const toBuilding = toBlock.building || 'IT';
+          const travelTime = buildingTravelTime[fromBuilding]?.[toBuilding] || 0;
+          const isImpossible = travelTime > 0; // 이동 시간이 필요한 경우
+          
+          consecutiveWarnings.push({
+            from: fromBlock,
+            to: toBlock,
+            travelTime,
+            isImpossible
+          });
+        }
+      }
+    }
+    
+    return { conflictPairs: conflicts, consecutiveWarnings };
+  });
+
   // 4. 사이드바에 필요한 데이터 가공
   const sidebarData = $derived.by(() => {
     const cartIds = new Set($cart.map(item => `${item.courseId}-${item.classId}`));
     const favoriteIds = new Set($favoriteCourses);
     
+    const timetableCourseIds = new Set(timetableCourses);
+    
     const allCoursesWithStatus = $courses.map(c => ({
       ...c,
       isInCart: cartIds.has(`${c.courseId}-${c.classId}`),
-      isFavorite: favoriteIds.has(`${c.courseId}-${c.classId}`)
+      isFavorite: favoriteIds.has(`${c.courseId}-${c.classId}`),
+      isInTimetable: timetableCourseIds.has(`${c.courseId}-${c.classId}`)
     }));
 
-    // 찜한 과목만 보기 필터링
+    // 장바구니에 넣은 과목만 보기 필터링
     const filteredCourses = showFavorites 
-      ? allCoursesWithStatus.filter(course => course.isFavorite)
+      ? allCoursesWithStatus.filter(course => course.isInCart)
       : allCoursesWithStatus;
 
     const dayTabs = [ "전체", "월", "화", "수", "목", "금" ].map((day, index) => {
@@ -286,13 +368,39 @@
 
   function handleAddToCart(event: CustomEvent<Lecture>) {
     const course = event.detail;
-    // 시간 중복 검사를 포함한 강의 추가
-    addLectureToCart(course);
+    const courseKey = `${course.courseId}-${course.classId}`;
+    
+    // 이미 시간표에 있는지 확인
+    if (timetableCourses.includes(courseKey)) {
+      showToast("이미 시간표에 있는 강의입니다", "info");
+      return;
+    }
+    
+    // 시간 충돌 검사
+    const existingCourses = timetableCourses.map(key => {
+      const [courseId, classId] = key.split('-');
+      return $courses.find(c => c.courseId === courseId && c.classId === classId);
+    }).filter(Boolean) as Lecture[];
+    
+    for (const existingCourse of existingCourses) {
+      if (hasTimeConflict(existingCourse, course)) {
+        // 교체 Toast 표시
+        showReplaceToast(existingCourse, course);
+        return;
+      }
+    }
+    
+    // 정상 추가
+    timetableCourses = [...timetableCourses, courseKey];
+    showToast(`"${course.title}" 강의가 시간표에 추가되었습니다!`, "success");
   }
 
   function handleRemoveFromCart(event: CustomEvent<Lecture>) {
     const course = event.detail;
-    handleRemoveFromGrid({ detail: { courseId: course.courseId, classId: course.classId } } as any);
+    const courseKey = `${course.courseId}-${course.classId}`;
+    
+    // 시간표에서 제거
+    timetableCourses = timetableCourses.filter(key => key !== courseKey);
   }
 
   async function handleDownload() {
@@ -365,8 +473,8 @@
     <main class="flex-1 overflow-hidden p-4">
       <TimetableGrid
         blocks={processedTimetable.blocks}
-        conflictPairs={processedTimetable.conflicts}
-        consecutiveWarnings={processedTimetable.consecutives}
+        conflictPairs={conflictAnalysis.conflictPairs}
+        consecutiveWarnings={conflictAnalysis.consecutiveWarnings}
         gaps={lectureGaps}
         displayedDays={displayedDays}
         on:remove={handleRemoveFromGrid}
@@ -490,8 +598,8 @@
   <main class="flex-1 overflow-y-auto">
     <TimetableGrid
       blocks={processedTimetable.blocks}
-      conflictPairs={processedTimetable.conflicts}
-      consecutiveWarnings={processedTimetable.consecutives}
+      conflictPairs={conflictAnalysis.conflictPairs}
+      consecutiveWarnings={conflictAnalysis.consecutiveWarnings}
       gaps={lectureGaps}
       displayedDays={displayedDays}
       on:remove={handleRemoveFromGrid}
@@ -505,7 +613,7 @@
 </div>
 
 <!-- Toast 컨테이너 -->
-<ToastContainer />
+<ToastContainer on:replace={handleReplaceToast} />
 
 <style>
   /* 모바일 장바구니 카드 */

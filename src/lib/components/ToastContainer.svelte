@@ -1,6 +1,11 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
   import { toastMessages, removeToast, confirmReplace } from "$lib/stores";
   import type { ToastMessage } from "$lib/types";
+
+  const dispatch = createEventDispatcher<{
+    replace: { toastId: string; existingLecture: any; newLecture: any };
+  }>();
 
   // 시간 포맷팅 함수
   function formatTime(slot: number): string {
@@ -32,7 +37,15 @@
 
   function handleConfirmReplace(toast: ToastMessage) {
     if (toast.existingLecture && toast.newLecture) {
+      // 기본적으로는 장바구니 교체 (기존 동작)
       confirmReplace(toast.id, toast.existingLecture, toast.newLecture);
+      
+      // 교체 이벤트도 dispatch (시간표에서 사용)
+      dispatch('replace', {
+        toastId: toast.id,
+        existingLecture: toast.existingLecture,
+        newLecture: toast.newLecture
+      });
     }
   }
 </script>

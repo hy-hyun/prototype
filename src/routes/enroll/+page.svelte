@@ -682,7 +682,7 @@
                           {:else}
                             <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-2 py-1 text-sm" onclick={() => doApply(item)}>신청</button>
                           {/if}
-                          <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-sm" onclick={() => removeFromCart(item.courseId, item.classId)}>장바구니 해제</button>
+                          <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-sm" onclick={() => removeFromCart(item.courseId, item.classId)}>🛒 장바구니 해제</button>
                         </div>
                       </div>
                     </div>
@@ -760,7 +760,7 @@
                               베팅 확정
                             </button>
                           {/if}
-                          <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-sm" onclick={() => removeFromCart(item.courseId, item.classId)}>장바구니 해제</button>
+                          <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-sm" onclick={() => removeFromCart(item.courseId, item.classId)}>🛒 장바구니 해제</button>
                         </div>
                       </div>
                     </div>
@@ -864,7 +864,7 @@
                 <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-2 py-1 text-sm" onclick={() => doApply(item)}>신청</button>
               {/if}
             {/if}
-            <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-sm" onclick={() => removeFromCart(item.courseId, item.classId)}>장바구니 해제</button>
+            <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-sm" onclick={() => removeFromCart(item.courseId, item.classId)}>🛒 장바구니 해제</button>
           </li>
         {/each}
       </ul>

@@ -24,8 +24,8 @@
     gaps: Gap[];
   }>();
 
-  // 시간 슬롯을 9시~18시까지 30분 간격으로 확장 (20개 슬롯)
-  const timeSlots = Array.from({ length: 20 }, (_, i) => {
+  // 시간 슬롯을 9시~21시까지 30분 간격으로 확장 (24개 슬롯)
+  const timeSlots = Array.from({ length: 24 }, (_, i) => {
     const hour = 9 + Math.floor(i / 2);
     const minute = (i % 2) * 30;
     return { 
@@ -61,7 +61,7 @@
   };
 </script>
 
-<div class="p-6 bg-white flex justify-center items-start" data-timetable-grid>
+<div class="p-6 bg-white flex flex-col" data-timetable-grid>
   <!-- CSS Grid 기반 시간표 -->
   <div class="timetable-grid">
     <!-- 헤더 -->
@@ -143,16 +143,17 @@
 <style>
   .timetable-grid {
     display: grid;
-    grid-template-columns: 80px repeat(5, 100px);
-    grid-template-rows: 40px repeat(20, 30px);
+    grid-template-columns: 120px repeat(5, 1fr);
+    grid-template-rows: 40px repeat(24, 30px);
     gap: 0px;
     background-color: #ffffff;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     overflow: hidden;
-    height: 640px;
-    width: fit-content;
-    max-width: 90vw;
+    height: 760px;
+    width: 100%;
+    min-width: 700px;
+    max-width: none;
   }
   
   .grid-header {
@@ -232,19 +233,19 @@
   
   .lecture-title {
     font-weight: 600;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     color: #1f2937;
-    line-height: 1.1;
+    line-height: 1.2;
   }
   
   .lecture-instructor {
-    font-size: 0.6rem;
+    font-size: 0.7rem;
     color: #4b5563;
     line-height: 1.1;
   }
   
   .lecture-location {
-    font-size: 0.6rem;
+    font-size: 0.65rem;
     color: #6b7280;
     line-height: 1.1;
   }

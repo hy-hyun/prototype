@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { courses, addToCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading, coursesError, refreshCourseData, cart } from "$lib/stores";
+  import { courses, addToCart, removeFromCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading, coursesError, refreshCourseData, cart } from "$lib/stores";
   import { showToast } from "$lib/toast";
   import Loading from "$lib/components/Loading.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
@@ -123,18 +123,18 @@
     }
   }
 
-  function onAddToCart(l: Lecture) {
-    // 중복 추가 방지
+  function onToggleCart(l: Lecture) {
     if (isInCart(l.courseId, l.classId)) {
-      showToast("이미 장바구니에 있는 과목입니다", "info");
-      return;
+      // 장바구니에서 제거
+      removeFromCart(l.courseId, l.classId);
+      showToast("장바구니에서 제거했습니다", "success");
+    } else {
+      // 장바구니에 추가
+      console.log('🛒 장바구니에 추가:', { courseId: l.courseId, classId: l.classId, method: l.method ?? "FCFS" });
+      addToCart({ courseId: l.courseId, classId: l.classId, method: l.method ?? "FCFS" });
+      console.log('🛒 현재 장바구니 상태:', $cart);
+      showToast("장바구니에 담았습니다", "success");
     }
-    
-    // 장바구니에 직접 추가 (수강신청 페이지와 시간표에서 표시됨)
-    console.log('🛒 장바구니에 추가:', { courseId: l.courseId, classId: l.classId, method: l.method ?? "FCFS" });
-    addToCart({ courseId: l.courseId, classId: l.classId, method: l.method ?? "FCFS" });
-    console.log('🛒 현재 장바구니 상태:', $cart);
-    showToast("장바구니에 담았습니다", "success");
   }
 
   function isInCart(courseId: string, classId: string): boolean {
@@ -537,11 +537,11 @@
             </button>
             <button 
               class="border border-blue-500 text-blue-500 hover:bg-blue-50 rounded px-3 py-1 text-sm transition-colors {
-                isInCart(l.courseId, l.classId) ? 'bg-pink-100 border-pink-400 text-pink-500' : ''
+                isInCart(l.courseId, l.classId) ? 'bg-pink-100 border-pink-400 text-pink-500 hover:bg-pink-200' : ''
               }"
-              onclick={() => onAddToCart(l)}
+              onclick={() => onToggleCart(l)}
             >
-              {isInCart(l.courseId, l.classId) ? '🛒 장바구니에 있음' : '장바구니'}
+              {isInCart(l.courseId, l.classId) ? '🛒 장바구니 해제' : '🛒 장바구니'}
             </button>
             <button 
               class="rounded px-3 py-1 text-sm transition-colors {isBettingCourse(l) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}"
@@ -746,10 +746,12 @@
         <!-- 모달 푸터 -->
         <div class="flex gap-3 mt-6 pt-4 border-t">
           <button 
-            class="flex-1 border border-blue-500 text-blue-500 hover:bg-blue-50 rounded py-2 transition-colors"
-            onclick={() => selectedLecture && onAddToCart(selectedLecture)}
+            class="flex-1 border border-blue-500 text-blue-500 hover:bg-blue-50 rounded py-2 transition-colors {
+              selectedLecture && isInCart(selectedLecture.courseId, selectedLecture.classId) ? 'bg-pink-100 border-pink-400 text-pink-500 hover:bg-pink-200' : ''
+            }"
+            onclick={() => selectedLecture && onToggleCart(selectedLecture)}
           >
-            장바구니 담기
+            {selectedLecture && isInCart(selectedLecture.courseId, selectedLecture.classId) ? '🛒 장바구니 해제' : '🛒 장바구니 담기'}
           </button>
           <button 
             class="flex-1 rounded py-2 transition-colors {selectedLecture && isBettingCourse(selectedLecture) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}"

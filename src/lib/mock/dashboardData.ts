@@ -138,7 +138,7 @@ export const dashboardData = {
 		},
 		{
 			id: '3',
-			title: '사랑의실천3(기업가정신)화',
+			title: '사랑의실천3(기업가정신)',
 			dept: '한양리더십센터',
 			credits: 2,
 			status: 'required',

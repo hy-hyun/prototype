@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { cart, applications, courses, addLectureToCart, hasTimeConflict, showReplaceToast, confirmReplaceInTimetable, removeFromCart, loadCourses } from "$lib/stores";
+  import { cart, applications, courses, addLectureToCart, hasTimeConflict, showReplaceToast, confirmReplaceInTimetable, removeFromCart, loadCourses, syncUserCart, isLoggedIn, currentUser, timetableCourses, addToTimetable, removeFromTimetable } from "$lib/stores";
   import { showToast } from "$lib/toast";
+  import { getUserDocument } from "$lib/firestore";
   import { browser } from "$app/environment";
   import TimetableHeader from "$lib/components/TimetableHeader.svelte";
   import TimetableSidebar from "$lib/components/TimetableSidebar.svelte";
@@ -18,12 +19,49 @@
   let selectedSemester = $state("2024-2학기");
   let displayedDays = $state(["월", "화", "수", "목", "금"]); // 요일 목록을 state로 변경
   let showCartOnly = $state(true); // 장바구니에 넣은 과목만 보기 토글
-  let timetableCourses = $state<string[]>([]); // 시간표에 표시할 과목들 (장바구니에서 추가 버튼을 눌렀을 때만)
 
   // 데이터 로딩
   $effect(() => {
     if ($courses.length === 0) {
       loadCourses();
+    }
+  });
+
+  // 🔥 로그인 상태에 따른 Firestore 데이터 로딩
+  $effect(() => {
+    if ($isLoggedIn && $currentUser) {
+      console.log('🔥 시간표: 로그인 사용자 데이터 로딩', $currentUser.id);
+      
+      // async 함수를 IIFE로 처리
+      (async () => {
+        try {
+          const userData = await getUserDocument($currentUser.id);
+          if (userData && userData.enrollment) {
+            // 장바구니, 신청내역, 시간표 동기화
+            cart.set(userData.enrollment.cart || []);
+            applications.set(userData.enrollment.applications || []);
+            timetableCourses.set(userData.enrollment.timetableCourses || []);
+            console.log('✅ 시간표: Firestore 데이터 로딩 완료', {
+              cart: userData.enrollment.cart?.length || 0,
+              applications: userData.enrollment.applications?.length || 0,
+              timetable: userData.enrollment.timetableCourses?.length || 0
+            });
+          }
+        } catch (error) {
+          console.error('❌ 시간표: Firestore 데이터 로딩 실패:', error);
+        }
+      })();
+    } else {
+      console.log('🔒 시간표: 로그인 필요');
+    }
+  });
+
+  // 🔥 Firestore 장바구니 데이터 동기화 확인
+  $effect(() => {
+    if ($cart.length === 0) {
+      console.log('🛒 시간표: 장바구니가 비어있습니다. Firestore 연동을 확인하세요.');
+    } else {
+      console.log('🛒 시간표: 장바구니 데이터 로드됨:', $cart.length, '개 과목');
     }
   });
 
@@ -60,11 +98,12 @@
   function handleReplaceToast(event: CustomEvent<{ toastId: string; existingLecture: Lecture; newLecture: Lecture }>) {
     const { toastId, existingLecture, newLecture } = event.detail;
     console.log('🔄 교체 이벤트 수신:', { toastId, existingLecture: existingLecture.title, newLecture: newLecture.title });
-    console.log('🔄 교체 전 timetableCourses:', timetableCourses);
+    console.log('🔄 교체 전 timetableCourses:', $timetableCourses);
     
-    timetableCourses = confirmReplaceInTimetable(toastId, existingLecture, newLecture, timetableCourses);
+    const newTimetableCourses = confirmReplaceInTimetable(toastId, existingLecture, newLecture, $timetableCourses);
+    timetableCourses.set(newTimetableCourses);
     
-    console.log('🔄 교체 후 timetableCourses:', timetableCourses);
+    console.log('🔄 교체 후 timetableCourses:', $timetableCourses);
   }
 
   // 장바구니만 보기 토글 핸들러
@@ -110,7 +149,7 @@
     // 시간표에는 신청된 과목과 장바구니에서 추가 버튼을 눌러서 시간표에 추가된 과목만 표시
     const allItems = [
       ...$applications.map(app => ({ courseId: app.courseId, classId: app.classId, method: "FCFS" as const })),
-      ...timetableCourses.map(courseKey => {
+      ...$timetableCourses.map(courseKey => {
         const [courseId, classId] = courseKey.split('-');
         return { courseId, classId, method: "FCFS" as const };
       })
@@ -258,7 +297,7 @@
   // 4. 사이드바에 필요한 데이터 가공
   const sidebarData = $derived.by(() => {
     const cartIds = new Set($cart.map(item => `${item.courseId}-${item.classId}`));
-    const timetableCourseIds = new Set(timetableCourses);
+    const timetableCourseIds = new Set($timetableCourses);
     
     const allCoursesWithStatus = $courses.map(c => ({
       ...c,
@@ -319,7 +358,7 @@
     const courseKey = `${courseId}-${classId}`;
     
     // 시간표에서만 제거 (장바구니는 유지)
-    timetableCourses = timetableCourses.filter(key => key !== courseKey);
+    removeFromTimetable(courseId, classId);
     showToast("시간표에서 제거했습니다", "success");
   }
 
@@ -356,13 +395,13 @@
     const courseKey = `${course.courseId}-${course.classId}`;
     
     // 이미 시간표에 있는지 확인
-    if (timetableCourses.includes(courseKey)) {
+    if ($timetableCourses.includes(courseKey)) {
       showToast("이미 시간표에 있는 강의입니다", "info");
       return;
     }
     
     // 시간 충돌 검사
-    const existingCourses = timetableCourses.map(key => {
+    const existingCourses = $timetableCourses.map(key => {
       const [courseId, classId] = key.split('-');
       return $courses.find(c => c.courseId === courseId && c.classId === classId);
     }).filter(Boolean) as Lecture[];
@@ -390,7 +429,7 @@
     }
     
     // 정상 추가
-    timetableCourses = [...timetableCourses, courseKey];
+    addToTimetable(course.courseId, course.classId);
     showToast(`"${course.title}" 강의가 시간표에 추가되었습니다!`, "success");
   }
 
@@ -399,10 +438,10 @@
     const courseKey = `${course.courseId}-${course.classId}`;
     
     // 시간표에서 제거
-    timetableCourses = timetableCourses.filter(key => key !== courseKey);
+    removeFromTimetable(course.courseId, course.classId);
   }
 
-  function handleToggleCart(event: CustomEvent<Lecture> | Lecture) {
+  async function handleToggleCart(event: CustomEvent<Lecture> | Lecture) {
     // 이벤트에서 오는 경우와 직접 호출되는 경우 모두 처리
     const course = event instanceof CustomEvent ? event.detail : event;
     
@@ -413,14 +452,21 @@
       removeFromCart(course.courseId, course.classId);
       
       // 시간표에서도 제거
-      const courseKey = `${course.courseId}-${course.classId}`;
-      timetableCourses = timetableCourses.filter(key => key !== courseKey);
+      removeFromTimetable(course.courseId, course.classId);
+      
+      // 🔥 Firestore에 동기화
+      const newCart = $cart.filter(item => !(item.courseId === course.courseId && item.classId === course.classId));
+      await syncUserCart(newCart);
       
       showToast("🛒 장바구니에서 제거했습니다", "success");
     } else {
       // 장바구니에 추가 (시간표에는 자동으로 추가하지 않음)
       const newItem = { courseId: course.courseId, classId: course.classId, method: course.method || "FCFS" };
-      cart.update(items => [...items, newItem]);
+      const newCart = [...$cart, newItem];
+      cart.update(items => newCart);
+      
+      // 🔥 Firestore에 동기화
+      await syncUserCart(newCart);
       
       showToast("🛒 장바구니에 담았습니다", "success");
     }
@@ -461,7 +507,7 @@
   function handleReset() {
     if (confirm("시간표를 초기화하시겠습니까?")) {
       // 시간표에서만 제거 (장바구니는 유지)
-      timetableCourses = [];
+      timetableCourses.set([]);
       showToast("시간표가 초기화되었습니다", "success");
     }
   }

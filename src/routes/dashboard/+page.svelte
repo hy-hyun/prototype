@@ -1,30 +1,34 @@
 <script lang="ts">
   import { dashboardData } from '$lib/mock/dashboardData';
+  import { userDocument, isLoggedIn } from '$lib/stores';
   import type { LearningJourney } from '$lib/types';
   
-   // 김민우 학생 데이터
-   let userName = dashboardData.userInfo.name;
-   let currentSemester = dashboardData.userInfo.currentSemester;
-   let totalCredits = dashboardData.userInfo.totalCredits;
-   let requiredCredits = dashboardData.userInfo.requiredCredits;
+  // 🔥 Firestore 사용자 데이터 또는 fallback
+  const userData = $derived($userDocument?.dashboard || dashboardData);
+  
+  // 사용자 정보 (Firestore 우선, fallback으로 dashboardData)
+  let userName = $derived(userData.userInfo.name);
+  let currentSemester = $derived(userData.userInfo.currentSemester);
+  let totalCredits = $derived(userData.userInfo.totalCredits);
+  let requiredCredits = $derived(userData.userInfo.requiredCredits);
   
   // 다중전공 데이터 구조
-  let majors = dashboardData.majors;
+  let majors = $derived(userData.majors);
   
   let selectedMajor = $state('main');
   let selectedSemester = $state('1-1'); // 교양필수 학기 선택
   
   // 교양 영역별 상세 데이터 (다중전공 기준)
-  let generalEducation = dashboardData.generalEducation;
+  let generalEducation = $derived(userData.generalEducation);
   
-   // 러닝저니 데이터 (학기별 학점 축적) - 김민우 학생 데이터
-   let learningJourney = dashboardData.learningJourney;
+  // 러닝저니 데이터 (학기별 학점 축적)
+  let learningJourney = $derived(userData.learningJourney);
    
-   // 추천 강의 데이터
-   let recommendedCourses = dashboardData.recommendedCourses;
+  // 추천 강의 데이터
+  let recommendedCourses = $derived(userData.recommendedCourses);
    
-   // 기본 수업 데이터
-   let basicCourses = dashboardData.basicCourses;
+  // 기본 수업 데이터
+  let basicCourses = $derived(userData.basicCourses);
    
    // 툴팁 상태
   let tooltip = $state<{
@@ -141,7 +145,7 @@
       }
 
   // 교직이수 영역별 이수 계산
-  const { major, profession } = dashboardData.teachingCourses;
+  const { major, profession } = $derived(userData.teachingCourses);
 
   const completedFieldsCount = $derived({
     basic: new Set(major.categories.basic.courses.filter(c => c.status === 'completed').map(c => c.fieldId)).size,
@@ -754,7 +758,7 @@
                      
                      {#if expandedCards.teachingMajor}
                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
-                         {#each dashboardData.teachingCourses.major.categories.basic.courses as course}
+                         {#each userData.teachingCourses.major.categories.basic.courses as course}
                            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
                              <div class="flex items-center gap-2">
                                   <div
@@ -817,7 +821,7 @@
                      
                      {#if expandedCards.teachingSubject}
                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
-                         {#each dashboardData.teachingCourses.major.categories.subjectEducation.courses as course}
+                         {#each userData.teachingCourses.major.categories.subjectEducation.courses as course}
                            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
                              <div class="flex items-center gap-2">
                                   <div
@@ -918,7 +922,7 @@
                      
                      {#if expandedCards.teachingProfession}
                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
-                         {#each dashboardData.teachingCourses.profession.categories.theory.courses as course}
+                         {#each userData.teachingCourses.profession.categories.theory.courses as course}
                            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
                              <div class="flex items-center gap-2">
                                   <div
@@ -981,7 +985,7 @@
                      
                      {#if expandedCards.teachingAptitude}
                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
-                         {#each dashboardData.teachingCourses.profession.categories.aptitude.courses as course}
+                         {#each userData.teachingCourses.profession.categories.aptitude.courses as course}
                            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
                              <div class="flex items-center gap-2">
                                   <div
@@ -1044,7 +1048,7 @@
                      
                      {#if expandedCards.teachingPractice}
                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
-                         {#each dashboardData.teachingCourses.profession.categories.practice.courses as course}
+                         {#each userData.teachingCourses.profession.categories.practice.courses as course}
                            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
                              <div class="flex items-center gap-2">
                                   <div
@@ -1169,7 +1173,7 @@
                             {course.credits}학점
                           </span>
                   <span class="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">
-                            {course.reason}
+                            {course.reason || course.type}
                           </span>
                         </div>
                         <button class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors">

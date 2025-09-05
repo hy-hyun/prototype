@@ -124,8 +124,8 @@
     {#each distanceWarnings as warning}
       {@const fromLecture = warning.fromLecture}
       {@const toLecture = warning.toLecture}
-      {@const fromBlock = blocks.find(b => b.courseId === fromLecture.courseId && b.classId === fromLecture.classId)}
-      {@const toBlock = blocks.find(b => b.courseId === toLecture.courseId && b.classId === toLecture.classId)}
+      {@const fromBlock = blocks.find((b: TimetableBlock) => b.courseId === fromLecture.courseId && b.classId === fromLecture.classId)}
+      {@const toBlock = blocks.find((b: TimetableBlock) => b.courseId === toLecture.courseId && b.classId === toLecture.classId)}
       
       {#if fromBlock && toBlock && fromBlock.day === toBlock.day && fromBlock.endTime === toBlock.startTime}
         <div
@@ -184,13 +184,13 @@
   .timetable-grid {
     display: grid;
     grid-template-columns: 120px repeat(5, 1fr);
-    grid-template-rows: 40px repeat(24, 30px);
+    grid-template-rows: 40px repeat(24, 35px);
     gap: 0px;
     background-color: #ffffff;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     overflow: hidden;
-    height: 760px;
+    height: 880px;
     width: 100%;
     min-width: 700px;
     max-width: none;
@@ -252,12 +252,12 @@
     margin: 1px;
     border-radius: 4px;
     border-left: 4px solid #3b82f6;
-    padding: 6px;
+    padding: 4px 6px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    min-height: 25px;
+    min-height: 30px;
   }
   
   .lecture-block.conflict {
@@ -268,24 +268,25 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
   }
   
   .lecture-title {
     font-weight: 600;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #1f2937;
-    line-height: 1.2;
+    line-height: 1.1;
+    word-break: break-word;
   }
   
   .lecture-instructor {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: #4b5563;
-    line-height: 1.1;
+    line-height: 1.0;
   }
   
   .lecture-location {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: #6b7280;
     line-height: 1.1;
   }

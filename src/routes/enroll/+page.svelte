@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { cart, applications, metrics, isLoggedIn, userDataLoading } from "$lib/stores";
+  import { cart, applications, metrics, isLoggedIn, userDataLoading, currentUser, timetableCourses } from "$lib/stores";
   import { courses, loadCourses } from "$lib/stores";
-  import { applyFcfs, applyBid } from "$lib/stores";
+  import { applyFcfs, applyBid, removeFromCart as removeFromCartStore, syncUserCart } from "$lib/stores";
+  import { getUserDocument } from "$lib/firestore";
   import Skeleton from "$lib/components/Skeleton.svelte";
   import { showToast } from "$lib/toast";
   import LoginModal from "$lib/components/LoginModal.svelte";
@@ -25,6 +26,35 @@
   $effect(() => {
     if ($courses.length === 0) {
       loadCourses();
+    }
+  });
+
+  // 🔥 로그인 상태에 따른 Firestore 데이터 로딩
+  $effect(() => {
+    if ($isLoggedIn && $currentUser) {
+      console.log('🔥 수강신청: 로그인 사용자 데이터 로딩', $currentUser.id);
+      
+      // async 함수를 IIFE로 처리
+      (async () => {
+        try {
+          const userData = await getUserDocument($currentUser.id);
+          if (userData && userData.enrollment) {
+            // 장바구니, 신청내역, 시간표 동기화
+            cart.set(userData.enrollment.cart || []);
+            applications.set(userData.enrollment.applications || []);
+            timetableCourses.set(userData.enrollment.timetableCourses || []);
+            console.log('✅ 수강신청: Firestore 데이터 로딩 완료', {
+              cart: userData.enrollment.cart?.length || 0,
+              applications: userData.enrollment.applications?.length || 0,
+              timetable: userData.enrollment.timetableCourses?.length || 0
+            });
+          }
+        } catch (error) {
+          console.error('❌ 수강신청: Firestore 데이터 로딩 실패:', error);
+        }
+      })();
+    } else {
+      console.log('🔒 수강신청: 로그인 필요');
     }
   });
 
@@ -128,15 +158,25 @@
     }
   }
 
-  // 로컬: 장바구니 조작/도우미들 (스토어 수정 없이 페이지에서만 처리)
-  function removeFromCart(courseId: string, classId: string) {
-    cart.update((c) => c.filter((x) => !(x.courseId === courseId && x.classId === classId)));
+  // 로컬: 장바구니 조작/도우미들
+  async function removeFromCart(courseId: string, classId: string) {
+    await removeFromCartStore(courseId, classId);
   }
 
-  function setBidAmount(courseId: string, classId: string, bidAmount: number) {
-    cart.update((c) =>
-      c.map((x) => (x.courseId === courseId && x.classId === classId ? { ...x, bidAmount } : x))
-    );
+  async function setBidAmount(courseId: string, classId: string, bidAmount: number) {
+    let newCart: any[] = [];
+    
+    cart.update((c) => {
+      newCart = c.map((x) => (x.courseId === courseId && x.classId === classId ? { ...x, bidAmount } : x));
+      return newCart;
+    });
+    
+    // 🔥 Firebase 동기화
+    try {
+      await syncUserCart(newCart);
+    } catch (error) {
+      console.error('❌ 베팅 금액 변경 Firestore 동기화 실패:', error);
+    }
   }
 
   async function applyMany(items: Array<{ courseId: string; classId: string; method: "FCFS" | "BID"; bidAmount?: number }>) {
@@ -394,10 +434,11 @@
     });
   }
 
-  function handleDndFinalize(e: CustomEvent) {
+  async function handleDndFinalize(e: CustomEvent) {
     const { items } = e.detail;
     
     // 새로운 순서로 장바구니 업데이트
+    let finalCart: any[] = [];
     cart.update((currentCart) => {
       const updatedCart = [...currentCart];
       
@@ -429,8 +470,17 @@
         }))
       });
       
-      return [...otherItems, ...reorderedItems];
+      finalCart = [...otherItems, ...reorderedItems];
+      return finalCart;
     });
+    
+    // 🔥 Firebase 동기화
+    try {
+      await syncUserCart(finalCart);
+      console.log('✅ 드래그앤드롭 Firestore 동기화 완료');
+    } catch (error) {
+      console.error('❌ 드래그앤드롭 Firestore 동기화 실패:', error);
+    }
     
     // 드래그 완료 후 임시 상태 초기화
     draggedItems = [];
@@ -636,7 +686,7 @@
       {#if groupedCartItems.fcfs.length === 0 && groupedCartItems.bid.length === 0}
         <p class="text-sm text-neutral-500">장바구니가 비었습니다.</p>
       {:else}
-        <Accordion value="fcfs-section" class="w-full">
+        <Accordion type="multiple" value={["fcfs-section", "bid-section"]} class="w-full">
           {#if groupedCartItems.fcfs.length > 0}
             <AccordionItem value="fcfs-section" class="border rounded-lg mb-3">
               <AccordionTrigger class="px-4 py-3 hover:no-underline">
@@ -655,7 +705,7 @@
                       <div class="flex items-center justify-between gap-3">
                         <!-- 우선순위 번호 -->
                         <div class="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                          {item.order || (index + 1)}
+                          {index + 1}
                         </div>
                         
                         <div class="text-sm flex-1">
@@ -710,7 +760,7 @@
                       <div class="flex items-center justify-between gap-3">
                         <!-- 우선순위 번호 -->
                         <div class="flex items-center justify-center w-6 h-6 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
-                          {item.order || (index + 1)}
+                          {index + 1}
                         </div>
                         
                         <div class="text-sm flex-1">
@@ -804,8 +854,12 @@
             </div>
             
             <!-- 우선순위 번호 -->
-            <div class="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 text-xs font-medium rounded-full mr-3">
-              {item.order || (sortableItems.findIndex(x => x.id === item.id) + 1)}
+            <div class="flex items-center justify-center w-6 h-6 text-xs font-medium rounded-full mr-3"
+                 class:bg-blue-100={item.method === 'FCFS'}
+                 class:text-blue-800={item.method === 'FCFS'}
+                 class:bg-orange-100={item.method === 'BID'}
+                 class:text-orange-800={item.method === 'BID'}>
+              {sortableItems.findIndex(x => x.id === item.id) + 1}
             </div>
             
             <div class="text-sm flex-1">

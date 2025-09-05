@@ -2,12 +2,13 @@
   import favicon from "$lib/assets/favicon.svg";
   import "../app.css";
   import { toasts } from "$lib/toast";
-  import { isLoggedIn, currentUser, globalLoading, loadingText } from "$lib/stores";
+  import { isLoggedIn, currentUser, globalLoading, loadingText, logoutUser } from "$lib/stores";
   import LoginModal from "$lib/components/LoginModal.svelte";
   import Loading from "$lib/components/Loading.svelte";
   import { Button } from "$lib/components/ui/button";
   import { auth } from '$lib/firebase';
   import { onAuthStateChanged } from 'firebase/auth';
+  import { migrateKimMinwooData, deleteOldStudentData } from '$lib/firestore';
   import {
     Megaphone,
     Search as SearchIcon,
@@ -52,8 +53,13 @@
   ];
 
   function handleLogout() {
-    isLoggedIn.set(false);
-    currentUser.set(null);
+    logoutUser();
+  }
+
+  // 🔥 개발용: 전역에 마이그레이션 함수 노출
+  if (typeof window !== 'undefined') {
+    (window as any).migrateKimMinwooData = migrateKimMinwooData;
+    (window as any).deleteOldStudentData = deleteOldStudentData;
   }
 </script>
 

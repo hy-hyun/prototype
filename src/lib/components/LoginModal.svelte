@@ -1,33 +1,53 @@
 <script lang="ts">
-  import { isLoggedIn, currentUser } from "$lib/stores";
+  import { loginUser, userDataLoading } from "$lib/stores";
   import { showToast } from "$lib/toast";
   
   let { isOpen = $bindable(false) } = $props();
-  let username = $state("");
+  let studentId = $state("");
   let password = $state("");
   let rememberMe = $state(false);
+  let isLoading = $state(false);
   
-  function handleLogin() {
-    if (!username.trim() || !password.trim()) {
-      showToast("아이디와 비밀번호를 입력해주세요", "error");
+  async function handleLogin() {
+    if (!studentId.trim()) {
+      showToast("학번을 입력해주세요", "error");
       return;
     }
     
-    // 목 로그인 성공 처리
-    isLoggedIn.set(true);
-    currentUser.set({ id: username, name: "학생" + username });
-    showToast("로그인 성공!", "success");
+    // 비밀번호는 현재 검증하지 않음 (간단한 로그인)
+    if (!password.trim()) {
+      showToast("비밀번호를 입력해주세요", "error");
+      return;
+    }
     
-    // 모달 닫기 및 입력 초기화
-    isOpen = false;
-    username = "";
-    password = "";
-    rememberMe = false;
+    try {
+      isLoading = true;
+      
+      // 🔥 실제 Firestore 로그인
+      const success = await loginUser(studentId.trim());
+      
+      if (success) {
+        showToast("로그인 성공!", "success");
+        
+        // 모달 닫기 및 입력 초기화
+        isOpen = false;
+        studentId = "";
+        password = "";
+        rememberMe = false;
+      } else {
+        showToast("로그인에 실패했습니다", "error");
+      }
+    } catch (error) {
+      console.error('로그인 오류:', error);
+      showToast("로그인 중 오류가 발생했습니다", "error");
+    } finally {
+      isLoading = false;
+    }
   }
   
   function handleClose() {
     isOpen = false;
-    username = "";
+    studentId = "";
     password = "";
     rememberMe = false;
   }
@@ -58,13 +78,14 @@
       
       <form onsubmit={(e) => { e.preventDefault(); handleLogin(); }} class="space-y-4">
         <div>
-          <label for="username-input" class="block text-sm font-medium mb-1">아이디</label>
+          <label for="studentId-input" class="block text-sm font-medium mb-1">학번</label>
           <input 
-            id="username-input"
+            id="studentId-input"
             type="text" 
-            bind:value={username}
-            class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="아이디를 입력하세요"
+            bind:value={studentId}
+            disabled={isLoading || $userDataLoading}
+            class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            placeholder="학번을 입력하세요 (예: 2024123456)"
           />
         </div>
         
@@ -74,36 +95,55 @@
             id="password-input"
             type="password" 
             bind:value={password}
-            class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isLoading || $userDataLoading}
+            class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             placeholder="비밀번호를 입력하세요"
           />
         </div>
         
         <div class="flex items-center">
-          <input type="checkbox" bind:checked={rememberMe} class="mr-2" id="remember" />
-          <label for="remember" class="text-sm">아이디 저장</label>
+          <input 
+            type="checkbox" 
+            bind:checked={rememberMe} 
+            disabled={isLoading || $userDataLoading}
+            class="mr-2" 
+            id="remember" 
+          />
+          <label for="remember" class="text-sm">학번 저장</label>
         </div>
+        
+        <!-- 🔥 로딩 상태 표시 -->
+        {#if isLoading || $userDataLoading}
+          <div class="text-center text-sm text-blue-600">
+            로그인 중...
+          </div>
+        {/if}
         
         <div class="flex gap-2">
           <button 
             type="submit"
-            class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isLoading || $userDataLoading}
+            class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            확인
+            {isLoading || $userDataLoading ? '로그인 중...' : '확인'}
           </button>
           <button 
             type="button"
             onclick={handleClose}
-            class="flex-1 border border-neutral-300 py-2 px-4 rounded-md hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-500"
+            disabled={isLoading || $userDataLoading}
+            class="flex-1 border border-neutral-300 py-2 px-4 rounded-md hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-500 disabled:opacity-50"
           >
             취소
           </button>
         </div>
         
         <div class="text-center">
-          <button type="button" class="text-sm text-blue-600 hover:underline">
-            아이디/비밀번호 찾기
-          </button>
+          <div class="text-xs text-gray-500 space-y-1">
+            <p><strong>테스트 계정:</strong></p>
+            <p>학번: 2021075178 (김민우 - 기존 데이터)</p>
+            <p>학번: 2025999999 (신규 사용자)</p>
+            <p>비밀번호: 아무거나</p>
+          </div>
         </div>
       </form>
     </div>

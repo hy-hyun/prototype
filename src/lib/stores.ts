@@ -1,9 +1,17 @@
 import { writable, derived, get } from "svelte/store";
-import type { Application, CartItem, Lecture, Notice, ToastMessage, Gap, TravelInfo, RiskLevel } from "$lib/types";
+import type { Application, CartItem, Lecture, Notice, ToastMessage, Gap, TravelInfo, RiskLevel, UserDocument } from "$lib/types";
 import { MOCK_NOTICES, SCHEDULE_EVENTS } from "$lib/mock/data";
 import { collection, getDocs, query, limit, orderBy } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import { LocalStorageCache, CACHE_KEYS } from '$lib/utils';
+import { 
+  getUserDocument, 
+  createUserDocument, 
+  updateLastLogin,
+  updateUserCart,
+  updateUserApplications,
+  updateUserFavorites 
+} from '$lib/firestore';
 
 // 로딩 상태 관리
 export const isLoading = writable(false);
@@ -51,34 +59,36 @@ export async function loadUserData(userId: string) {
   
   // 캐시에서만 확인 (Firebase 접근 금지)
   const cacheKey = CACHE_KEYS.USER_DATA(userId);
-  const cachedData = LocalStorageCache.get<{ cart: CartItem[], applications: Application[] }>(cacheKey);
+  const cachedData = LocalStorageCache.get<{ cart: CartItem[], applications: Application[], timetableCourses: string[] }>(cacheKey);
   
   if (cachedData) {
     cart.set(cachedData.cart || []);
     applications.set(cachedData.applications || []);
+    timetableCourses.set(cachedData.timetableCourses || []);
   } else {
     // 캐시가 없으면 빈 데이터로 초기화
     cart.set([]);
     applications.set([]);
+    timetableCourses.set([]);
   }
   
   isUserDataLoaded = true;
 }
 
 // 사용자 데이터는 로컬 캐시에만 저장 (Firebase 쓰기 금지)
-async function saveUserData(userId: string, data: { cart?: CartItem[], applications?: Application[] }) {
+async function saveUserData(userId: string, data: { cart?: CartItem[], applications?: Application[], timetableCourses?: string[] }) {
   if (!userId) return;
   
   // Firebase 쓰기 작업 제거 - 로컬 캐시에만 저장
   const cacheKey = CACHE_KEYS.USER_DATA(userId);
-  const cachedData = LocalStorageCache.get<{ cart: CartItem[], applications: Application[] }>(cacheKey);
+  const cachedData = LocalStorageCache.get<{ cart: CartItem[], applications: Application[], timetableCourses: string[] }>(cacheKey);
   
   if (cachedData) {
     const updatedData = { ...cachedData, ...data };
     LocalStorageCache.set(cacheKey, updatedData, LocalStorageCache.EXPIRY_TIMES.SHORT);
   } else {
     // 새로운 캐시 생성
-    const newData = { cart: [], applications: [], ...data };
+    const newData = { cart: [], applications: [], timetableCourses: [], ...data };
     LocalStorageCache.set(cacheKey, newData, LocalStorageCache.EXPIRY_TIMES.SHORT);
   }
 }
@@ -741,8 +751,12 @@ export const scheduleEvents = writable(initializeScheduleEventsWithCache());
 export const isLoggedIn = writable(false);
 export const currentUser = writable<{ id: string; name: string } | null>(null);
 
+// 🔥 새로 추가: 사용자 문서 상태
+export const userDocument = writable<UserDocument | null>(null);
+
 export const cart = writable<CartItem[]>([]);
 export const applications = writable<Application[]>([]);
+export const timetableCourses = writable<string[]>([]); // 시간표에 추가된 과목들
 
 // Toast 관련 store
 export const toastMessages = writable<ToastMessage[]>([]);
@@ -766,13 +780,18 @@ applications.subscribe($applications => {
   }
 });
 
-export const metrics = derived([cart, applications], ([$cart, $applications]) => {
-  const basicCredits = 6; // 기본 수업 학점
-  const maxCredits = 21; // 최대 학점
+timetableCourses.subscribe($timetableCourses => {
+  if (currentUid && isUserDataLoaded) {
+    saveUserData(currentUid, { timetableCourses: $timetableCourses });
+  }
+});
+
+export const metrics = derived([cart, applications, userDocument], ([$cart, $applications, $userDocument]) => {
+  // 사용자별 크레딧 정보 가져오기 (기본값: 하드코딩)
+  const basicCredits = $userDocument?.enrollment?.credits?.basicCredits ?? 9; // 기본 수업 학점
+  const maxCredits = $userDocument?.enrollment?.credits?.maxCredits ?? 24; // 최대 학점
+  const totalBettingPoints = $userDocument?.enrollment?.credits?.totalBettingPoints ?? 150; // 총 베팅 포인트
   const enrolledCourses = 0; // 신청 과목 수 (추후 구현)
-  
-  // 총 베팅 포인트 = (최대 학점 - 기본 수업 학점) * 10
-  const totalBettingPoints = (maxCredits - basicCredits) * 10;
   
   // 사용된 베팅 포인트 계산 (당첨된 베팅의 포인트만)
   const usedBettingPoints = $applications
@@ -792,7 +811,9 @@ export const metrics = derived([cart, applications], ([$cart, $applications]) =>
   };
 });
 
-export function addToCart(item: CartItem) {
+export async function addToCart(item: CartItem) {
+  let newCart: CartItem[] = [];
+  
   cart.update((c) => {
     const exists = c.find((x) => x.courseId === item.courseId && x.classId === item.classId);
     if (!exists) {
@@ -804,12 +825,32 @@ export function addToCart(item: CartItem) {
       
       c.push({ ...item, order: maxOrder + 1 });
     }
+    newCart = [...c];
     return [...c];
   });
+
+  // 🔥 Firestore에 자동 동기화
+  try {
+    await syncUserCart(newCart);
+  } catch (error) {
+    console.error('❌ 장바구니 Firestore 동기화 실패:', error);
+  }
 }
 
-export function removeFromCart(courseId: string, classId: string) {
-  cart.update((c) => c.filter((x) => !(x.courseId === courseId && x.classId === classId)));
+export async function removeFromCart(courseId: string, classId: string) {
+  let newCart: CartItem[] = [];
+  
+  cart.update((c) => {
+    newCart = c.filter((x) => !(x.courseId === courseId && x.classId === classId));
+    return newCart;
+  });
+
+  // 🔥 Firestore에 자동 동기화
+  try {
+    await syncUserCart(newCart);
+  } catch (error) {
+    console.error('❌ 장바구니 Firestore 동기화 실패:', error);
+  }
 }
 
 export function applyFcfs(courseId: string, classId: string) {
@@ -933,6 +974,194 @@ if (import.meta.hot) {
       LocalStorageCache.set(CACHE_KEYS.NOTICES, MOCK_NOTICES, LocalStorageCache.EXPIRY_TIMES.MEDIUM);
     }
   });
+}
+
+// 🔥 새로 추가: 사용자 로그인 및 데이터 관리 함수들
+
+/**
+ * 사용자 로그인 (학번으로)
+ */
+export async function loginUser(studentId: string): Promise<boolean> {
+  if (!studentId.trim()) {
+    console.error('❌ 학번이 입력되지 않았습니다');
+    return false;
+  }
+
+  try {
+    userDataLoading.set(true);
+    console.log('🔑 사용자 로그인 시도:', studentId);
+
+    // Firestore에서 사용자 문서 조회
+    let userData = await getUserDocument(studentId);
+
+    // 사용자 문서가 없으면 새로 생성
+    if (!userData) {
+      console.log('🆕 신규 사용자 - 문서 생성:', studentId);
+      userData = await createUserDocument(studentId);
+    }
+
+    // 로그인 시간 업데이트
+    await updateLastLogin(studentId);
+
+    // 상태 업데이트
+    userDocument.set(userData);
+    currentUser.set({
+      id: studentId,
+      name: userData.profile.name
+    });
+    isLoggedIn.set(true);
+
+    // 사용자의 장바구니/신청내역을 전역 상태에 로딩
+    cart.set(userData.enrollment.cart || []);
+    applications.set(userData.enrollment.applications || []);
+    favoriteCourses.set(userData.enrollment.favorites || []);
+
+    console.log('✅ 로그인 성공:', userData.profile.name);
+    return true;
+
+  } catch (error) {
+    console.error('❌ 로그인 실패:', error);
+    return false;
+  } finally {
+    userDataLoading.set(false);
+  }
+}
+
+/**
+ * 사용자 로그아웃
+ */
+export function logoutUser(): void {
+  console.log('🚪 사용자 로그아웃');
+  
+  // 모든 상태 초기화
+  isLoggedIn.set(false);
+  currentUser.set(null);
+  userDocument.set(null);
+  cart.set([]);
+  applications.set([]);
+  timetableCourses.set([]);
+  favoriteCourses.set([]);
+  
+  // 캐시 정리 (선택적)
+  // clearAllCache();
+}
+
+/**
+ * 장바구니 변경시 Firestore 동기화
+ */
+export async function syncUserCart(newCart: CartItem[]): Promise<void> {
+  const user = get(currentUser);
+  if (!user) return;
+
+  try {
+    await updateUserCart(user.id, newCart);
+    cart.set(newCart);
+    console.log('✅ 장바구니 동기화 완료');
+  } catch (error) {
+    console.error('❌ 장바구니 동기화 실패:', error);
+  }
+}
+
+/**
+ * 신청내역 변경시 Firestore 동기화
+ */
+export async function syncUserApplications(newApplications: Application[]): Promise<void> {
+  const user = get(currentUser);
+  if (!user) return;
+
+  try {
+    await updateUserApplications(user.id, newApplications);
+    applications.set(newApplications);
+    console.log('✅ 신청내역 동기화 완료');
+  } catch (error) {
+    console.error('❌ 신청내역 동기화 실패:', error);
+  }
+}
+
+/**
+ * 찜한 과목 변경시 Firestore 동기화
+ */
+export async function syncUserFavorites(newFavorites: string[]): Promise<void> {
+  const user = get(currentUser);
+  if (!user) return;
+
+  try {
+    await updateUserFavorites(user.id, newFavorites);
+    favoriteCourses.set(newFavorites);
+    console.log('✅ 찜한 과목 동기화 완료');
+  } catch (error) {
+    console.error('❌ 찜한 과목 동기화 실패:', error);
+  }
+}
+
+/**
+ * 시간표에 과목 추가
+ */
+export async function addToTimetable(courseId: string, classId: string): Promise<void> {
+  const courseKey = `${courseId}-${classId}`;
+  let newTimetableCourses: string[] = [];
+  
+  timetableCourses.update(courses => {
+    if (!courses.includes(courseKey)) {
+      newTimetableCourses = [...courses, courseKey];
+      return newTimetableCourses;
+    }
+    newTimetableCourses = courses;
+    return courses;
+  });
+  
+  // 🔥 Firebase 동기화
+  try {
+    await syncUserTimetable(newTimetableCourses);
+  } catch (error) {
+    console.error('❌ 시간표 추가 Firestore 동기화 실패:', error);
+  }
+}
+
+/**
+ * 시간표에서 과목 제거
+ */
+export async function removeFromTimetable(courseId: string, classId: string): Promise<void> {
+  const courseKey = `${courseId}-${classId}`;
+  let newTimetableCourses: string[] = [];
+  
+  timetableCourses.update(courses => {
+    newTimetableCourses = courses.filter(key => key !== courseKey);
+    return newTimetableCourses;
+  });
+  
+  // 🔥 Firebase 동기화
+  try {
+    await syncUserTimetable(newTimetableCourses);
+  } catch (error) {
+    console.error('❌ 시간표 제거 Firestore 동기화 실패:', error);
+  }
+}
+
+/**
+ * 시간표에 있는지 확인
+ */
+export function isInTimetable(courseId: string, classId: string): boolean {
+  const courseKey = `${courseId}-${classId}`;
+  const courses = get(timetableCourses);
+  return courses.includes(courseKey);
+}
+
+/**
+ * 시간표 변경시 Firestore 동기화
+ */
+export async function syncUserTimetable(newTimetableCourses: string[]): Promise<void> {
+  const user = get(currentUser);
+  if (!user) return;
+
+  try {
+    const { updateUserTimetable } = await import('$lib/firestore');
+    await updateUserTimetable(user.id, newTimetableCourses);
+    timetableCourses.set(newTimetableCourses);
+    console.log('✅ 시간표 Firestore 동기화 완료');
+  } catch (error) {
+    console.error('❌ 시간표 Firestore 동기화 실패:', error);
+  }
 }
 
 
@@ -1087,8 +1316,14 @@ export function getRiskIcon(risk: RiskLevel): string {
 // 간격 블록 스타일
 export function getGapStyle(gap: Gap): string {
   const DAY_TO_COLUMN: Record<string, number> = {
-    '월': 2, '화': 3, '수': 4, '목': 5, '금': 6
-  };
+  '월': 2, '화': 3, '수': 4, '목': 5, '금': 6
+};
+
+const RISK_COLORS: Record<RiskLevel, string> = {
+  'safe': '#22c55e',      // green-500
+  'warning': '#f59e0b',   // amber-500  
+  'danger': '#ef4444'     // red-500
+};
   
   // 시간표 그리드: 9:00부터 시작, 30분 단위
   // timeSlot 5 = 11:30 = 9:00 + 2.5시간 = 6번째 grid-row (헤더 포함)

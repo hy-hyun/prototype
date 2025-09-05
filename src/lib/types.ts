@@ -75,4 +75,166 @@ export type LearningJourney = {
 	isFuture: boolean;
 };
 
+// 🔥 새로 추가: 사용자 데이터 타입들
+export type UserInfo = {
+  name: string;
+  studentId: string;
+  currentSemester: string;
+  totalCredits: number;
+  requiredCredits: number;
+};
+
+export type Major = {
+  id: string;
+  name: string;
+  type: string;
+  isActive: boolean;
+  color: string;
+  requirements: {
+    majorRequired: { completed: number; required: number; name: string };
+    majorElective: { completed: number; required: number; name: string };
+    total: { completed: number; required: number };
+  };
+};
+
+export type GeneralEducation = {
+  required: {
+    completed: number;
+    required: number;
+    name: string;
+    bySemester: Record<string, {
+      completed: number;
+      required: number;
+      subjects: Array<{
+        name: string;
+        completed: number;
+        required: number;
+        status: string;
+      }>;
+    }>;
+  };
+  core: {
+    completed: number;
+    required: number;
+    name: string;
+    areas: Array<{
+      name: string;
+      completed: number;
+      required: number;
+      isGroup?: boolean;
+    }>;
+  };
+  general: { completed: number; required: number; name: string };
+};
+
+export type Course = {
+  id: string;
+  title: string;
+  dept: string;
+  credits: number;
+  status: string;
+  type: string;
+  reason?: string; // 추천 이유 (recommendedCourses용)
+};
+
+export type TeachingCourses = {
+  major: {
+    name: string;
+    categories: {
+      basic: {
+        name: string;
+        required: number;
+        fields: number;
+        courses: Array<{
+          title: string;
+          credits: number;
+          status: string;
+          fieldId: string;
+        }>;
+      };
+      subjectEducation: {
+        name: string;
+        required: number;
+        fields: number;
+        courses: Array<{
+          title: string;
+          credits: number;
+          status: string;
+          fieldId: string;
+        }>;
+      };
+    };
+  };
+  profession: {
+    name: string;
+    categories: {
+      theory: {
+        name: string;
+        required: number;
+        fields: number;
+        courses: Array<{
+          title: string;
+          credits: number;
+          status: string;
+          fieldId: string;
+        }>;
+      };
+      aptitude: {
+        name: string;
+        required: number;
+        fields: number;
+        courses: Array<{
+          title: string;
+          credits: number;
+          status: string;
+          fieldId: string;
+        }>;
+      };
+      practice: {
+        name: string;
+        required: number;
+        fields: number;
+        courses: Array<{
+          title: string;
+          credits: number;
+          status: string;
+          fieldId: string;
+        }>;
+      };
+    };
+  };
+};
+
+// 🔥 Firestore 사용자 문서 타입
+export type UserDocument = {
+  profile: UserInfo & {
+    email?: string;
+    createdAt: Date;
+    lastLoginAt: Date;
+  };
+  dashboard: {
+    userInfo: UserInfo;
+    majors: Major[];
+    generalEducation: GeneralEducation;
+    learningJourney: LearningJourney[];
+    recommendedCourses: Course[];
+    basicCourses: Course[];
+    teachingCourses: TeachingCourses;
+  };
+  enrollment: {
+    cart: CartItem[];
+    applications: Application[];
+    favorites: string[];
+    timetableCourses: string[]; // 시간표에 추가된 과목들 (courseId-classId 형태)
+    credits: {
+      basicCredits: number; // 잔여 기본 수업 학점
+      maxCredits: number; // 최대 학점
+      totalBettingPoints: number; // 총 베팅 포인트
+    };
+  };
+  settings: {
+    theme?: string;
+    notifications?: boolean;
+  };
+};
 

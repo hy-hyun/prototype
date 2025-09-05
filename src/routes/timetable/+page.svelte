@@ -450,7 +450,9 @@
 
   function handleReset() {
     if (confirm("시간표를 초기화하시겠습니까?")) {
-      cart.set([]);
+      // 시간표에서만 제거 (장바구니는 유지)
+      timetableCourses = [];
+      showToast("시간표가 초기화되었습니다", "success");
     }
   }
 </script>

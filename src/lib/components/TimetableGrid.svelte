@@ -24,8 +24,8 @@
     gaps: Gap[];
   }>();
 
-  // 시간 슬롯을 9시~18시까지 30분 간격으로 확장 (20개 슬롯)
-  const timeSlots = Array.from({ length: 20 }, (_, i) => {
+  // 시간 슬롯을 9시~21시까지 30분 간격으로 확장 (24개 슬롯)
+  const timeSlots = Array.from({ length: 24 }, (_, i) => {
     const hour = 9 + Math.floor(i / 2);
     const minute = (i % 2) * 30;
     return { 
@@ -144,13 +144,13 @@
   .timetable-grid {
     display: grid;
     grid-template-columns: 120px repeat(5, 1fr);
-    grid-template-rows: 40px repeat(20, 30px);
+    grid-template-rows: 40px repeat(24, 30px);
     gap: 0px;
     background-color: #ffffff;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     overflow: hidden;
-    height: 640px;
+    height: 760px;
     width: 100%;
     min-width: 700px;
     max-width: none;

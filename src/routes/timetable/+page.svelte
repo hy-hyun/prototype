@@ -73,8 +73,8 @@
 
   // --- 상수 ---
   const semesters = ["2024-2학기", "2024-1학기", "2023-2학기"];
-  const minCredits = 12;
-  const maxCredits = 21;
+  const minCredits = 10;
+  const maxCredits = 23;
   const buildingTravelTime: Record<string, Record<string, number>> = {
     "IT": { "IT": 0, "SCI": 5, "HUM": 10, "BIZ": 8, "ENG": 7 },
     "SCI": { "IT": 5, "SCI": 0, "HUM": 8, "BIZ": 12, "ENG": 6 },

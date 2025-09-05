@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { cart, applications, courses, addLectureToCart, findLectureGaps, loadCourses, favoriteCourses, hasTimeConflict, showReplaceToast, confirmReplaceInTimetable } from "$lib/stores";
+  import { cart, applications, courses, addLectureToCart, findLectureGaps, loadCourses, hasTimeConflict, showReplaceToast, confirmReplaceInTimetable, removeFromCart } from "$lib/stores";
   import { showToast } from "$lib/toast";
   import { browser } from "$app/environment";
   import TimetableHeader from "$lib/components/TimetableHeader.svelte";
@@ -15,7 +15,7 @@
   let activeTab = $state("전체");
   let selectedSemester = $state("2024-2학기");
   let displayedDays = $state(["월", "화", "수", "목", "금"]); // 요일 목록을 state로 변경
-  let showFavorites = $state(false); // 장바구니에 넣은 과목만 보기 토글
+  let showCartOnly = $state(false); // 장바구니에 넣은 과목만 보기 토글
   let timetableCourses = $state<string[]>([]); // 시간표에 표시할 과목들 (장바구니에서 추가 버튼을 눌렀을 때만)
 
   // 데이터 로딩
@@ -33,7 +33,7 @@
     if (conflictAnalysis.consecutiveWarnings.length > 0) {
       const impossibleCount = conflictAnalysis.consecutiveWarnings.filter(w => w.isImpossible).length;
       if (impossibleCount > 0) {
-        showToast(`연속 강의 이동 불가능! (${impossibleCount}개)`, "warning");
+        showToast(`연속 강의 이동 불가능! (${impossibleCount}개)`, "error");
       }
     }
   });
@@ -49,19 +49,9 @@
     console.log('🔄 교체 후 timetableCourses:', timetableCourses);
   }
 
-  // 찜 토글 핸들러
-  function handleToggleFavorites() {
-    showFavorites = !showFavorites;
-  }
-
-  // 찜한 과목 추가/제거 핸들러
-  function handleToggleFavorite(courseId: string, classId: string) {
-    const courseKey = `${courseId}-${classId}`;
-    if ($favoriteCourses.includes(courseKey)) {
-      favoriteCourses.update(favorites => favorites.filter(id => id !== courseKey));
-    } else {
-      favoriteCourses.update(favorites => [...favorites, courseKey]);
-    }
+  // 장바구니만 보기 토글 핸들러
+  function handleToggleCartOnly() {
+    showCartOnly = !showCartOnly;
   }
 
   // --- 타입 정의 ---
@@ -250,19 +240,16 @@
   // 4. 사이드바에 필요한 데이터 가공
   const sidebarData = $derived.by(() => {
     const cartIds = new Set($cart.map(item => `${item.courseId}-${item.classId}`));
-    const favoriteIds = new Set($favoriteCourses);
-    
     const timetableCourseIds = new Set(timetableCourses);
     
     const allCoursesWithStatus = $courses.map(c => ({
       ...c,
       isInCart: cartIds.has(`${c.courseId}-${c.classId}`),
-      isFavorite: favoriteIds.has(`${c.courseId}-${c.classId}`),
       isInTimetable: timetableCourseIds.has(`${c.courseId}-${c.classId}`)
     }));
 
     // 장바구니에 넣은 과목만 보기 필터링
-    const filteredCourses = showFavorites 
+    const filteredCourses = showCartOnly 
       ? allCoursesWithStatus.filter(course => course.isInCart)
       : allCoursesWithStatus;
 
@@ -403,6 +390,30 @@
     timetableCourses = timetableCourses.filter(key => key !== courseKey);
   }
 
+  function handleToggleCart(event: CustomEvent<Lecture> | Lecture) {
+    // 이벤트에서 오는 경우와 직접 호출되는 경우 모두 처리
+    const course = event instanceof CustomEvent ? event.detail : event;
+    
+    const isInCartNow = $cart.some(item => item.courseId === course.courseId && item.classId === course.classId);
+    
+    if (isInCartNow) {
+      // 장바구니에서 제거
+      removeFromCart(course.courseId, course.classId);
+      
+      // 시간표에서도 제거
+      const courseKey = `${course.courseId}-${course.classId}`;
+      timetableCourses = timetableCourses.filter(key => key !== courseKey);
+      
+      showToast("🛒 장바구니에서 제거했습니다", "success");
+    } else {
+      // 장바구니에 추가 (시간표에는 자동으로 추가하지 않음)
+      const newItem = { courseId: course.courseId, classId: course.classId, method: course.method || "FCFS" };
+      cart.update(items => [...items, newItem]);
+      
+      showToast("🛒 장바구니에 담았습니다", "success");
+    }
+  }
+
   async function handleDownload() {
     if (!browser) return;
     try {
@@ -449,23 +460,19 @@
     cartCourses={sidebarData.cartCourses}
     dayTabs={sidebarData.dayTabs}
     activeTab={activeTab}
-    {showFavorites}
-    favoriteCourses={$favoriteCourses}
+    showFavorites={showCartOnly}
     on:tabChange={handleTabChange}
     on:add={handleAddToCart}
     on:remove={handleRemoveFromCart}
-    on:toggleFavorites={handleToggleFavorites}
-    on:toggleFavorite={handleToggleFavorite}
+    on:toggleFavorites={handleToggleCartOnly}
+    on:toggleCart={handleToggleCart}
   />
   <div class="flex-1 flex flex-col min-w-0">
     <TimetableHeader 
-      selectedSemester={selectedSemester}
-      semesters={semesters}
       totalCredits={headerData.totalCredits}
       creditStatus={headerData.creditStatus}
       minCredits={minCredits}
       maxCredits={maxCredits}
-      on:semesterChange={(e) => selectedSemester = e.detail}
       on:reset={handleReset}
       on:download={handleDownload}
       on:share={handleShare}
@@ -477,7 +484,7 @@
         consecutiveWarnings={conflictAnalysis.consecutiveWarnings}
         gaps={lectureGaps}
         displayedDays={displayedDays}
-        on:remove={handleRemoveFromGrid}
+        on:remove={(e) => handleRemoveFromGrid(e)}
         on:suggest={handleSuggestFromGrid}
       />
       <TimetableFooter
@@ -492,13 +499,10 @@
 <div class="lg:hidden flex flex-col h-screen bg-gray-50">
   <!-- 모바일 헤더 -->
   <TimetableHeader 
-    selectedSemester={selectedSemester}
-    semesters={semesters}
     totalCredits={headerData.totalCredits}
     creditStatus={headerData.creditStatus}
     minCredits={minCredits}
     maxCredits={maxCredits}
-    on:semesterChange={(e) => selectedSemester = e.detail}
     on:reset={handleReset}
     on:download={handleDownload}
     on:share={handleShare}
@@ -560,14 +564,12 @@
             </div>
           </div>
           <button 
-            class="mobile-remove-btn"
-            onclick={() => handleRemoveFromCart({ detail: course } as any)}
-            aria-label="장바구니에서 제거"
+            class="mobile-cart-toggle-btn"
+            onclick={() => handleToggleCart(course)}
+            aria-label="장바구니 토글"
+            title="장바구니에서 제거"
           >
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
-            </svg>
-            <span class="sr-only">제거</span>
+            🛒
           </button>
         </div>
       {/each}
@@ -634,26 +636,27 @@
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
   }
 
-  /* 모바일 제거 버튼 */
-  .mobile-remove-btn {
+  /* 모바일 카트 토글 버튼 */
+  .mobile-cart-toggle-btn {
     position: absolute;
     top: 8px;
     right: 8px;
-    width: 20px;
-    height: 20px;
-    background: linear-gradient(135deg, #f8b4cb 0%, #fce7f3 100%);
-    color: #be185d;
-    border: 1px solid #f9a8d4;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border: 1px solid #2563eb;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
     cursor: pointer;
+    font-size: 12px;
   }
 
-  .mobile-remove-btn:hover {
-    background: linear-gradient(135deg, #f472b6 0%, #f8b4cb 100%);
+  .mobile-cart-toggle-btn:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
     transform: scale(1.1);
   }
 

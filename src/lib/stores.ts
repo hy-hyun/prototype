@@ -735,6 +735,10 @@ export function addToCart(item: CartItem) {
   });
 }
 
+export function removeFromCart(courseId: string, classId: string) {
+  cart.update((c) => c.filter((x) => !(x.courseId === courseId && x.classId === classId)));
+}
+
 export function applyFcfs(courseId: string, classId: string) {
   applications.update((a) => {
     // 중복 신청 방지

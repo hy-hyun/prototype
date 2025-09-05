@@ -9,15 +9,13 @@
     cartCourses = [],
     dayTabs = [],
     activeTab = "전체",
-    showFavorites = false,
-    favoriteCourses = []
+    showFavorites = false
   } = $props<{
-    courses: (Lecture & { isInCart: boolean; isFavorite: boolean; isInTimetable: boolean })[];
+    courses: (Lecture & { isInCart: boolean; isInTimetable: boolean })[];
     cartCourses: (Lecture & { cartMethod: string })[];
     dayTabs: DayTab[];
     activeTab: string;
     showFavorites: boolean;
-    favoriteCourses: string[];
   }>();
 
   const dispatch = createEventDispatcher<{
@@ -25,7 +23,7 @@
     add: Lecture;
     remove: Lecture;
     toggleFavorites: void;
-    toggleFavorite: { courseId: string; classId: string };
+    toggleCart: Lecture;
   }>();
 
   function changeTab(tabKey: string) {
@@ -38,6 +36,10 @@
 
   function removeFromCart(course: Lecture) {
     dispatch('remove', course);
+  }
+
+  function toggleCart(course: Lecture) {
+    dispatch('toggleCart', course);
   }
 
   function formatTime(slot: number): string {
@@ -175,74 +177,63 @@
               </div>
             </div>
 
-            <!-- 찜 버튼과 장바구니 버튼 -->
+            <!-- 장바구니 토글 버튼과 시간표 추가/제거 버튼 -->
             <div class="flex justify-between items-center">
-              <!-- 찜 버튼 -->
+              <!-- 장바구니 토글 버튼 -->
               <button 
                 type="button"
                 class="px-3 py-1.5 text-xs rounded-lg transition-colors font-medium {
-                  course.isFavorite 
-                    ? 'bg-pink-100 text-pink-500 hover:bg-pink-200' 
+                  course.isInCart 
+                    ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
                     : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                 }"
-                onclick={() => dispatch('toggleFavorite', { courseId: course.courseId, classId: course.classId })}
-                title={course.isFavorite ? "찜 해제" : "찜하기"}
+                onclick={() => toggleCart(course)}
+                title={course.isInCart ? "🛒 장바구니 해제" : "🛒 장바구니"}
               >
-                {course.isFavorite ? "🛒" : "🛒"}
+                🛒
               </button>
               
-              <!-- 장바구니 버튼 -->
-              {#if course.isInCart && course.isInTimetable}
-                <!-- 장바구니에 있고 시간표에도 표시된 과목: 제거 버튼 -->
-                <button 
-                  type="button"
-                  class="cart-btn remove"
-                  onclick={() => removeFromCart(course)}
-                  title="시간표에서 제거"
-                >
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
-                  </svg>
-                  제거
-                </button>
-              {:else if course.isInCart}
-                <!-- 장바구니에 있지만 시간표에 표시되지 않은 과목: 추가 버튼 -->
-                <button 
-                  type="button"
-                  class="cart-btn add"
-                  onclick={() => addToCart(course)}
-                  title="시간표에 추가"
-                >
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                  </svg>
-                  추가
-                </button>
-              {:else if course.isFavorite}
-                <!-- 찜한 과목: 추가 버튼 -->
-                <button 
-                  type="button"
-                  class="cart-btn add"
-                  onclick={() => addToCart(course)}
-                  title="찜한 과목을 장바구니에 추가"
-                >
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                  </svg>
-                  추가
-                </button>
+              <!-- 시간표 추가/제거 버튼 -->
+              {#if course.isInCart}
+                {#if course.isInTimetable}
+                  <!-- 시간표에 표시된 과목: 시간표에서 제거 -->
+                  <button 
+                    type="button"
+                    class="cart-btn remove"
+                    onclick={() => removeFromCart(course)}
+                    title="시간표에서 제거"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                    </svg>
+                    시간표 제거
+                  </button>
+                {:else}
+                  <!-- 장바구니에 있지만 시간표에 표시되지 않은 과목: 시간표에 추가 -->
+                  <button 
+                    type="button"
+                    class="cart-btn add"
+                    onclick={() => addToCart(course)}
+                    title="시간표에 추가"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    시간표 추가
+                  </button>
+                {/if}
               {:else}
-                <!-- 일반 과목: 추가 버튼 -->
+                <!-- 장바구니에 없는 과목: 비활성화 -->
                 <button 
                   type="button"
-                  class="cart-btn add"
-                  onclick={() => addToCart(course)}
-                  title="장바구니에 추가"
+                  class="cart-btn disabled"
+                  disabled
+                  title="먼저 장바구니에 추가해주세요"
                 >
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                   </svg>
-                  추가
+                  시간표 추가
                 </button>
               {/if}
             </div>
@@ -291,5 +282,17 @@
     background: linear-gradient(135deg, #f472b6 0%, #f8b4cb 100%);
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(244, 114, 182, 0.3);
+  }
+
+  .cart-btn.disabled {
+    background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+    color: #9ca3af;
+    border-color: #d1d5db;
+    cursor: not-allowed;
+  }
+
+  .cart-btn.disabled:hover {
+    transform: none;
+    box-shadow: none;
   }
 </style>

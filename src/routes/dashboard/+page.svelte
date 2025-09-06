@@ -1,11 +1,58 @@
 <script lang="ts">
   import { dashboardData } from '$lib/mock/dashboardData';
-  import { userDocument, isLoggedIn } from '$lib/stores';
-  import type { LearningJourney } from '$lib/types';
+  import { userDocument, isLoggedIn, cart, addToCart, removeFromCart, courses as allCourses } from '$lib/stores';
+  import type { LearningJourney, CartItem } from '$lib/types';
+  import { showToast } from '$lib/toast';
+  import { fade, fly } from 'svelte/transition';
   
   // 🔥 Firestore 사용자 데이터 또는 fallback
   const userData = $derived($userDocument?.dashboard || dashboardData);
-  
+
+  // 추천 강의/기본 수업 데이터 (상태로 관리)
+  let recommendedCourses = $state(dashboardData.recommendedCourses);
+  let basicCourses = $state(dashboardData.basicCourses);
+
+  // 사용자 데이터가 변경될 때마다 강의 목록을 안전하게 업데이트
+  $effect(() => {
+    const user = $userDocument;
+    const mockRec = dashboardData.recommendedCourses;
+    const mockBasic = dashboardData.basicCourses;
+
+    // 추천 강의 업데이트
+    if (user?.dashboard?.recommendedCourses) {
+      const source = user.dashboard.recommendedCourses;
+      if (Array.isArray(source) && source.length > 0) {
+        recommendedCourses = source;
+      } else if (typeof source === 'object' && source !== null && Object.keys(source).length > 0) {
+        recommendedCourses = Object.values(source);
+      } else {
+        recommendedCourses = mockRec;
+      }
+    } else {
+      recommendedCourses = mockRec;
+    }
+
+    // 기본 수업 업데이트
+    if (user?.dashboard?.basicCourses) {
+      const source = user.dashboard.basicCourses;
+      let userCourses: any[] = [];
+      if (Array.isArray(source) && source.length > 0) {
+        userCourses = source;
+      } else if (typeof source === 'object' && source !== null && Object.keys(source).length > 0) {
+        userCourses = Object.values(source);
+      } else {
+        userCourses = mockBasic;
+      }
+      
+      basicCourses = userCourses.map(fc => {
+        const mockCourse = mockBasic.find(mc => mc.id === fc.id);
+        return { ...fc, status: mockCourse?.status || 'recommended' };
+      });
+    } else {
+      basicCourses = mockBasic;
+    }
+  });
+
   // 사용자 정보 (Firestore 우선, fallback으로 dashboardData)
   let userName = $derived(userData.userInfo.name);
   let currentSemester = $derived(userData.userInfo.currentSemester);
@@ -24,13 +71,7 @@
   // 러닝저니 데이터 (학기별 학점 축적)
   let learningJourney = $derived(userData.learningJourney);
    
-  // 추천 강의 데이터
-  let recommendedCourses = $derived(userData.recommendedCourses);
-   
-  // 기본 수업 데이터
-  let basicCourses = $derived(userData.basicCourses);
-   
-   // 툴팁 상태
+  // 툴팁 상태
   let tooltip = $state<{
     show: boolean;
     x: number;
@@ -111,7 +152,66 @@
 	let journeyMidpoint = $derived(Math.ceil(learningJourney.length / 2));
 	let journeyPart1 = $derived(learningJourney.slice(0, journeyMidpoint));
 	let journeyPart2 = $derived(learningJourney.slice(journeyMidpoint));
+  const finalCumulativeCredits = $derived(learningJourney.at(-1)?.cumulative ?? 0);
    
+  // 장바구니 상태
+  let showRemoveConfirm = $state(false);
+  let courseToRemove = $state<CartItem | null>(null);
+
+  // 현재 장바구니에 담긴 아이템
+  const cartItems = $derived($cart);
+
+  // 강의가 장바구니에 있는지 확인하는 함수 (제목으로)
+  function isInCart(courseTitle: string): boolean {
+    const fullCourse = $allCourses.find(c => c.title === courseTitle);
+    if (!fullCourse) return false;
+    return cartItems.some(item => item.courseId === fullCourse.courseId && item.classId === fullCourse.classId);
+  }
+
+  // 장바구니에 강의 추가
+  function handleAddToCart(course: { id: string; title: string; }) {
+    // dashboardData의 course.id는 allCourses의 courseId에 해당합니다.
+    const fullCourse = $allCourses.find(c => c.title === course.title);
+
+    if (fullCourse) {
+      addToCart({
+        courseId: fullCourse.courseId,
+        classId: fullCourse.classId,
+        method: fullCourse.method || 'FCFS',
+      });
+      showToast(`${course.title} 강의를 장바구니에 담았습니다.`, 'success');
+    } else {
+      showToast('강의 정보를 찾을 수 없습니다.', 'error');
+    }
+  }
+
+  // 장바구니에서 강의 제거 (팝업 열기)
+  function handleRemoveFromCart(course: { id: string; title: string; }) {
+    const fullCourse = $allCourses.find(c => c.title === course.title);
+    if (fullCourse) {
+        const itemInCart = cartItems.find(item => item.courseId === fullCourse.courseId && item.classId === fullCourse.classId);
+        if (itemInCart) {
+          courseToRemove = itemInCart;
+          showRemoveConfirm = true;
+        }
+    }
+  }
+
+  // 장바구니에서 제거 확정
+  function confirmRemove() {
+    if (courseToRemove) {
+      removeFromCart(courseToRemove.courseId, courseToRemove.classId);
+      showToast('강의를 장바구니에서 제거했습니다.', 'info');
+    }
+    closeModal();
+  }
+
+  // 팝업 닫기
+  function closeModal() {
+    showRemoveConfirm = false;
+    courseToRemove = null;
+  }
+
       // 선택된 영역 정보 상태
     let selectedArea: { name: string; completed: number; required: number } | null = $state(null);
   let donutTooltip = $state({ visible: false, area: '', completed: 0, required: 0 });
@@ -200,7 +300,41 @@
   };
 </script>
 
-<div class="min-h-screen bg-gray-50 p-6">
+<div class="min-h-screen bg-gray-50 p-6 relative">
+  <!-- 제거 확인 팝업 -->
+  {#if showRemoveConfirm}
+    <div
+      transition:fade={{ duration: 150 }}
+      class="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onclick={closeModal}
+      onkeydown={(e) => {
+        if (e.key === 'Escape') closeModal();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="remove-title"
+    >
+      <div
+        transition:fly={{ y: 20, duration: 200 }}
+        class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm"
+        onclick={(e) => e.stopPropagation()}
+      >
+        <h3 id="remove-title" class="text-lg font-semibold text-gray-900 mb-4">확인</h3>
+        <p class="text-gray-600 mb-6">이 강의를 장바구니에서 제거하시겠습니까?</p>
+        <div class="flex justify-end gap-3">
+          <button
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            onclick={closeModal}>아니오</button
+          >
+          <button
+            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+            onclick={confirmRemove}>예</button
+          >
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <!-- 헤더 -->
   <div class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900 mb-2">대시보드</h1>
@@ -267,15 +401,11 @@
                       class="absolute text-center text-xs text-gray-500"
                       style="left: {(i / (learningJourney.length - 1)) * 100}%; transform: {getXAxisLabelTransform(i, learningJourney.length)};"
                     >
-                         <div class="font-medium">
-                        {displayYear}-{sem}
-                        {#if journey.isFuture}
-                          <span class="text-gray-400">({year})</span>
-                           {/if}
-                         </div>
-                       </div>
-                     {/each}
-                   </div>
+                       <div class="font-medium">{displayYear}-{sem}</div>
+                       <div class="text-gray-400">({year})</div>
+                    </div>
+                  {/each}
+                </div>
                   
                   <!-- 격자선 -->
                   <div class="absolute left-12 right-0 top-0 bottom-0">
@@ -1085,20 +1215,6 @@
                    </div>
                  </div>
               </div>
-             
-             <!-- 일반교양 -->
-              <div class="bg-gray-50 rounded-lg p-3">
-                <div class="flex items-center justify-between mb-3">
-                 <h4 class="font-medium text-gray-900">{generalEducation.general.name}</h4>
-                 <span class="text-sm text-gray-700">{generalEducation.general.completed}/{generalEducation.general.required} 학점</span>
-               </div>
-                 <div class="w-full bg-gray-200 rounded-full h-2">
-                   <div 
-                     class="bg-gray-600 h-2 rounded-full"
-                     style="width: {Math.min((generalEducation.general.completed / generalEducation.general.required) * 100, 100)}%"
-                   ></div>
-                 </div>
-               </div>
              </div>
         </div>
 
@@ -1106,10 +1222,10 @@
         <div class="mt-6 p-4 bg-gray-50 rounded-lg">
           <div class="flex items-center justify-between">
             <span class="text-sm font-medium text-gray-700">예상 졸업 학기</span>
-            <span class="text-lg font-bold text-blue-600">{learningJourney[learningJourney.length - 1]?.semester}</span>
+            <span class="text-lg font-bold text-blue-600">{learningJourney.at(-1)?.semester}</span>
           </div>
           <div class="mt-2 text-xs text-gray-500">
-            <p>총 {requiredCredits}학점 이수 필요</p>
+            <p>총 {finalCumulativeCredits}학점으로 졸업 예정 (최소 {requiredCredits}학점)</p>
             </div>
           </div>
         </div>
@@ -1145,11 +1261,22 @@
                        {course.credits}학점
                      </span>
                    </div>
-                <button
-                  class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors flex-shrink-0"
-                >
-                     담기
-                   </button>
+                  {#if isInCart(course.title)}
+                    <button
+                      class="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors flex-shrink-0"
+                      onclick={() => handleRemoveFromCart(course)}
+                      title="장바구니에서 제거"
+                    >
+                      👍 담김
+                    </button>
+                  {:else}
+                    <button
+                    class="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors"
+                      onclick={() => handleAddToCart(course)}
+                    >
+                      👉 담기
+                    </button>
+                  {/if}
                  </div>
                </div>
              {/each}
@@ -1173,12 +1300,25 @@
                             {course.credits}학점
                           </span>
                   <span class="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">
-                            {course.reason || course.type}
+                            {course.reason}
                           </span>
                         </div>
-                        <button class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors">
-                          담기
-                        </button>
+                        {#if isInCart(course.title)}
+                          <button
+                          class="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex-shrink-0"
+                          onclick={() => handleRemoveFromCart(course)}
+                            title="장바구니에서 제거"
+                          >
+                          👍 담김
+                          </button>
+                        {:else}
+                          <button
+                            class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+                            onclick={() => handleAddToCart(course)}
+                          >
+                          👉 담기
+                          </button>
+                        {/if}
                       </div>
                     </div>
                   {/each}
@@ -1192,20 +1332,20 @@
          </h2>
          
                                        <div class="space-y-2">
-             <button class="w-full p-2 text-left bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
+             <a href="/timetable" class="block w-full p-2 text-left bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
                <div class="font-medium text-blue-900 text-sm">시간표 보기</div>
                <div class="text-xs text-blue-700">현재 학기 시간표 확인</div>
-             </button>
+             </a>
              
-             <button class="w-full p-2 text-left bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
+             <a href="/search" class="block w-full p-2 text-left bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
                <div class="font-medium text-green-900 text-sm">강의 검색</div>
                <div class="text-xs text-green-700">새로운 강의 찾아보기</div>
-             </button>
+             </a>
              
-             <button class="w-full p-2 text-left bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
+             <a href="/enroll" class="block w-full p-2 text-left bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
                <div class="font-medium text-purple-900 text-sm">수강 신청</div>
                <div class="text-xs text-purple-700">장바구니에서 신청하기</div>
-             </button>
+             </a>
            </div>
        </div>
     </div>

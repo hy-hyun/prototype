@@ -95,24 +95,24 @@ export const dashboardData = {
 				},
 			],
 		},
-		general: { completed: 42, required: 50, name: '교직이수' },
+		general: { completed: 18, required: 29, name: '일반교양' },
 	},
 	learningJourney: [
-		{ semester: '2021-1', credits: 19, cumulative: 19, milestone: '입학', isFuture: false },
+		{ semester: '2021-1', credits: 19, cumulative: 19, milestone: '신입학', isFuture: false },
 		{ semester: '2021-2', credits: 18, cumulative: 37, milestone: null, isFuture: false },
 		{ semester: '2022-1', credits: 20, cumulative: 57, milestone: null, isFuture: false },
-		{ semester: '2022-2', credits: 19, cumulative: 76, milestone: null, isFuture: false },
+		{ semester: '2022-2', credits: 19, cumulative: 76, milestone: '제2전공', isFuture: false },
 		{ semester: '2022-겨울', credits: 3, cumulative: 79, milestone: null, isFuture: false },
 		{
 			semester: '2025-1',
 			credits: 23,
 			cumulative: 102,
-			milestone: '다중전공 시작, 복학 학기',
+			milestone: '정규 복학',
 			isFuture: false,
 		},
-		{ semester: '2025-2', credits: 18, cumulative: 120, milestone: '예상', isFuture: true },
-		{ semester: '2026-1', credits: 15, cumulative: 135, milestone: '예상', isFuture: true },
-		{ semester: '2026-2', credits: 16, cumulative: 151, milestone: '예상', isFuture: true },
+		{ semester: '2025-2', credits: 21, cumulative: 123, milestone: '21학점 이수 예상', isFuture: true },
+		{ semester: '2026-1', credits: 15, cumulative: 138, milestone: '15학점 이수 예상', isFuture: true },
+		{ semester: '2026-2', credits: 16, cumulative: 154, milestone: '16학점 이수 예상', isFuture: true },
 	],
 	recommendedCourses: [
 		{ id: '1', title: '교육공학사례연구', dept: '교육공학과', credits: 3, reason: '400단위 전공 3학점 추천' },
@@ -146,6 +146,7 @@ export const dashboardData = {
 		},
 	],
 	teachingCourses: {
+		general: { completed: 42, required: 51, name: '교직이수' },
 		major: {
 			name: '전공과목',
 			categories: {
@@ -162,8 +163,8 @@ export const dashboardData = {
 						{ title: '뉴미디어학습컨텐츠개발', credits: 3, status: 'completed', fieldId: '교육행정' },
 						{ title: '교육공학이론과실제', credits: 3, status: 'completed', fieldId: '교육공학' },
 						{ title: '첨단매체와스마트러닝', credits: 3, status: 'completed', fieldId: '교육공학' },
-						{ title: '교수체제개발', credits: 3, status: 'completed', fieldId: '교육행정' },
-						{ title: '디지털변혁시대의HRD방법론', credits: 3, status: 'completed', fieldId: '교육행정' }
+						{ title: '교수체제개발', credits: 3, status: 'completed', fieldId: '교육연구방법' },
+						{ title: '디지털변혁시대의HRD방법론', credits: 3, status: 'completed', fieldId: '교육연구방법' }
 					]
 				},
 				subjectEducation: {

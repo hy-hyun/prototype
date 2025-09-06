@@ -124,7 +124,11 @@ export type GeneralEducation = {
       isGroup?: boolean;
     }>;
   };
-  general: { completed: number; required: number; name: string };
+  general: {
+    name: string;
+    completed: number;
+    required: number;
+  };
 };
 
 export type Course = {
@@ -138,6 +142,11 @@ export type Course = {
 };
 
 export type TeachingCourses = {
+  general: {
+    name: string;
+    completed: number;
+    required: number;
+  };
   major: {
     name: string;
     categories: {

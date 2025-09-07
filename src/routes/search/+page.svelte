@@ -323,7 +323,7 @@
       </div>
 
       <div>
-        <p class="text-xs text-gray-500 mb-2">학과</p>
+        <p class="text-xs text-gray-500 mb-2">학과/전공</p>
         <select class="border rounded p-2 bg-white w-full" bind:value={filters.dept} onchange={() => performRealTimeSearch()}>
           <option value="">전체 학과</option>
           {#each availableDepts as dept}

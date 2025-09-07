@@ -165,8 +165,8 @@ export const dashboardData = {
 			]
 		},
 		{ semester: '2025-2', credits: 21, cumulative: 123, milestone: '21학점 이수 예상', isFuture: true },
-		{ semester: '2026-1', credits: 15, cumulative: 138, milestone: '15학점 이수 예상', isFuture: true },
-		{ semester: '2026-2', credits: 16, cumulative: 154, milestone: '16학점 이수 예상', isFuture: true },
+		{ semester: '2026-1', credits: 16, cumulative: 139, milestone: '16학점 이수 예상', isFuture: true },
+		{ semester: '2026-2', credits: 15, cumulative: 154, milestone: '15학점 이수 예상', isFuture: true },
 	],
 	// 학기별 기본 추천 과목
 	baseRecommendationsBySemester: {
@@ -211,14 +211,14 @@ export const dashboardData = {
 				title: '교육공학사례연구',
 				dept: '교육공학과',
 				credits: 3,
-				reason: '400단위 전공'
+				reason: '400단위 전공 이수'
 			},
 			{
-				id: 'BIG4001',
-				title: '응용회귀분석',
+				id: 'BIG2006',
+				title: 'R과자료시각화',
 				dept: '빅데이터융합전공',
 				credits: 3,
-				reason: '제2전공'
+				reason: '제2전공 학점 이수'
 			},
 			{
 				id: 'AIX0005',
@@ -228,8 +228,94 @@ export const dashboardData = {
 				reason: '전공 인정 교과목 (제2전공)'
 			}
 		],
-		'2026-1': [],
-		'2026-2': [],
+		'2026-1': [
+			{
+				id: 'EDU3032',
+				title: '교육학교과교재및이론',
+				dept: '교육학과',
+				credits: 3,
+				reason: '미이수한 교직이수 과목'
+			},
+			{
+				id: 'EDU2025',
+				title: '교육논술',
+				dept: '교육학과',
+				credits: 2,
+				reason: '미이수한 교직이수 과목'
+			},
+			{
+				id: 'EDU4003',
+				title: '교육실습',
+				dept: '교직과',
+				credits: 3,
+				reason: '미이수한 교직이수 과목'
+			},
+			{
+				id: 'BIG2001',
+				title: '기초미적분학',
+				dept: '빅데이터융합전공',
+				credits: 3,
+				reason: '제2전공 필수 과목'
+			},
+			{
+				id: 'BIG3001',
+				title: '통계적모델링',
+				dept: '빅데이터융합전공',
+				credits: 3,
+				reason: '제2전공 학점 이수'
+			},
+			{
+				id: 'BIG3002',
+				title: '빅데이터마이닝',
+				dept: '빅데이터융합전공',
+				credits: 3,
+				reason: '제2전공 학점 이수'
+			}
+		],
+		'2026-2': [
+			{
+				id: 'EDU3080',
+				title: '학교폭력예방및학생의이해',
+				dept: '교원양성지원센터',
+				credits: 2,
+				reason: '미이수한 교직이수 과목'
+			},
+			{
+				id: 'EDU3071',
+				title: '특수교육학개론',
+				dept: '교원양성지원센터',
+				credits: 2,
+				reason: '미이수한 교직이수 과목'
+			},
+			{
+				id: 'EDU4003',
+				title: '교육실습',
+				dept: '교직과',
+				credits: 3,
+				reason: '미이수한 교직이수 과목'
+			},
+			{
+				id: 'BIG3005',
+				title: '사회연결망분석과텍스트마이닝',
+				dept: '빅데이터융합전공',
+				credits: 3,
+				reason: '제2전공 학점 이수'
+			},
+			{
+				id: 'ITC3009',
+				title: '텍스트마이닝',
+				dept: '빅데이터융합전공',
+				credits: 3,
+				reason: '제2전공 400단위 전공 이수'
+			},
+			{
+				id: 'BIG4001',
+				title: '응용회귀분석',
+				dept: '빅데이터융합전공',
+				credits: 3,
+				reason: '제2전공 400단위 전공 이수'
+			}
+		],
 	},
 	basicCourses: [
 		{

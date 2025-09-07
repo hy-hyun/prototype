@@ -1,7 +1,7 @@
 <script lang="ts">
   import { dashboardData } from '$lib/mock/dashboardData';
   import { userDocument, isLoggedIn, cart, addToCart, removeFromCart, courses as allCourses } from '$lib/stores';
-  import type { LearningJourney, CartItem } from '$lib/types';
+  import type { LearningJourney, CartItem, UserDocument } from '$lib/types';
   import { showToast } from '$lib/toast';
   import { fade, fly } from 'svelte/transition';
   
@@ -9,27 +9,20 @@
   const userData = $derived($userDocument?.dashboard || dashboardData);
 
   // 추천 강의/기본 수업 데이터 (상태로 관리)
-  let recommendedCourses = $state(dashboardData.recommendedCourses);
+  let recommendedCoursesBySemester = $state(dashboardData.baseRecommendationsBySemester);
   let basicCourses = $state(dashboardData.basicCourses);
 
   // 사용자 데이터가 변경될 때마다 강의 목록을 안전하게 업데이트
   $effect(() => {
     const user = $userDocument;
-    const mockRec = dashboardData.recommendedCourses;
+    const mockRec = dashboardData.baseRecommendationsBySemester;
     const mockBasic = dashboardData.basicCourses;
 
-    // 추천 강의 업데이트
-    if (user?.dashboard?.recommendedCourses) {
-      const source = user.dashboard.recommendedCourses;
-      if (Array.isArray(source) && source.length > 0) {
-        recommendedCourses = source;
-      } else if (typeof source === 'object' && source !== null && Object.keys(source).length > 0) {
-        recommendedCourses = Object.values(source);
-      } else {
-        recommendedCourses = mockRec;
-      }
+    // 추천 강의 업데이트 (학기별 구조 반영)
+    if (user?.dashboard?.baseRecommendationsBySemester) {
+        recommendedCoursesBySemester = user.dashboard.baseRecommendationsBySemester;
     } else {
-      recommendedCourses = mockRec;
+        recommendedCoursesBySemester = mockRec;
     }
 
     // 기본 수업 업데이트
@@ -212,6 +205,158 @@
     courseToRemove = null;
   }
 
+  // AI 추천 팝업 상태
+  let aiRecPopup = $state<{
+    show: boolean;
+    semester: string | null;
+    courses: any[];
+    isLoading: boolean;
+    error: string | null;
+    currentPage: number; // 페이지네이션 상태 추가
+  }>({
+    show: false,
+    semester: null,
+    courses: [],
+    isLoading: false,
+    error: null,
+    currentPage: 1,
+  });
+
+  // AI 추천 팝업 열기
+  async function showAiRecPopup(journey: LearningJourney) {
+    if (!journey.isFuture) return;
+
+    // 팝업 열고 로딩 시작
+    aiRecPopup = {
+      show: true,
+      semester: journey.semester,
+      courses: [], // 이전 데이터 초기화
+      isLoading: true,
+      error: null,
+      currentPage: 1, // 팝업 열 때 1페이지로 초기화
+    };
+
+    // 2026-1 학기는 AI 추천을 비활성화하고 기본 추천만 표시 (데모용)
+    if (journey.semester === '2026-1') {
+      setTimeout(() => {
+        const baseRecommendations = recommendedCoursesBySemester[journey.semester] || [];
+        aiRecPopup.courses = baseRecommendations;
+        aiRecPopup.isLoading = false;
+      }, 1000); // 1초간 로딩하는 척
+      return;
+    }
+
+    // AI 추천 로직 실행
+    const startTime = Date.now();
+    try {
+      // 로그인하지 않았을 경우를 대비해 Mock 데이터를 UserDocument 형태로 가공
+      const payload: UserDocument = $userDocument || {
+        profile: {
+          ...dashboardData.userInfo,
+          studentId: '2021075178', // Mock ID
+          createdAt: new Date(),
+          lastLoginAt: new Date(),
+        },
+        dashboard: {
+          ...dashboardData,
+          // recommendedCourses를 baseRecommendationsBySemester로 변경
+          recommendedCourses: [], // 이 부분은 이제 사용되지 않으므로 빈 배열로 둡니다.
+        },
+        enrollment: {} as any, 
+        settings: {} as any,
+      };
+
+      // API 호출
+      const response = await fetch('/api/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // 현재 로그인한 사용자 데이터 또는 Mock 데이터를 body에 담아 전송
+        body: JSON.stringify({
+          userDocument: payload,
+          semester: journey.semester, // 학기 정보 추가
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('AI 추천 데이터를 가져오는 데 실패했습니다.');
+      }
+
+      const result = await response.json();
+      
+      // 클릭된 학기에 해당하는 기본 추천 과목 목록을 먼저 채웁니다.
+      const baseRecommendations = recommendedCoursesBySemester[journey.semester] || [];
+      
+      if (result.success) {
+        const finalRecommendations = [...baseRecommendations];
+
+        if (result.data) {
+          // AI 추천이 있는 경우에만 추가
+          finalRecommendations.push(result.data);
+        }
+        
+        aiRecPopup.courses = finalRecommendations;
+      } else {
+        // API 호출이 실패하더라도 기본 추천은 보여줍니다.
+        aiRecPopup.courses = baseRecommendations;
+        throw new Error(result.message || '알 수 없는 오류가 발생했습니다.');
+      }
+
+    } catch (err: any) {
+      aiRecPopup.error = err.message;
+    } finally {
+      const elapsedTime = Date.now() - startTime;
+      const minLoadingTime = 1000; // 최소 로딩 시간 1초
+      if (elapsedTime < minLoadingTime) {
+        setTimeout(() => {
+          aiRecPopup.isLoading = false;
+        }, minLoadingTime - elapsedTime);
+      } else {
+        aiRecPopup.isLoading = false;
+      }
+    }
+  }
+
+  // AI 추천 팝업 닫기
+  function closeAiRecPopup() {
+    aiRecPopup = { show: false, semester: null, courses: [], isLoading: false, error: null, currentPage: 1 };
+  }
+
+  // 과거 학기 상세 팝업 상태
+  let pastSemesterPopup = $state<{
+    show: boolean;
+    semester: string | null;
+    courses: any[];
+  }>({
+    show: false,
+    semester: null,
+    courses: [],
+  });
+
+  // 과거 학기 팝업 열기
+  function showPastSemesterPopup(journey: LearningJourney) {
+    if (journey.isFuture) return;
+
+    pastSemesterPopup = {
+      show: true,
+      semester: journey.semester,
+      courses: journey.courses,
+    };
+  }
+
+  // 과거 학기 팝업 닫기
+  function closePastSemesterPopup() {
+    pastSemesterPopup = { show: false, semester: null, courses: [] };
+  }
+
+  // 학기 클릭 핸들러
+  function handleSemesterClick(journey: LearningJourney) {
+    if (journey.isFuture) {
+      showAiRecPopup(journey);
+    } else {
+      showPastSemesterPopup(journey);
+    }
+  }
+
       // 선택된 영역 정보 상태
     let selectedArea: { name: string; completed: number; required: number } | null = $state(null);
   let donutTooltip = $state({ visible: false, area: '', completed: 0, required: 0 });
@@ -335,6 +480,200 @@
     </div>
   {/if}
 
+  <!-- 과거 학기 상세 팝업 -->
+  {#if pastSemesterPopup.show}
+    <div
+      transition:fade={{ duration: 150 }}
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onclick={closePastSemesterPopup}
+      onkeydown={(e) => {
+        if (e.key === 'Escape') closePastSemesterPopup();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="past-semester-title"
+    >
+      <div
+        transition:fly={{ y: 20, duration: 200 }}
+        class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl"
+        onclick={(e) => e.stopPropagation()}
+      >
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 id="past-semester-title" class="text-lg font-semibold text-gray-900 mb-2">
+              📖 {pastSemesterPopup.semester}학기 수강 내역
+            </h3>
+            <p class="text-sm text-gray-600 mb-4">해당 학기에 수강한 과목 목록입니다.</p>
+          </div>
+          <button class="text-gray-400 hover:text-gray-600" onclick={closePastSemesterPopup}>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+
+        <div class="max-h-[60vh] overflow-y-auto pr-2">
+          <table class="w-full text-sm text-left text-gray-500">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+              <tr>
+                <th scope="col" class="px-4 py-3">이수구분</th>
+                <th scope="col" class="px-4 py-3">학수번호</th>
+                <th scope="col" class="px-4 py-3">과목명</th>
+                <th scope="col" class="px-4 py-3 text-center">학점</th>
+                <th scope="col" class="px-4 py-3 text-center">평점</th>
+                <th scope="col" class="px-4 py-3 text-center">등급</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each pastSemesterPopup.courses as course}
+                <tr class="bg-white border-b hover:bg-gray-50">
+                  <td class="px-4 py-3">{course.classification}</td>
+                  <td class="px-4 py-3">{course.courseId}</td>
+                  <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{course.title}</th>
+                  <td class="px-4 py-3 text-center">{course.credits}</td>
+                  <td class="px-4 py-3 text-center">{course.gradePoints.toFixed(1)}</td>
+                  <td class="px-4 py-3 text-center font-semibold">{course.grade}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-end mt-6">
+          <button
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            onclick={closePastSemesterPopup}>닫기</button
+          >
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- AI 추천 강의 팝업 -->
+  {#if aiRecPopup.show}
+    <div
+      transition:fade={{ duration: 150 }}
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onclick={closeAiRecPopup}
+      onkeydown={(e) => {
+        if (e.key === 'Escape') closeAiRecPopup();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ai-rec-title"
+    >
+      <div
+        transition:fly={{ y: 20, duration: 200 }}
+        class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg"
+        onclick={(e) => e.stopPropagation()}
+      >
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 id="ai-rec-title" class="text-lg font-semibold text-gray-900 mb-2">
+              🤖 {aiRecPopup.semester}학기 AI 추천 강의
+            </h3>
+            <p class="text-sm text-gray-600 mb-4">AI가 졸업요건과 수강패턴을 분석하여 추천하는 강의입니다.</p>
+          </div>
+          <button class="text-gray-400 hover:text-gray-600" onclick={closeAiRecPopup}>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+
+        <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+          {#if aiRecPopup.isLoading}
+            <!-- 스켈레톤 UI (로딩 중) -->
+            {#each { length: 4 } as _}
+              <div class="border border-gray-200 rounded-lg p-3 animate-pulse">
+                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div class="h-3 bg-gray-200 rounded w-1/2 mb-3"></div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-1">
+                    <div class="h-5 bg-gray-200 rounded w-12"></div>
+                    <div class="h-5 bg-gray-200 rounded w-16"></div>
+                  </div>
+                  <div class="h-7 bg-gray-200 rounded-lg w-16"></div>
+                </div>
+              </div>
+            {/each}
+          {:else if aiRecPopup.error}
+            <!-- 에러 메시지 -->
+            <div class="text-center py-8 text-red-500 bg-red-50 rounded-lg">
+              <p>😢</p>
+              <p>{aiRecPopup.error}</p>
+            </div>
+          {:else}
+            <!-- 추천 결과 -->
+            {@const itemsPerPage = 5}
+            {@const startIndex = (aiRecPopup.currentPage - 1) * itemsPerPage}
+            {@const endIndex = startIndex + itemsPerPage}
+            {@const paginatedCourses = aiRecPopup.courses.slice(startIndex, endIndex)}
+
+            {#each paginatedCourses as course}
+              <div class="border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
+                <h4 class="font-medium text-gray-900 text-sm mb-1 truncate">{course.title}</h4>
+                <p class="text-xs text-gray-600 mb-2 truncate">{course.dept}</p>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-1">
+                    <span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                      {course.credits}학점
+                    </span>
+                    <span class="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">
+                      {course.reason || 'AI 추천'}
+                    </span>
+                  </div>
+                  {#if isInCart(course.title)}
+                    <button
+                      class="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex-shrink-0"
+                      onclick={() => handleRemoveFromCart(course)}
+                      title="장바구니에서 제거"
+                    >
+                      👍 담김
+                    </button>
+                  {:else}
+                    <button
+                      class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+                      onclick={() => handleAddToCart(course)}
+                    >
+                      👉 담기
+                    </button>
+                  {/if}
+                </div>
+              </div>
+            {/each}
+          {/if}
+        </div>
+        
+        <!-- 페이지네이션 컨트롤 -->
+        {#if !aiRecPopup.isLoading && !aiRecPopup.error && aiRecPopup.courses.length > 5}
+          <div class="flex items-center justify-center gap-4 mt-4 text-sm">
+            <button
+              class="px-3 py-1 rounded-lg transition-colors {aiRecPopup.currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300'}"
+              disabled={aiRecPopup.currentPage === 1}
+              onclick={() => aiRecPopup.currentPage--}
+            >
+              이전
+            </button>
+            <span class="font-medium text-gray-700">
+              {aiRecPopup.currentPage} / {Math.ceil(aiRecPopup.courses.length / 5)}
+            </span>
+            <button
+              class="px-3 py-1 rounded-lg transition-colors {aiRecPopup.currentPage * 5 >= aiRecPopup.courses.length ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300'}"
+              disabled={aiRecPopup.currentPage * 5 >= aiRecPopup.courses.length}
+              onclick={() => aiRecPopup.currentPage++}
+            >
+              다음
+            </button>
+          </div>
+        {/if}
+        
+        <div class="flex justify-end mt-6">
+          <button
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            onclick={closeAiRecPopup}>닫기</button
+          >
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <!-- 헤더 -->
   <div class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900 mb-2">대시보드</h1>
@@ -446,13 +785,14 @@
                       {#each learningJourney as journey, i}
                         <div 
                         class="absolute w-3 h-3 {journey.isFuture
-                          ? 'bg-gray-400'
-                          : 'bg-blue-500'} rounded-full border-2 border-white shadow-md cursor-pointer hover:scale-125 transition-all duration-300 hover:shadow-lg"
+                          ? 'bg-gray-400 cursor-pointer'
+                          : 'bg-blue-500'} rounded-full border-2 border-white shadow-md hover:scale-125 transition-all duration-300 hover:shadow-lg"
                         style="left: {(i / (learningJourney.length - 1)) * 100}%; top: {100 -
                           (journey.cumulative / 200) * 100}%; transform: translate(-50%, -50%);"
                           data-journey-index={i}
                           onmouseenter={() => showTooltip(journey, i)}
                           onmouseleave={() => hideTooltip()}
+                          onclick={() => handleSemesterClick(journey)}
                         >
                           <!-- 내부 원형 표시 -->
                         <div
@@ -538,7 +878,8 @@
 				<div class="space-y-3 min-w-0">
 					{#each journeyPart1 as journey (journey.semester)}
 						<div
-							class="flex items-start rounded-lg p-3 transition-colors {journey.isFuture ? 'bg-gray-50' : 'bg-blue-50'}"
+							class="flex items-start rounded-lg p-3 transition-colors {journey.isFuture ? 'bg-gray-50 hover:bg-gray-100 cursor-pointer' : 'bg-blue-50 hover:bg-blue-100'} cursor-pointer"
+							onclick={() => handleSemesterClick(journey)}
 						>
 							<div
 								class="mt-1 h-3 w-3 flex-shrink-0 rounded-full {journey.isFuture ? 'border-2 border-gray-300' : 'bg-blue-500'}"
@@ -571,7 +912,8 @@
 				<div class="space-y-3 min-w-0">
 					{#each journeyPart2 as journey (journey.semester)}
 						<div
-							class="flex items-start rounded-lg p-3 transition-colors {journey.isFuture ? 'bg-gray-50' : 'bg-blue-50'}"
+							class="flex items-start rounded-lg p-3 transition-colors {journey.isFuture ? 'bg-gray-50 hover:bg-gray-100 cursor-pointer' : 'bg-blue-50 hover:bg-blue-100'} cursor-pointer"
+							onclick={() => handleSemesterClick(journey)}
 						>
 							<div
 								class="mt-1 h-3 w-3 flex-shrink-0 rounded-full {journey.isFuture ? 'border-2 border-gray-300' : 'bg-blue-500'}"
@@ -1301,7 +1643,7 @@
         </h2>
         
         <div class="space-y-2">
-          {#each recommendedCourses.slice(0, 3) as course}
+          {#each (recommendedCoursesBySemester[currentSemester] || []).slice(0, 3) as course}
                     <div class="border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
                       <h3 class="font-medium text-gray-900 text-sm mb-1 truncate">{course.title}</h3>
                       <p class="text-xs text-gray-600 mb-2 truncate">{course.dept}</p>

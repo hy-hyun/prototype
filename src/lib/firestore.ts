@@ -5,11 +5,12 @@ import {
   updateDoc, 
   deleteDoc,
   collection,
+  getDocs, // getDocs 추가
   serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { UserDocument, CartItem, Application } from './types';
+import type { UserDocument, CartItem, Application, Lecture } from './types'; // Lecture 타입 추가
 import { dashboardData } from './mock/dashboardData';
 
 // 🔥 사용자 문서 Firestore 관리 함수들
@@ -128,7 +129,7 @@ export async function createUserDocument(studentId: string): Promise<UserDocumen
             isFuture: false
           }
         ],
-        recommendedCourses: dashboardData.recommendedCourses.map(course => ({
+        recommendedCourses: (dashboardData.baseRecommendationsBySemester[dashboardData.userInfo.currentSemester] || []).map(course => ({
           id: course.id,
           title: course.title,
           dept: course.dept,
@@ -313,7 +314,7 @@ export async function migrateKimMinwooData(): Promise<void> {
         majors: dashboardData.majors,
         generalEducation: dashboardData.generalEducation,
         learningJourney: dashboardData.learningJourney,
-        recommendedCourses: dashboardData.recommendedCourses.map(course => ({
+        recommendedCourses: (dashboardData.baseRecommendationsBySemester[dashboardData.userInfo.currentSemester] || []).map(course => ({
           id: course.id,
           title: course.title,
           dept: course.dept,
@@ -381,6 +382,81 @@ export async function deleteOldStudentData(studentId: string): Promise<void> {
     
   } catch (error) {
     console.error('❌ 기존 학번 데이터 삭제 실패:', error);
+    throw error;
+  }
+}
+
+/**
+ * 모든 강의 목록 조회 (AI 추천용)
+ */
+export async function getAllCourses(): Promise<Lecture[]> {
+  try {
+    const coursesCollectionRef = collection(db, 'courses');
+    const querySnapshot = await getDocs(coursesCollectionRef);
+    
+    const courses: Lecture[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+
+ 
+      // 데이터 검증 강화: 어떤 필드가 누락되었는지 상세히 로그로 남깁니다.
+      const requiredFields = ['subjectCode', 'subjectName', 'category', 'offeringDepartment', 'courseNumber', 'creditHours'];
+      const missingFields = requiredFields.filter(field => data[field] === undefined || data[field] === null);
+
+      if (missingFields.length > 0) {
+        console.warn(
+          `[데이터 무결성 경고] 문서 '${doc.id}' 건너뜀. 누락된 필드: ${missingFields.join(', ')}`
+        );
+        return; // forEach의 다음 순회로 넘어감
+      }
+
+      // credits 필드를 유연하게 처리 (숫자, 문자열, 객체)
+      let lectureCredits = 0;
+      let labCredits = 0;
+      const firestoreCredits = data.creditHours; // 'credits'가 아닌 'creditHours' 필드 사용
+
+      if (typeof firestoreCredits === 'number') {
+        lectureCredits = firestoreCredits;
+      } else if (typeof firestoreCredits === 'string') {
+        const parsed = parseFloat(firestoreCredits);
+        if (!isNaN(parsed)) {
+          lectureCredits = parsed;
+        }
+      } else if (typeof firestoreCredits === 'object' && firestoreCredits !== null) {
+        lectureCredits = typeof firestoreCredits.lecture === 'number' ? firestoreCredits.lecture : 0;
+        labCredits = typeof firestoreCredits.lab === 'number' ? firestoreCredits.lab : 0;
+      }
+
+      // schedule 필드가 배열인 경우에만 map을 실행하도록 안전장치 추가
+      const schedule = Array.isArray(data.schedule) 
+        ? data.schedule.map((s: any) => ({
+            ...s,
+            start: s.start,
+            end: s.end,
+          }))
+        : [];
+      
+      const courseData: Lecture = {
+        courseId: data.subjectCode, // Firestore의 'subjectCode'를 'courseId'로 매핑
+        classId: data.courseNumber, // Firestore의 'courseNumber'를 'classId'로 매핑
+        title: data.subjectName, // Firestore의 'subjectName'을 'title'로 매핑
+        category: data.category,
+        dept: data.offeringDepartment, // Firestore의 'offeringDepartment'를 'dept'로 매핑
+        instructor: data.instructor || '미지정', // 강사 정보가 없을 경우 기본값
+        credits: { lecture: lectureCredits, lab: labCredits },
+        schedule: schedule,
+        building: schedule.length > 0 ? schedule[0].building : undefined,
+        capacity: data.capacity || 0, // 수강 정원이 없을 경우 기본값
+        // ... 기타 Lecture 타입에 맞는 필드들
+      };
+      courses.push(courseData);
+    });
+    
+    console.log(`✅ ${courses.length}개의 유효한 강의 목록을 Firestore에서 가져왔습니다.`);
+    return courses;
+    
+  } catch (error) {
+    console.error('❌ Firestore에서 강의 목록을 가져오는 데 실패했습니다:', error);
     throw error;
   }
 }

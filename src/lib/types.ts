@@ -67,12 +67,22 @@ export type Gap = {
   warningMessage: string; // 상태 메시지
 };
 
+export type PastCourse = {
+  classification: string;
+  courseId: string;
+  title: string;
+  credits: number;
+  gradePoints: number;
+  grade: string;
+};
+
 export type LearningJourney = {
 	semester: string;
 	credits: number;
 	cumulative: number;
 	milestone: string | null;
 	isFuture: boolean;
+	courses?: PastCourse[];
 };
 
 // 🔥 새로 추가: 사용자 데이터 타입들

@@ -30,11 +30,11 @@
     dispatch('tabChange', tabKey);
   }
 
-  function addToCart(course: Lecture) {
+  function addToTimetable(course: Lecture) {
     dispatch('add', course);
   }
 
-  function removeFromCart(course: Lecture) {
+  function removeFromTimetable(course: Lecture) {
     dispatch('remove', course);
   }
 
@@ -47,6 +47,24 @@
     const minute = (slot % 2) * 30;
     return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
   }
+
+  // --- Pagination ---
+  let currentPage = $state(1);
+  const itemsPerPage = 10;
+
+  const totalCourses = $derived(courses.length);
+  const totalPages = $derived(Math.ceil(totalCourses / itemsPerPage));
+
+  const paginatedCourses = $derived(
+    courses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  );
+
+  // When filters change, reset the current page if it's out of bounds.
+  $effect(() => {
+    if (currentPage > totalPages) {
+      currentPage = Math.max(1, totalPages);
+    }
+  });
 </script>
 
 <!-- 사이드바 전체 컨테이너 -->
@@ -129,7 +147,7 @@
           <div class="text-base">해당하는 강의가 없습니다</div>
         </div>
       {:else}
-        {#each courses as course (course.courseId + course.classId)}
+        {#each paginatedCourses as course (course.courseId + course.classId)}
           <div class="mb-4 p-4 bg-gray-100 rounded-xl border hover:bg-gray-150 transition-all duration-200 hover:shadow-md {
             course.isInCart ? 'bg-green-50 border-green-200 shadow-sm' : 'border-gray-200'
           }">
@@ -184,8 +202,8 @@
                 type="button"
                 class="px-3 py-1.5 text-xs rounded-lg transition-colors font-medium {
                   course.isInCart 
-                    ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
-                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                    ? ' bg-blue-100 text-blue-600 hover:bg-blue-200' 
+                    : ' bg-gray-200 text-gray-600 hover:bg-gray-300'
                 }"
                 onclick={() => toggleCart(course)}
                 title={course.isInCart ? "🛒 장바구니 해제" : "🛒 장바구니"}
@@ -194,41 +212,26 @@
               </button>
               
               <!-- 시간표 추가/제거 버튼 -->
-              {#if course.isInCart}
-                {#if course.isInTimetable}
-                  <!-- 시간표에 표시된 과목: 시간표에서 제거 -->
-                  <button 
-                    type="button"
-                    class="cart-btn remove"
-                    onclick={() => removeFromCart(course)}
-                    title="시간표에서 제거"
-                  >
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
-                    </svg>
-                    시간표 제거
-                  </button>
-                {:else}
-                  <!-- 장바구니에 있지만 시간표에 표시되지 않은 과목: 시간표에 추가 -->
-                  <button 
-                    type="button"
-                    class="cart-btn add"
-                    onclick={() => addToCart(course)}
-                    title="시간표에 추가"
-                  >
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    시간표 추가
-                  </button>
-                {/if}
-              {:else}
-                <!-- 장바구니에 없는 과목: 비활성화 -->
+              {#if course.isInTimetable}
+                <!-- 시간표에 이미 있는 경우: 제거 버튼 -->
                 <button 
                   type="button"
-                  class="cart-btn disabled"
-                  disabled
-                  title="먼저 장바구니에 추가해주세요"
+                  class="cart-btn remove"
+                  onclick={() => removeFromTimetable(course)}
+                  title="시간표에서 제거"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                  </svg>
+                  시간표 제거
+                </button>
+              {:else}
+                <!-- 시간표에 없는 경우: 추가 버튼 -->
+                <button 
+                  type="button"
+                  class="cart-btn add"
+                  onclick={() => addToTimetable(course)}
+                  title="시간표에 추가"
                 >
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -242,6 +245,29 @@
       {/if}
     </div>
   </div>
+
+  <!-- Pagination Controls -->
+  {#if totalPages > 1}
+    <div class="p-4 border-t border-gray-100 flex items-center justify-between">
+      <button
+        class="pagination-btn"
+        onclick={() => currentPage = Math.max(1, currentPage - 1)}
+        disabled={currentPage === 1}
+      >
+        이전
+      </button>
+      <span class="text-sm font-medium text-gray-600">
+        {currentPage} / {totalPages}
+      </span>
+      <button
+        class="pagination-btn"
+        onclick={() => currentPage = Math.min(totalPages, currentPage + 1)}
+        disabled={currentPage === totalPages}
+      >
+        다음
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -294,5 +320,27 @@
   .cart-btn.disabled:hover {
     transform: none;
     box-shadow: none;
+  }
+
+  .pagination-btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid #d1d5db;
+    background-color: white;
+    color: #374151;
+  }
+
+  .pagination-btn:hover:not(:disabled) {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+  }
+
+  .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 </style>

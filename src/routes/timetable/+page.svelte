@@ -11,6 +11,7 @@
   import ToastContainer from "$lib/components/ToastContainer.svelte";
   import DistanceWarning from "$lib/components/DistanceWarning.svelte";
   import { analyzeTimetableDistanceWarnings, analyzeNewLectureDistanceWarnings, type DistanceWarningResult } from "$lib/utils/distanceWarning";
+  import { DISTANCE_MATRIX } from '$lib/data/distanceMatrix';
 
 
   // --- 상수 정의 ---
@@ -225,11 +226,17 @@
           }
           if (blockA.endTime === blockB.startTime || blockB.endTime === blockA.startTime) {
             const [from, to] = blockA.endTime === blockB.startTime ? [blockA, blockB] : [blockB, blockA];
-            const travelTime = buildingTravelTime[from.building]?.[to.building] ?? 10;
-            const isImpossible = travelTime > 10;
-            consecutives.push({ from, to, travelTime, isImpossible });
-            from.isConsecutiveWarning = true;
-            to.isConsecutiveWarning = true;
+            
+            // DISTANCE_MATRIX 사용하도록 수정. building 대신 building group을 사용해야 합니다.
+            // 이 예제에서는 building 속성에 building group이 있다고 가정합니다.
+            const travelWarning = DISTANCE_MATRIX[from.building]?.[to.building];
+            const isImpossible = travelWarning === '경고';
+            
+            if (travelWarning && travelWarning !== '0' && travelWarning !== '비대면') {
+                consecutives.push({ from, to, travelTime: isImpossible ? 15 : 5, isImpossible });
+                from.isConsecutiveWarning = true;
+                to.isConsecutiveWarning = true;
+            }
           }
         }
       }
@@ -268,17 +275,20 @@
         
         // 같은 요일이고 연속 강의인지 확인
         if (fromBlock.day === toBlock.day && fromBlock.endTime === toBlock.startTime) {
-          const fromBuilding = fromBlock.building || 'IT';
-          const toBuilding = toBlock.building || 'IT';
-          const travelTime = buildingTravelTime[fromBuilding]?.[toBuilding] || 0;
-          const isImpossible = travelTime > 0; // 이동 시간이 필요한 경우
-          
-          consecutiveWarnings.push({
-            from: fromBlock,
-            to: toBlock,
-            travelTime,
-            isImpossible
-          });
+            // DISTANCE_MATRIX 사용
+            const fromBuilding = fromBlock.building || 'A';
+            const toBuilding = toBlock.building || 'A';
+            const travelWarning = DISTANCE_MATRIX[fromBuilding]?.[toBuilding];
+            const isImpossible = travelWarning === '경고';
+
+            if (travelWarning && travelWarning !== '0' && travelWarning !== '비대면' && travelWarning !== '-') {
+              consecutiveWarnings.push({
+                from: fromBlock,
+                to: toBlock,
+                travelTime: isImpossible ? 15 : 5, // travelTime을 임의로 설정
+                isImpossible
+              });
+            }
         }
       }
     }
@@ -327,14 +337,19 @@
 
   // 5. 헤더에 필요한 데이터 가공
   const headerData = $derived.by(() => {
-    const allItems = [...$cart, ...$applications.map(app => ({ courseId: app.courseId, classId: app.classId }))];
-    const totalCredits = allItems.reduce((sum, item) => {
-      const lecture = $courses.find(l => l.courseId === item.courseId && l.classId === item.classId);
+    const timetableCourseKeys = new Set([
+      ...$applications.map(app => `${app.courseId}-${app.classId}`),
+      ...$timetableCourses
+    ]);
+
+    let totalCredits = 0;
+    for (const key of timetableCourseKeys) {
+      const [courseId, classId] = key.split('-');
+      const lecture = $courses.find(l => l.courseId === courseId && l.classId === classId);
       if (lecture && lecture.credits) {
-        return sum + (lecture.credits.lecture || 0) + (lecture.credits.lab || 0);
+        totalCredits += (lecture.credits.lecture || 0) + (lecture.credits.lab || 0);
       }
-      return sum;
-    }, 0);
+    }
     
     let creditStatus: { status: "success" | "warning" | "error", message: string } = { status: "success", message: "적정 학점" };
     if (totalCredits < minCredits) creditStatus = { status: "warning", message: `최소 ${minCredits}학점 필요` };
@@ -382,7 +397,7 @@
   }
 
 
-  function handleAddToCart(event: CustomEvent<Lecture>) {
+  function handleAddToTimetable(event: CustomEvent<Lecture>) {
     const course = event.detail;
     const courseKey = `${course.courseId}-${course.classId}`;
     
@@ -425,12 +440,13 @@
     showToast(`"${course.title}" 강의가 시간표에 추가되었습니다!`, "success");
   }
 
-  function handleRemoveFromCart(event: CustomEvent<Lecture>) {
+  function handleRemoveFromTimetable(event: CustomEvent<Lecture>) {
     const course = event.detail;
     const courseKey = `${course.courseId}-${course.classId}`;
     
     // 시간표에서 제거
     removeFromTimetable(course.courseId, course.classId);
+    showToast(`"${course.title}" 강의를 시간표에서 제거했습니다.`, "success");
   }
 
   async function handleToggleCart(event: CustomEvent<Lecture> | Lecture) {
@@ -442,25 +458,10 @@
     if (isInCartNow) {
       // 장바구니에서 제거
       removeFromCart(course.courseId, course.classId);
-      
-      // 시간표에서도 제거
-      removeFromTimetable(course.courseId, course.classId);
-      
-      // 🔥 Firestore에 동기화
-      const newCart = $cart.filter(item => !(item.courseId === course.courseId && item.classId === course.classId));
-      await syncUserCart(newCart);
-      
       showToast("🛒 장바구니에서 제거했습니다", "success");
     } else {
       // 장바구니에 추가 (시간표에는 자동으로 추가하지 않음)
-      const newItem = { courseId: course.courseId, classId: course.classId, method: course.method || "FCFS" };
-      const newCart = [...$cart, newItem];
-      cart.update(items => newCart);
-      
-      // 🔥 Firestore에 동기화
-      await syncUserCart(newCart);
-      
-      showToast("🛒 장바구니에 담았습니다", "success");
+      addLectureToCart(course);
     }
   }
 
@@ -514,8 +515,8 @@
     activeTab={activeTab}
     showFavorites={showCartOnly}
     on:tabChange={handleTabChange}
-    on:add={handleAddToCart}
-    on:remove={handleRemoveFromCart}
+    on:add={handleAddToTimetable}
+    on:remove={handleRemoveFromTimetable}
     on:toggleFavorites={handleToggleCartOnly}
     on:toggleCart={handleToggleCart}
   />

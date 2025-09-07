@@ -815,11 +815,7 @@ export const metrics = derived([cart, applications, userDocument], ([$cart, $app
 
 export async function addToCart(item: CartItem) {
   const user = get(currentUser);
-  if (!user) {
-    console.error('❌ addToCart: 사용자가 로그인하지 않았습니다.');
-    return;
-  }
-
+  
   let newCart: CartItem[] = [];
   const originalCart = get(cart);
 
@@ -838,27 +834,25 @@ export async function addToCart(item: CartItem) {
     return [...c];
   });
 
-  // 2. Firestore에 동기화
-  try {
-    console.log('🔥 addToCart: Firestore 동기화 시작...', { userId: user.id, cart: newCart });
-    await updateUserCart(user.id, newCart);
-    console.log('✅ addToCart: Firestore 동기화 성공.');
-  } catch (error) {
-    console.error('❌ addToCart: Firestore 동기화 실패. 롤백 실행.', error);
-    // 3. 실패 시 롤백
-    cart.set(originalCart);
-    // 사용자에게 에러 알림
-    showToast("장바구니 추가에 실패했습니다. 다시 시도해주세요.", "error");
+  // 2. 로그인 상태일 때만 Firestore에 동기화
+  if (user) {
+    try {
+      console.log('🔥 addToCart: Firestore 동기화 시작...', { userId: user.id, cart: newCart });
+      await updateUserCart(user.id, newCart);
+      console.log('✅ addToCart: Firestore 동기화 성공.');
+    } catch (error) {
+      console.error('❌ addToCart: Firestore 동기화 실패. 롤백 실행.', error);
+      // 3. 실패 시 롤백
+      cart.set(originalCart);
+      // 사용자에게 에러 알림
+      showToast("장바구니 추가에 실패했습니다. 다시 시도해주세요.", "error");
+    }
   }
 }
 
 export async function removeFromCart(courseId: string, classId: string) {
   const user = get(currentUser);
-  if (!user) {
-    console.error('❌ removeFromCart: 사용자가 로그인하지 않았습니다.');
-    return;
-  }
-
+  
   let newCart: CartItem[] = [];
   const originalCart = get(cart);
 
@@ -868,16 +862,18 @@ export async function removeFromCart(courseId: string, classId: string) {
     return newCart;
   });
 
-  // 2. Firestore에 동기화
-  try {
-    console.log('🔥 removeFromCart: Firestore 동기화 시작...', { userId: user.id, cart: newCart });
-    await updateUserCart(user.id, newCart);
-    console.log('✅ removeFromCart: Firestore 동기화 성공.');
-  } catch (error) {
-    console.error('❌ removeFromCart: Firestore 동기화 실패. 롤백 실행.', error);
-    // 3. 실패 시 롤백
-    cart.set(originalCart);
-    showToast("장바구니 삭제에 실패했습니다. 다시 시도해주세요.", "error");
+  // 2. 로그인 상태일 때만 Firestore에 동기화
+  if (user) {
+    try {
+      console.log('🔥 removeFromCart: Firestore 동기화 시작...', { userId: user.id, cart: newCart });
+      await updateUserCart(user.id, newCart);
+      console.log('✅ removeFromCart: Firestore 동기화 성공.');
+    } catch (error) {
+      console.error('❌ removeFromCart: Firestore 동기화 실패. 롤백 실행.', error);
+      // 3. 실패 시 롤백
+      cart.set(originalCart);
+      showToast("장바구니 삭제에 실패했습니다. 다시 시도해주세요.", "error");
+    }
   }
 }
 
@@ -1319,7 +1315,7 @@ export function addLectureToCart(lecture: Lecture) {
     method: lecture.method || "FCFS"
   };
   
-  cart.update(items => [...items, newItem]);
+  addToCart(newItem);
   showToast('success', `"${lecture.title}" 강의가 추가되었습니다!`);
 }
 

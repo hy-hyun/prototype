@@ -147,7 +147,7 @@
   <!-- 이동거리 경고 섹션 -->
   {#if distanceWarnings.length > 0}
     <div class="mt-4 p-4 bg-gray-50 rounded-lg">
-      <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+      <h3 class="text-base font-semibold text-gray-700 mb-3 flex items-center gap-2">
         <span class="text-lg">🚶‍♂️</span>
         연강 안내
       </h3>
@@ -158,16 +158,16 @@
               <div class="flex items-start gap-2">
                 <span class="text-lg mt-1">{warning.info.icon}</span>
                 <div class="flex-1">
-                  <div class="text-sm font-medium {warning.info.color}">
+                  <div class="text-base font-medium {warning.info.color}">
                     {warning.info.message}
                     {#if warning.day !== undefined && warning.startTime !== undefined}
-                      <span class="font-sans font-medium ml-2">[{dayIndexToName[warning.day]} {formatSlotTime(warning.startTime)}]</span>
+                      <span class="font-medium ml-2">[{dayIndexToName[warning.day]} {formatSlotTime(warning.startTime)}]</span>
                     {/if}
                   </div>
-                  <div class="text-xs text-gray-600 mt-1">
+                  <div class="text-sm text-gray-600 mt-1">
                     <span class="font-semibold">{warning.fromLecture.title}</span> → <span class="font-semibold">{warning.toLecture.title}</span>
                   </div>
-                  <div class="text-xs text-gray-500 mt-1">
+                  <div class="text-sm text-gray-500 mt-1">
                     {warning.fromBuilding} → {warning.toBuilding}
                   </div>
                 </div>
@@ -213,7 +213,7 @@
     background-color: #3b82f6;
     color: white;
     font-weight: 700;
-    font-size: 0.8rem;
+    font-size: 1rem;
     border-left: 1px solid #e5e7eb;
     border-right: 1px solid #e5e7eb;
   }
@@ -223,7 +223,7 @@
     border: none;
     padding: 12px 8px;
     text-align: center;
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: #374151;
     display: flex;
     align-items: center;
@@ -273,20 +273,20 @@
   
   .lecture-title {
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     color: #1f2937;
-    line-height: 1.1;
+    line-height: 1.2;
     word-break: break-word;
   }
   
   .lecture-instructor {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     color: #4b5563;
-    line-height: 1.0;
+    line-height: 1.1;
   }
   
   .lecture-location {
-    font-size: 0.6rem;
+    font-size: 0.75rem;
     color: #6b7280;
     line-height: 1.1;
   }

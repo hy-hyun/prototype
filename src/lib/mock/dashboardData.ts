@@ -95,7 +95,7 @@ export const dashboardData = {
 				},
 			],
 		},
-		general: { completed: 18, required: 29, name: '일반교양' },
+		general: { completed: 42, required: 50, name: '일반교양' },
 	},
 	learningJourney: [
 		{ semester: '2021-1', credits: 19, cumulative: 19, milestone: '신입학', isFuture: false },

@@ -674,136 +674,142 @@
                  <span class="text-sm text-gray-700">{generalEducation.core.completed}/{generalEducation.core.required} 학점</span>
                </div>
                
-                               <div class="flex flex-col items-center gap-6">
+                               <div class="flex flex-col items-center justify-center gap-6 md:flex-row md:gap-12 {selectedArea ? 'md:items-start' : 'md:items-center'}">
                   <!-- 도넛 차트 -->
-                  <div class="relative w-48 h-48 flex items-center justify-center">
+                  <div class="relative w-55 h-65 flex items-center justify-center">
                     <svg class="w-full h-full" viewBox="0 0 200 200">
-                      <!-- 배경 원 -->
-                      <circle cx="100" cy="110" r="70" fill="none" stroke="#f3f4f6" stroke-width="35"/>
-                      
-                      <!-- 고전읽기영역 (15.4%) - 진한 파란색 -->
-                      <circle 
-                        cx="100" cy="110" r="70" 
-                        fill="none" 
-                        stroke="#1e40af" 
-                        stroke-width="35"
-                        stroke-dasharray="73.45 366.37"
-                        stroke-dashoffset="0"
-                        transform="rotate(-90 100 110)"
-                        class="cursor-pointer hover:opacity-80 transition-all duration-200"
-                        onclick={() => showAreaInfo(generalEducation.core.areas[0].name, generalEducation.core.areas[0].completed, generalEducation.core.areas[0].required)}
-                        onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[0].name, completed: generalEducation.core.areas[0].completed, required: generalEducation.core.areas[0].required }}
-                        onmouseleave={() => donutTooltip.visible = false}
-                      />
-                      
-                      <!-- 글로벌언어와문화영역 (23.1%) - 중간 파란색 -->
-                      <circle 
-                        cx="100" cy="110" r="70" 
-                        fill="none" 
-                        stroke="#3b82f6" 
-                        stroke-width="35"
-                        stroke-dasharray="73.45 366.37"
-                        stroke-dashoffset="-73.45"
-                        transform="rotate(-90 100 110)"
-                        class="cursor-pointer hover:opacity-80 transition-all duration-200"
-                        onclick={() => showAreaInfo(generalEducation.core.areas[1].name, generalEducation.core.areas[1].completed, generalEducation.core.areas[1].required)}
-                        onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[1].name, completed: generalEducation.core.areas[1].completed, required: generalEducation.core.areas[1].required }}
-                        onmouseleave={() => donutTooltip.visible = false}
-                      />
-                      
-                      <!-- 소프트웨어영역 (15.4%) - 밝은 파란색 -->
-                      <circle 
-                        cx="100" cy="110" r="70" 
-                        fill="none" 
-                        stroke="#60a5fa" 
-                        stroke-width="35"
-                        stroke-dasharray="73.45 366.37"
-                        stroke-dashoffset="-146.81"
-                        transform="rotate(-90 100 110)"
-                        class="cursor-pointer hover:opacity-80 transition-all duration-200"
-                        onclick={() => showAreaInfo(generalEducation.core.areas[2].name, generalEducation.core.areas[2].completed, generalEducation.core.areas[2].required)}
-                        onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[2].name, completed: generalEducation.core.areas[2].completed, required: generalEducation.core.areas[2].required }}
-                        onmouseleave={() => donutTooltip.visible = false}
-                      />
-                      
-                      <!-- 미래산업과창업영역 + 과학과기술영역 (30.8%) - 연한 파란색 -->
-                      <circle 
-                        cx="100" cy="110" r="70" 
-                        fill="none" 
-                        stroke="#93c5fd" 
-                        stroke-width="35"
-                        stroke-dasharray="135.38 304.44"
-                        stroke-dashoffset="-271.15"
-                        transform="rotate(-90 100 110)"
-                        class="cursor-pointer hover:opacity-80 transition-all duration-200"
-                        onclick={() => showAreaInfo(generalEducation.core.areas[3].name, generalEducation.core.areas[3].completed, generalEducation.core.areas[3].required)}
-                        onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[3].name, completed: generalEducation.core.areas[3].completed, required: generalEducation.core.areas[3].required }}
-                        onmouseleave={() => donutTooltip.visible = false}
-                      />
-                      
-                                             <!-- 인문과예술영역 + 사회와세계영역 (15.4%) - 연한 푸른색 -->
+                       <!-- 배경 원 -->
+                       <circle cx="100" cy="110" r="70" fill="none" stroke="#f3f4f6" stroke-width="35"/>
+                       
+                       <!-- 고전읽기영역 - 진한 파란색 -->
                        <circle 
                          cx="100" cy="110" r="70" 
                          fill="none" 
-                         stroke="#a8d5ff" 
+                         stroke="#1e40af" 
                          stroke-width="35"
-                         stroke-dasharray="67.69 372.13"
-                         stroke-dashoffset="-406.53"
+                         stroke-dasharray="67.665 372.155"
+                         stroke-dashoffset="0"
                          transform="rotate(-90 100 110)"
-                         class="cursor-pointer hover:opacity-80 transition-all duration-200"
-                        onclick={() => showAreaInfo(generalEducation.core.areas[4].name, generalEducation.core.areas[4].completed, generalEducation.core.areas[4].required)}
-                        onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[4].name, completed: generalEducation.core.areas[4].completed, required: generalEducation.core.areas[4].required }}
+                         class="cursor-pointer hover:opacity-70 transition-all duration-200"
+                         onclick={() => showAreaInfo(generalEducation.core.areas[0].name, generalEducation.core.areas[0].completed, generalEducation.core.areas[0].required)}
+                         onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[0].name, completed: generalEducation.core.areas[0].completed, required: generalEducation.core.areas[0].required }}
                          onmouseleave={() => donutTooltip.visible = false}
                        />
-                      
-                      <!-- 중앙 원형 배경 -->
-                      <circle cx="100" cy="110" r="27" fill="white" stroke="#e5e7eb" stroke-width="1"/>
-                      
-                      <!-- 중앙 텍스트 -->
-                      <text x="100" y="105" text-anchor="middle" class="text-xl font-bold fill-gray-800">{generalEducation.core.completed}</text>
-                      <text x="100" y="120" text-anchor="middle" class="text-xs fill-gray-600">학점</text>
-                      
-                      <!-- 호버 시 표시되는 라벨들 -->
-                      {#if donutTooltip.visible}
-                        <text x="100" y="40" text-anchor="middle" class="text-sm font-medium fill-blue-700 opacity-90">
-                          {donutTooltip.area} ({donutTooltip.completed}/{donutTooltip.required})
-                        </text>
-                      {/if}
+                       
+                       <!-- 글로벌언어와문화영역 - 중간 파란색 -->
+                       <circle 
+                         cx="100" cy="110" r="70" 
+                         fill="none" 
+                         stroke="#3b82f6" 
+                         stroke-width="35"
+                         stroke-dasharray="101.497 338.323"
+                         stroke-dashoffset="-67.665"
+                         transform="rotate(-90 100 110)"
+                         class="cursor-pointer hover:opacity-70 transition-all duration-200"
+                         onclick={() => showAreaInfo(generalEducation.core.areas[1].name, generalEducation.core.areas[1].completed, generalEducation.core.areas[1].required)}
+                         onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[1].name, completed: generalEducation.core.areas[1].completed, required: generalEducation.core.areas[1].required }}
+                         onmouseleave={() => donutTooltip.visible = false}
+                       />
+                       
+                       <!-- 소프트웨어영역 - 밝은 파란색 -->
+                       <circle 
+                         cx="100" cy="110" r="70" 
+                         fill="none" 
+                         stroke="#60a5fa" 
+                         stroke-width="35"
+                         stroke-dasharray="67.665 372.155"
+                         stroke-dashoffset="-169.162"
+                         transform="rotate(-90 100 110)"
+                         class="cursor-pointer hover:opacity-70 transition-all duration-200"
+                         onclick={() => showAreaInfo(generalEducation.core.areas[2].name, generalEducation.core.areas[2].completed, generalEducation.core.areas[2].required)}
+                         onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[2].name, completed: generalEducation.core.areas[2].completed, required: generalEducation.core.areas[2].required }}
+                         onmouseleave={() => donutTooltip.visible = false}
+                       />
+                       
+                       <!-- 미래산업과창업영역 + 과학과기술영역 (30.8%) - 연한 파란색 -->
+                       <circle 
+                         cx="100" cy="110" r="70" 
+                         fill="none" 
+                         stroke="#93c5fd" 
+                         stroke-width="35"
+                         stroke-dasharray="135.328 304.492"
+                         stroke-dashoffset="-236.827"
+                         transform="rotate(-90 100 110)"
+                         class="cursor-pointer hover:opacity-70 transition-all duration-200"
+                         onclick={() => showAreaInfo(generalEducation.core.areas[3].name, generalEducation.core.areas[3].completed, generalEducation.core.areas[3].required)}
+                         onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[3].name, completed: generalEducation.core.areas[3].completed, required: generalEducation.core.areas[3].required }}
+                         onmouseleave={() => donutTooltip.visible = false}
+                       />
+                       
+                                              <!-- 인문과예술영역 + 사회와세계영역 (15.4%) - 연한 푸른색 -->
+                        <circle 
+                          cx="100" cy="110" r="70" 
+                          fill="none" 
+                          stroke="#a8d5ff" 
+                          stroke-width="35"
+                          stroke-dasharray="67.665 372.155"
+                          stroke-dashoffset="-372.155"
+                          transform="rotate(-90 100 110)"
+                          class="cursor-pointer hover:opacity-70 transition-all duration-200"
+                          onclick={() => showAreaInfo(generalEducation.core.areas[4].name, generalEducation.core.areas[4].completed, generalEducation.core.areas[4].required)}
+                         onmouseenter={() => donutTooltip = { visible: true, area: generalEducation.core.areas[4].name, completed: generalEducation.core.areas[4].completed, required: generalEducation.core.areas[4].required }}
+                          onmouseleave={() => donutTooltip.visible = false}
+                        />
+                       
+                       <!-- 중앙 원형 배경 -->
+                       <circle cx="100" cy="110" r="30" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+                       
+                       <!-- 중앙 텍스트 -->
+                       <text x="100" y="110" text-anchor="middle" class="text-xl font-bold fill-gray-800">{generalEducation.core.completed}</text>
+                       <text x="100" y="125" text-anchor="middle" class="text-xs fill-gray-600">학점</text>
+                       
+                       <!-- 호버 시 표시되는 라벨들 -->
+                       {#if donutTooltip.visible}
+                         <text x="100" y="0" text-anchor="middle" class="text-xs font-medium fill-black-700 opacity-100">
+                           {donutTooltip.area}
+                         </text>
+                         <text x="100" y="15" text-anchor="middle" class="text-xs font-medium fill-black-700 opacity-100">
+                           ({donutTooltip.completed}/{donutTooltip.required})
+                         </text>
+                       {/if}
                     </svg>
                   </div>
                  
-                                   <!-- 범례 -->
-                  <div class="space-y-2">
-                    {#each generalEducation.core.areas as area, i}
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 rounded-full" style="background-color: {coreAreaColors[i]};"></div>
-                        <span class="text-sm text-gray-700">
-                          {area.name} ({area.completed}/{area.required})
-                          {#if area.completed >= area.required}
-                            <span class="ml-1">✅</span>
-                          {/if}
-                        </span>
-                    </div>
-                    {/each}
-                  </div>
-                  
-                  <!-- 영역 정보 표시 -->
-                  {#if selectedArea}
-                    <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <div class="text-center">
-                        <h5 class="font-medium text-blue-900 mb-1">{selectedArea.name}</h5>
-                        <p class="text-sm text-blue-700">
-                          이수: {selectedArea.completed}학점 / 필요: {selectedArea.required}학점
-                        </p>
-                        {#if selectedArea.completed >= selectedArea.required}
-                          <span class="inline-block mt-1 px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">✅ 완료</span>
-                        {:else}
-                          <span class="inline-block mt-1 px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full">🔄 진행중</span>
-                        {/if}
+                  <!-- 오른쪽 컬럼 (범례 + 상세 정보) -->
+                  <div class="flex flex-col items-center gap-4">
+                                      <!-- 범례 -->
+                    <div class="space-y-2">
+                      {#each generalEducation.core.areas as area, i}
+                      <div class="flex items-center gap-2">
+                          <div class="w-3 h-3 rounded-full" style="background-color: {coreAreaColors[i]};"></div>
+                          <span class="text-sm text-gray-700">
+                            {area.name} ({area.completed}/{area.required})
+                            {#if area.completed >= area.required}
+                              <span class="ml-1">✅</span>
+                            {/if}
+                          </span>
                       </div>
+                      {/each}
                     </div>
-                  {/if}
-               </div>
+                    
+                    <!-- 영역 정보 표시 -->
+                    {#if selectedArea}
+                      <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200 w-full max-w-md">
+                        <div class="text-center">
+                          <h5 class="font-medium text-blue-900 mb-1">{selectedArea.name}</h5>
+                          <p class="text-sm text-blue-700">
+                            이수: {selectedArea.completed}학점 / 필요: {selectedArea.required}학점
+                          </p>
+                          {#if selectedArea.completed >= selectedArea.required}
+                            <span class="inline-block mt-1 px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">✅ 완료</span>
+                          {:else}
+                            <span class="inline-block mt-1 px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full">🔄 진행중</span>
+                          {/if}
+                        </div>
+                      </div>
+                    {/if}
+                  </div>
+              </div>
              </div>
 
                                                                                                        <!-- 교직이수 -->
@@ -1350,7 +1356,6 @@
        </div>
     </div>
   </div>
-
 </div>
 
 <style>

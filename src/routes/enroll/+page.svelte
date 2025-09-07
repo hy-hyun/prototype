@@ -37,6 +37,7 @@
       // async 함수를 IIFE로 처리
       (async () => {
         try {
+          userDataLoading.set(true); // 로딩 시작
           const userData = await getUserDocument($currentUser.id);
           if (userData && userData.enrollment) {
             // 장바구니, 신청내역, 시간표 동기화
@@ -51,10 +52,15 @@
           }
         } catch (error) {
           console.error('❌ 수강신청: Firestore 데이터 로딩 실패:', error);
+        } finally {
+          userDataLoading.set(false); // 로딩 종료
         }
       })();
     } else {
-      console.log('🔒 수강신청: 로그인 필요');
+      // 로딩이 완료되었지만, 로그인 정보가 없는 경우 비로그인으로 간주
+      if ($userDataLoading === false && !$currentUser) {
+         console.log('🔒 수강신청: 로그인 필요 (현재 비로그인 상태)');
+      }
     }
   });
 
@@ -186,8 +192,10 @@
     }
   }
 
+  const coursesMap = $derived(new Map($courses.map(c => [`${c.courseId}-${c.classId}`, c])));
+
   function findLecture(courseId: string, classId: string) {
-    return get(courses).find((l) => l.courseId === courseId && l.classId === classId);
+    return coursesMap.get(`${courseId}-${classId}`);
   }
 
   function computeCredits(courseId: string, classId: string) {
@@ -544,7 +552,7 @@
   
 </script>
 
-<h2 class="text-lg font-semibold mb-4">수강신청</h2>
+<h2 class="text-xl font-semibold mb-4">수강신청</h2>
 
 <Tabs bind:value={view} class="w-full">
   <div class="flex justify-between items-center mb-3">
@@ -552,7 +560,7 @@
       <TabsTrigger value="cart">🛒 장바구니</TabsTrigger>
       <TabsTrigger value="applications">📋 신청내역</TabsTrigger>
     </TabsList>
-    <div class="text-sm text-neutral-600 dark:text-neutral-400">
+    <div class="text-base text-neutral-600 dark:text-neutral-400">
       기본 수업 학점 {$metrics.basicCredits} / 최대 학점 {$metrics.maxCredits} / 신청 과목 수 {$metrics.enrolledCourses} / 
       베팅 포인트: {$metrics.usedBettingPoints}/{$metrics.totalBettingPoints} (잔여: {$metrics.remainingBettingPoints})
     </div>
@@ -562,7 +570,7 @@
     <div class="flex justify-between items-center gap-2 mb-3">
       <div class="flex items-center border rounded-lg p-1 bg-neutral-50 dark:bg-neutral-800">
         <button 
-          class="px-3 py-1 text-sm rounded-md transition-colors"
+          class="px-3 py-1 text-base rounded-md transition-colors"
           class:bg-white={cartView === 'all'}
           class:shadow-sm={cartView === 'all'}
           class:text-neutral-900={cartView === 'all'}
@@ -574,7 +582,7 @@
           전체
         </button>
         <button 
-          class="px-3 py-1 text-sm rounded-md transition-colors"
+          class="px-3 py-1 text-base rounded-md transition-colors"
           class:bg-white={cartView === 'fcfs'}
           class:shadow-sm={cartView === 'fcfs'}
           class:text-neutral-900={cartView === 'fcfs'}
@@ -586,7 +594,7 @@
           선착순
         </button>
         <button 
-          class="px-3 py-1 text-sm rounded-md transition-colors"
+          class="px-3 py-1 text-base rounded-md transition-colors"
           class:bg-white={cartView === 'bid'}
           class:shadow-sm={cartView === 'bid'}
           class:text-neutral-900={cartView === 'bid'}
@@ -598,7 +606,7 @@
           베팅
         </button>
         <button 
-          class="px-3 py-1 text-sm rounded-md transition-colors"
+          class="px-3 py-1 text-base rounded-md transition-colors"
           class:bg-white={cartView === 'results'}
           class:shadow-sm={cartView === 'results'}
           class:text-neutral-900={cartView === 'results'}
@@ -617,7 +625,7 @@
         {#each Array(3) as _}
           <div class="rounded border p-3">
             <div class="flex items-center justify-between gap-3">
-              <div class="text-sm flex-1">
+              <div class="text-base flex-1">
                 <Skeleton width="w-3/4" height="h-4" rounded="rounded" />
                 <Skeleton width="w-1/2" height="h-3" rounded="rounded" />
               </div>
@@ -632,9 +640,9 @@
     {:else if cartView === 'results'}
       <!-- 베팅결과 뷰 -->
       <div class="flex justify-between items-center mb-3">
-        <div class="text-sm text-neutral-600">베팅 결과</div>
+        <div class="text-base text-neutral-600">베팅 결과</div>
         <button 
-          class="border border-green-500 bg-green-500 text-white hover:bg-green-600 rounded px-3 py-1 text-sm disabled:opacity-50" 
+          class="border border-green-500 bg-green-500 text-white hover:bg-green-600 rounded px-3 py-1 text-base disabled:opacity-50" 
           disabled={bettingResults.filter(r => r.bidResult === 'WAITING').length === 0}
           onclick={processBettingResults}
         >
@@ -642,12 +650,12 @@
         </button>
       </div>
       {#if bettingResults.length === 0}
-        <p class="text-sm text-neutral-500">베팅 결과가 없습니다.</p>
+        <p class="text-base text-neutral-500">베팅 결과가 없습니다.</p>
       {:else}
         <ul class="grid gap-2">
           {#each bettingResults as item}
             <li class="rounded border p-3 flex items-center justify-between gap-3">
-              <div class="text-sm flex-1">
+              <div class="text-base flex-1">
                 <div class="font-medium">
                   {#if findLecture(item.courseId, item.classId)}
                     {findLecture(item.courseId, item.classId)?.title}
@@ -655,15 +663,15 @@
                     {item.courseId}-{item.classId}
                   {/if}
                 </div>
-                <div class="text-xs text-neutral-500">
+                <div class="text-sm text-neutral-500">
                   {computeCredits(item.courseId, item.classId)}학점 · {formatSchedule(item.courseId, item.classId)}
                 </div>
                 {#if item.bidAmount}
-                  <div class="text-xs text-blue-600">베팅 금액: {item.bidAmount}p</div>
+                  <div class="text-sm text-blue-600">베팅 금액: {item.bidAmount}p</div>
                 {/if}
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-xs px-2 py-1 rounded border"
+                <span class="text-sm px-2 py-1 rounded border"
                   class:bg-yellow-50={item.bidResult === 'WAITING'}
                   class:text-yellow-700={item.bidResult === 'WAITING'}
                   class:border-yellow-200={item.bidResult === 'WAITING'}
@@ -684,7 +692,7 @@
     {:else if cartView === 'all'}
       <!-- 전체 탭 - 아코디언 구조 -->
       {#if groupedCartItems.fcfs.length === 0 && groupedCartItems.bid.length === 0}
-        <p class="text-sm text-neutral-500">장바구니가 비었습니다.</p>
+        <p class="text-base text-neutral-500">장바구니가 비었습니다.</p>
       {:else}
         <Accordion type="multiple" value={["fcfs-section", "bid-section"]} class="w-full">
           {#if groupedCartItems.fcfs.length > 0}
@@ -694,7 +702,7 @@
                   <div class="flex items-center gap-2">
                     <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
                     <span class="font-medium">선착순 과목</span>
-                    <span class="text-sm text-neutral-500">({groupedCartItems.fcfs.length}개)</span>
+                    <span class="text-base text-neutral-500">({groupedCartItems.fcfs.length}개)</span>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -704,11 +712,11 @@
                     <div class="rounded border p-3 bg-white">
                       <div class="flex items-center justify-between gap-3">
                         <!-- 우선순위 번호 -->
-                        <div class="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                        <div class="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
                           {index + 1}
                         </div>
                         
-                        <div class="text-sm flex-1">
+                        <div class="text-base flex-1">
                           <div class="font-medium">
                             {#if findLecture(item.courseId, item.classId)}
                               {findLecture(item.courseId, item.classId)?.title}
@@ -716,10 +724,10 @@
                               {item.courseId}-{item.classId}
                             {/if}
                           </div>
-                          <div class="text-xs text-neutral-500">
+                          <div class="text-sm text-neutral-500">
                             {computeCredits(item.courseId, item.classId)}학점 · {formatSchedule(item.courseId, item.classId)}
                           </div>
-                          <div class="mt-1 flex flex-wrap gap-1 text-[11px]">
+                          <div class="mt-1 flex flex-wrap gap-1 text-xs">
                             {#if hasTimeConflict(item.courseId, item.classId)}
                               <span class="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">시간 충돌</span>
                             {/if}
@@ -728,11 +736,11 @@
                         
                         <div class="flex items-center gap-2">
                           {#if getBettingStatus(item.courseId, item.classId).isApplied}
-                            <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>신청 완료</button>
+                            <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-base opacity-60 cursor-default" disabled>신청 완료</button>
                           {:else}
-                            <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-2 py-1 text-sm" onclick={() => doApply(item)}>신청</button>
+                            <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-2 py-1 text-base" onclick={() => doApply(item)}>신청</button>
                           {/if}
-                          <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-sm" onclick={() => removeFromCart(item.courseId, item.classId)}>🛒 장바구니 해제</button>
+                          <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-base" onclick={() => removeFromCart(item.courseId, item.classId)}>🛒 장바구니 해제</button>
                         </div>
                       </div>
                     </div>
@@ -749,7 +757,7 @@
                   <div class="flex items-center gap-2">
                     <div class="w-3 h-3 bg-orange-500 rounded-full"></div>
                     <span class="font-medium">베팅 과목</span>
-                    <span class="text-sm text-neutral-500">({groupedCartItems.bid.length}개)</span>
+                    <span class="text-base text-neutral-500">({groupedCartItems.bid.length}개)</span>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -759,11 +767,11 @@
                     <div class="rounded border p-3 bg-white">
                       <div class="flex items-center justify-between gap-3">
                         <!-- 우선순위 번호 -->
-                        <div class="flex items-center justify-center w-6 h-6 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                        <div class="flex items-center justify-center w-6 h-6 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
                           {index + 1}
                         </div>
                         
-                        <div class="text-sm flex-1">
+                        <div class="text-base flex-1">
                           <div class="font-medium">
                             {#if findLecture(item.courseId, item.classId)}
                               {findLecture(item.courseId, item.classId)?.title}
@@ -771,10 +779,10 @@
                               {item.courseId}-{item.classId}
                             {/if}
                           </div>
-                          <div class="text-xs text-neutral-500">
+                          <div class="text-sm text-neutral-500">
                             {computeCredits(item.courseId, item.classId)}학점 · {formatSchedule(item.courseId, item.classId)}
                           </div>
-                          <div class="mt-1 flex flex-wrap gap-1 text-[11px]">
+                          <div class="mt-1 flex flex-wrap gap-1 text-xs">
                             {#if hasTimeConflict(item.courseId, item.classId)}
                               <span class="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">시간 충돌</span>
                             {/if}
@@ -785,32 +793,32 @@
                         </div>
                         
                         <div class="flex items-center gap-2">
-                          <div class="relative group text-[11px] text-neutral-500 whitespace-nowrap">
+                          <div class="relative group text-xs text-neutral-500 whitespace-nowrap">
                             전년도 정보: 최저 {getBidStats(item.courseId, item.classId).minWin}p · 하위 25-75% {getBidStats(item.courseId, item.classId).q25}~{getBidStats(item.courseId, item.classId).q75}p
                             <button type="button" class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full border border-neutral-300 text-neutral-500 bg-white select-none cursor-help" aria-label="설명">i</button>
-                            <div role="tooltip" class="absolute z-10 left-1/2 -translate-x-1/2 mt-1 w-64 p-3 text-[11px] leading-relaxed bg-neutral-800 text-white rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                            <div role="tooltip" class="absolute z-10 left-1/2 -translate-x-1/2 mt-1 w-64 p-3 text-xs leading-relaxed bg-neutral-800 text-white rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                               <div>전년도 베팅 당첨 통계입니다.</div>
                               <div>최저: 최소 당첨 포인트 / 하위 25-75%: 중간 50% 구간 범위</div>
                             </div>
                           </div>
-                          <input class="border rounded px-2 py-1 w-24 text-sm" type="number" min="1" max="100" step="1" placeholder="최대 100p" value={item.bidAmount ?? ''} oninput={(e) => handleBidInput(e, item)} />
+                          <input class="border rounded px-2 py-1 w-24 text-base" type="number" min="1" max="100" step="1" placeholder="최대 100p" value={item.bidAmount ?? ''} oninput={(e) => handleBidInput(e, item)} />
                           {#if getBettingStatus(item.courseId, item.classId).isApplied}
                             {@const bettingStatus = getBettingStatus(item.courseId, item.classId)}
                             {#if bettingStatus.bidResult === 'WON'}
-                              <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>베팅 당첨</button>
+                              <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-base opacity-60 cursor-default" disabled>베팅 당첨</button>
                             {:else if bettingStatus.bidResult === 'LOST'}
-                              <button class="border border-red-500 bg-red-50 text-red-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>베팅 탈락</button>
+                              <button class="border border-red-500 bg-red-50 text-red-700 rounded px-2 py-1 text-base opacity-60 cursor-default" disabled>베팅 탈락</button>
                             {:else if bettingStatus.bidResult === 'WAITING'}
-                              <button class="border border-yellow-500 bg-yellow-50 text-yellow-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>베팅 대기</button>
+                              <button class="border border-yellow-500 bg-yellow-50 text-yellow-700 rounded px-2 py-1 text-base opacity-60 cursor-default" disabled>베팅 대기</button>
                             {:else}
-                              <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>신청 완료</button>
+                              <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-base opacity-60 cursor-default" disabled>신청 완료</button>
                             {/if}
                           {:else}
-                            <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-2 py-1 text-sm disabled:opacity-50" onclick={() => doApply(item)} disabled={!item.bidAmount || item.bidAmount <= 0 || countBidSameCourse(item.courseId) > 1}>
+                            <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-2 py-1 text-base disabled:opacity-50" onclick={() => doApply(item)} disabled={!item.bidAmount || item.bidAmount <= 0 || countBidSameCourse(item.courseId) > 1}>
                               베팅 확정
                             </button>
                           {/if}
-                          <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-sm" onclick={() => removeFromCart(item.courseId, item.classId)}>🛒 장바구니 해제</button>
+                          <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-base" onclick={() => removeFromCart(item.courseId, item.classId)}>🛒 장바구니 해제</button>
                         </div>
                       </div>
                     </div>
@@ -822,12 +830,12 @@
         </Accordion>
       {/if}
     {:else if sortableItems.length === 0}
-      <p class="text-sm text-neutral-500">
+      <p class="text-base text-neutral-500">
         {cartView === 'fcfs' ? '선착순 장바구니가' : cartView === 'bid' ? '베팅 장바구니가' : '장바구니가'} 비었습니다.
       </p>
     {:else}
       <div class="relative">
-        <div class="text-xs text-gray-500 mb-2 flex items-center gap-2">
+        <div class="text-sm text-gray-500 mb-2 flex items-center gap-2">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
           </svg>
@@ -854,7 +862,7 @@
             </div>
             
             <!-- 우선순위 번호 -->
-            <div class="flex items-center justify-center w-6 h-6 text-xs font-medium rounded-full mr-3"
+            <div class="flex items-center justify-center w-6 h-6 text-sm font-medium rounded-full mr-3"
                  class:bg-blue-100={item.method === 'FCFS'}
                  class:text-blue-800={item.method === 'FCFS'}
                  class:bg-orange-100={item.method === 'BID'}
@@ -862,7 +870,7 @@
               {sortableItems.findIndex(x => x.id === item.id) + 1}
             </div>
             
-            <div class="text-sm flex-1">
+            <div class="text-base flex-1">
               <div class="font-medium">
                 {#if findLecture(item.courseId, item.classId)}
                   {findLecture(item.courseId, item.classId)?.title}
@@ -870,10 +878,10 @@
                   {item.courseId}-{item.classId}
                 {/if}
               </div>
-              <div class="text-xs text-neutral-500">
+              <div class="text-sm text-neutral-500">
                 {computeCredits(item.courseId, item.classId)}학점 · {formatSchedule(item.courseId, item.classId)}
               </div>
-              <div class="mt-1 flex flex-wrap gap-1 text-[11px]">
+              <div class="mt-1 flex flex-wrap gap-1 text-xs">
                 {#if hasTimeConflict(item.courseId, item.classId)}
                   <span class="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">시간 충돌</span>
                 {/if}
@@ -884,28 +892,28 @@
             </div>
             {#if item.method === 'BID'}
               <div class="flex items-center gap-2">
-                <div class="relative group text-[11px] text-neutral-500 whitespace-nowrap">
+                <div class="relative group text-xs text-neutral-500 whitespace-nowrap">
                   전년도 정보: 최저 {getBidStats(item.courseId, item.classId).minWin}p · 하위 25-75% {getBidStats(item.courseId, item.classId).q25}~{getBidStats(item.courseId, item.classId).q75}p
                   <button type="button" class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full border border-neutral-300 text-neutral-500 bg-white select-none cursor-help" aria-label="설명">i</button>
-                  <div role="tooltip" class="absolute z-10 left-1/2 -translate-x-1/2 mt-1 w-64 p-3 text-[11px] leading-relaxed bg-neutral-800 text-white rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                  <div role="tooltip" class="absolute z-10 left-1/2 -translate-x-1/2 mt-1 w-64 p-3 text-xs leading-relaxed bg-neutral-800 text-white rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     <div>전년도 베팅 당첨 통계입니다.</div>
                     <div>최저: 최소 당첨 포인트 / 하위 25-75%: 중간 50% 구간 범위</div>
                   </div>
                 </div>
-                <input class="border rounded px-2 py-1 w-24 text-sm" type="number" min="1" max="100" step="1" placeholder="최대 100p" value={item.bidAmount ?? ''} oninput={(e) => handleBidInput(e, item)} />
+                <input class="border rounded px-2 py-1 w-24 text-base" type="number" min="1" max="100" step="1" placeholder="최대 100p" value={item.bidAmount ?? ''} oninput={(e) => handleBidInput(e, item)} />
                 {#if getBettingStatus(item.courseId, item.classId).isApplied}
                   {@const bettingStatus = getBettingStatus(item.courseId, item.classId)}
                   {#if bettingStatus.bidResult === 'WON'}
-                    <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>베팅 당첨</button>
+                    <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-base opacity-60 cursor-default" disabled>베팅 당첨</button>
                   {:else if bettingStatus.bidResult === 'LOST'}
-                    <button class="border border-red-500 bg-red-50 text-red-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>베팅 탈락</button>
+                    <button class="border border-red-500 bg-red-50 text-red-700 rounded px-2 py-1 text-base opacity-60 cursor-default" disabled>베팅 탈락</button>
                   {:else if bettingStatus.bidResult === 'WAITING'}
-                    <button class="border border-yellow-500 bg-yellow-50 text-yellow-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>베팅 대기</button>
+                    <button class="border border-yellow-500 bg-yellow-50 text-yellow-700 rounded px-2 py-1 text-base opacity-60 cursor-default" disabled>베팅 대기</button>
                   {:else}
-                    <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>신청 완료</button>
+                    <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-base opacity-60 cursor-default" disabled>신청 완료</button>
                   {/if}
                 {:else}
-                  <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-2 py-1 text-sm disabled:opacity-50" onclick={() => doApply(item)} disabled={!item.bidAmount || item.bidAmount <= 0 || countBidSameCourse(item.courseId) > 1}>
+                  <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-2 py-1 text-base disabled:opacity-50" onclick={() => doApply(item)} disabled={!item.bidAmount || item.bidAmount <= 0 || countBidSameCourse(item.courseId) > 1}>
                     베팅 확정
                   </button>
                 {/if}
@@ -913,12 +921,12 @@
             {:else}
               {#if getBettingStatus(item.courseId, item.classId).isApplied}
                 {@const bettingStatus = getBettingStatus(item.courseId, item.classId)}
-                <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-sm opacity-60 cursor-default" disabled>신청 완료</button>
+                <button class="border border-green-500 bg-green-50 text-green-700 rounded px-2 py-1 text-base opacity-60 cursor-default" disabled>신청 완료</button>
               {:else}
-                <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-2 py-1 text-sm" onclick={() => doApply(item)}>신청</button>
+                <button class="border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 rounded px-2 py-1 text-base" onclick={() => doApply(item)}>신청</button>
               {/if}
             {/if}
-            <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-sm" onclick={() => removeFromCart(item.courseId, item.classId)}>🛒 장바구니 해제</button>
+            <button class="border border-gray-500 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded px-2 py-1 text-base" onclick={() => removeFromCart(item.courseId, item.classId)}>🛒 장바구니 해제</button>
           </li>
         {/each}
       </ul>
@@ -928,8 +936,8 @@
 
   <TabsContent value="applications">
     <div class="flex items-center justify-between mb-3">
-      <div class="text-sm">신청내역</div>
-      <select class="border rounded p-1 text-sm" bind:value={statusFilter}>
+      <div class="text-base">신청내역</div>
+      <select class="border rounded p-1 text-base" bind:value={statusFilter}>
         <option value="ALL">전체</option>
         <option value="PENDING">대기</option>
         <option value="CONFIRMED">확정</option>
@@ -956,7 +964,7 @@
         {/each}
       </div>
     {:else if $applications.length === 0}
-      <p class="text-sm text-neutral-500">신청내역이 없습니다.</p>
+      <p class="text-base text-neutral-500">신청내역이 없습니다.</p>
     {:else}
       <ul class="grid gap-2">
         {#each $applications.filter(a => {
@@ -970,16 +978,16 @@
           
           return statusMatch;
         }) as a}
-          <li class="rounded border p-3 text-sm flex items-center justify-between">
+          <li class="rounded border p-3 text-base flex items-center justify-between">
             <div class="flex-1">
               <div class="font-medium">{findLecture(a.courseId, a.classId)?.title || `${a.courseId}-${a.classId}`}</div>
-              <div class="text-xs text-neutral-500">{a.courseId}-{a.classId} · {formatSchedule(a.courseId, a.classId)}</div>
+              <div class="text-sm text-neutral-500">{a.courseId}-{a.classId} · {formatSchedule(a.courseId, a.classId)}</div>
               {#if a.method === 'BID' && a.bidAmount}
-                <div class="text-xs text-blue-600 mt-1">베팅 금액: {a.bidAmount}p</div>
+                <div class="text-sm text-blue-600 mt-1">베팅 금액: {a.bidAmount}p</div>
               {/if}
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-xs px-2 py-1 rounded border"
+              <span class="text-sm px-2 py-1 rounded border"
                 class:bg-green-50={a.status==='CONFIRMED'}
                 class:text-green-700={a.status==='CONFIRMED'}
                 class:border-green-200={a.status==='CONFIRMED'}
@@ -1005,7 +1013,7 @@
                   {a.status}
                 {/if}
               </span>
-              <button class="border border-red-500 bg-red-500 text-white hover:bg-red-600 rounded px-2 py-1 text-xs" onclick={() => cancelApp(a)}>수강 취소</button>
+              <button class="border border-red-500 bg-red-500 text-white hover:bg-red-600 rounded px-2 py-1 text-sm" onclick={() => cancelApp(a)}>수강 취소</button>
             </div>
           </li>
         {/each}

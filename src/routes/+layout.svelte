@@ -69,28 +69,27 @@
 
 <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-hanyang-blue/20 shadow-sm">
   <div class="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
-    <a class="text-2xl font-black text-center hanyang-navy hover:hanyang-blue transition-colors duration-200" href="/">
+    <a class="text-3xl font-black text-center hanyang-navy hover:hanyang-blue transition-colors duration-200" href="/">
       HY-PATH
-      <span class="text-sm hanyang-blue block -mt-1">수강신청 시스템</span>
+      <span class="text-base hanyang-blue block -mt-1">수강신청 시스템</span>
     </a>
     <div class="flex items-center gap-4 sm:gap-6">
       {#each navItems as item}
         {@const Icon = item.icon}
         <Button
           variant="ghost"
-          size="sm"
-          class="text-gray-700 hover:text-hanyang-navy"
+          class="text-gray-700 hover:text-hanyang-navy text-base"
           href={item.href}
           aria-label={item.label}
         >
           <Icon class="size-4" />
-          <span class="hidden sm:inline">{item.label}</span>
+          <span class="hidden sm:inline ml-1">{item.label}</span>
         </Button>
       {/each}
 
       {#if $isLoggedIn}
         <div class="flex items-center gap-3">
-          <span class="text-sm hanyang-dark-gray">안녕하세요, <span class="font-semibold hanyang-navy">{$currentUser?.name}</span>님</span>
+          <span class="text-base hanyang-dark-gray">안녕하세요, <span class="font-semibold hanyang-navy">{$currentUser?.name}</span>님</span>
           <Button
             variant="outline"
             class="border-red-300 text-red-600 hover:bg-red-50"
@@ -128,7 +127,7 @@
 <!-- Toasts -->
 <div class="fixed bottom-6 right-6 grid gap-3 z-50">
   {#each $toasts as t}
-    <div class="rounded-xl border-2 px-4 py-3 text-sm shadow-lg bg-white font-medium {t.type === 'success' ? 'border-green-300 text-green-700' : t.type === 'error' ? 'border-red-300 text-red-700' : 'border-hanyang-blue text-hanyang-navy'}">
+    <div class="rounded-xl border-2 px-4 py-3 text-base shadow-lg bg-white font-medium {t.type === 'success' ? 'border-green-300 text-green-700' : t.type === 'error' ? 'border-red-300 text-red-700' : 'border-hanyang-blue text-hanyang-navy'}">
       {t.message}
     </div>
   {/each}

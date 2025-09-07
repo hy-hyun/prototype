@@ -13,6 +13,9 @@
   import { analyzeTimetableDistanceWarnings, analyzeNewLectureDistanceWarnings, type DistanceWarningResult } from "$lib/utils/distanceWarning";
 
 
+  // --- 상수 정의 ---
+  const minCredits = 10; // 최소 신청 학점
+  const maxCredits = 20; // 최대 신청 학점
   
   // --- 상태 관리 ---
   let activeTab = $state("전체");
@@ -128,17 +131,6 @@
     classId: string;
   };
 
-  // --- 상수 ---
-  const semesters = ["2024-2학기", "2024-1학기", "2023-2학기"];
-  const minCredits = 10;
-  const maxCredits = 23;
-  const buildingTravelTime: Record<string, Record<string, number>> = {
-    "IT": { "IT": 0, "SCI": 5, "HUM": 10, "BIZ": 8, "ENG": 7 },
-    "SCI": { "IT": 5, "SCI": 0, "HUM": 8, "BIZ": 12, "ENG": 6 },
-    "HUM": { "IT": 10, "SCI": 8, "HUM": 0, "BIZ": 5, "ENG": 9 },
-    "BIZ": { "IT": 8, "SCI": 12, "HUM": 5, "BIZ": 0, "ENG": 11 },
-    "ENG": { "IT": 7, "SCI": 6, "HUM": 9, "BIZ": 11, "ENG": 0 }
-  };
 
   // --- 파생 상태 (Derived State) ---
 
@@ -613,9 +605,9 @@
     <div class="flex gap-3 overflow-x-auto pb-2">
       {#each sidebarData.cartCourses.slice(0, 4) as course}
         <div class="mobile-cart-card">
-          <div class="font-medium text-xs text-gray-800 truncate mb-1">{course.title}</div>
+          <div class="font-medium text-xs text-gray-800 truncate mb-1">{course.courseId}</div>
           <div class="text-xs text-gray-500 mb-2">
-            <div class="truncate">{course.courseId}</div>
+            <div class="truncate">{course.title}</div>
             <div class="text-orange-600">
               {typeof course.credits === 'object' && course.credits !== null 
                 ? (course.credits.lecture || 0) + (course.credits.lab || 0)

@@ -136,15 +136,6 @@
             취소
           </button>
         </div>
-        
-        <div class="text-center">
-          <div class="text-xs text-gray-500 space-y-1">
-            <p><strong>테스트 계정:</strong></p>
-            <p>학번: 2021075178 (김민우 - 기존 데이터)</p>
-            <p>학번: 2025999999 (신규 사용자)</p>
-            <p>비밀번호: 아무거나</p>
-          </div>
-        </div>
       </form>
     </div>
   </div>

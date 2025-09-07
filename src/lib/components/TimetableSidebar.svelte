@@ -138,12 +138,12 @@
               <div class="flex-1 min-w-0">
                 <div class="font-semibold text-gray-800 text-base flex items-center gap-2 truncate mb-2">
                   {#if course.isInCart}
-                    <span class="text-green-500 flex-shrink-0 text-lg">✓</span>
+                    <span class="text-green-500 flex-shrink-0 text-xl">✓</span>
                   {/if}
                   <span class="truncate">{course.title}</span>
                 </div>
-                <div class="text-sm text-gray-500 mb-2 flex items-center gap-2 flex-wrap">
-                  <span class="truncate font-mono">{course.courseId}</span>
+                <div class="text-sm text-gray-500 mb-2 flex items-center gap-2">
+                  <span class="truncate text-sm">{course.courseId}</span>
                   <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs flex-shrink-0 font-medium">{course.category}</span>
                   <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs flex-shrink-0 font-medium">
                     {typeof course.credits === 'object' && course.credits !== null 
@@ -156,7 +156,7 @@
             </div>
             
             <!-- 상세 정보 -->
-            <div class="text-xs text-gray-600 space-y-0.5 mb-2">
+            <div class="text-sm text-gray-600 space-y-0.5 mb-2">
               <div class="flex items-center gap-1">
                 <span class="flex-shrink-0">👨‍🏫</span>
                 <span class="truncate">{course.instructor}</span>

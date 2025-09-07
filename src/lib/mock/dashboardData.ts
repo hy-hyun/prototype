@@ -7,7 +7,7 @@ export const dashboardData = {
 	},
 	majors: [
 		{
-			id: 'main',
+			id: '1',
 			name: '교육공학과',
 			type: '주전공',
 			isActive: true,
@@ -19,9 +19,9 @@ export const dashboardData = {
 			},
 		},
 		{
-			id: 'double',
+			id: '2',
 			name: '빅데이터융합전공',
-			type: '다중전공',
+			type: '제2전공',
 			isActive: false,
 			color: '#10b981',
 			requirements: {

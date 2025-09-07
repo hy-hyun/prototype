@@ -1,13 +1,15 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { courses, addToCart, removeFromCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading, coursesError, refreshCourseData, cart } from "$lib/stores";
+  import { courses, addToCart, removeFromCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading, coursesError, refreshCourseData, cart, isLoggedIn, currentUser } from "$lib/stores";
   import { showToast } from "$lib/toast";
   import Loading from "$lib/components/Loading.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
   import { Input } from "$lib/components/ui/input";
   import { STATIC_FILTER_OPTIONS, collegeToDepartmentMapping } from "$lib/mock/data";
+  import LoginModal from "$lib/components/LoginModal.svelte";
   // Svelte 5 룬모드 상태 변수들
   let keyword = $state("");
+  let showLoginModal = $state(false);
   let filters = $state({ 
     grade: "", 
     dept: "",
@@ -138,6 +140,11 @@
   }
 
   async function onToggleCart(l: Lecture) {
+    if (!$isLoggedIn) {
+      showToast("로그인이 필요합니다", "error");
+      showLoginModal = true;
+      return;
+    }
     if (isInCart(l.courseId, l.classId)) {
       // 장바구니에서 제거
       await removeFromCart(l.courseId, l.classId);
@@ -247,6 +254,12 @@
       console.log('🔍 초기 데이터 로드 완료 - 전체 목록 표시');
       results = $courses; // 직접 할당으로 무한 루프 방지
       currentPage = 1; // 첫 페이지로 설정
+    }
+  });
+
+  $effect(() => {
+    if ($isLoggedIn) {
+      showLoginModal = false;
     }
   });
 </script>
@@ -462,7 +475,7 @@
             <!-- 강의 제목 및 기본 정보 -->
             <div class="flex items-start gap-3 mb-2">
               <div class="flex-1">
-                <h3 class="font-semibold text-lg text-gray-900 mb-1">{l.title}</h3>
+                <h3 class="font-semibold text-xl text-gray-900 mb-1">{l.title}</h3>
                 <div class="flex items-center gap-2 text-sm text-gray-600 mb-2 flex-wrap">
                   <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
                     {l.category}
@@ -483,28 +496,28 @@
             </div>
             
             <!-- 상세 정보 -->
-            <div class="space-y-2 text-sm text-gray-600">
+            <div class="space-y-2 text-base text-gray-600">
               <!-- 1행: 정원, 과목코드 (항상 표시) -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div class="flex items-center gap-2">
-                  <span class="font-medium">정원:</span>
-                  <span>{l.capacity}명</span>
+                  <span class="font-semibold">정원:</span>
+                  <span class="font-medium">{l.capacity}명</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="font-medium">과목코드:</span>
-                  <span class="text-xs font-mono">{l.courseId}</span>
+                  <span class="font-semibold">학수번호:</span>
+                  <span class="font-medium">{l.courseId}</span>
                 </div>
               </div>
               
               <!-- 2행: 수업시간, 강의실 (항상 표시) -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div class="flex items-center gap-2">
-                  <span class="font-medium">수업시간:</span>
-                  <span class="text-xs">{formatTime(l.schedule)}</span>
+                  <span class="font-semibold">수업시간:</span>
+                  <span class="text-medium">{formatTime(l.schedule)}</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="font-medium">강의실:</span>
-                  <span class="text-xs">{formatLocation(l.schedule)}</span>
+                  <span class="font-semibold">강의실:</span>
+                  <span class="font-medium">{formatLocation(l.schedule)}</span>
                 </div>
               </div>
               
@@ -514,8 +527,8 @@
                   <!-- 단위 표시 (courseLevel이 있는 경우만) -->
                   {#if l.courseLevel}
                     <div class="flex items-center gap-2">
-                      <span class="font-medium">단위:</span>
-                      <span class="text-xs">{Math.floor(parseInt(l.courseLevel) / 100) * 100}단위</span>
+                      <span class="font-semibold">단위:</span>
+                      <span class="font-medium">{Math.floor(parseInt(l.courseLevel) / 100) * 100}단위</span>
                     </div>
                   {:else}
                     <div></div> <!-- 빈 공간 유지 -->
@@ -524,8 +537,8 @@
                   <!-- 교양영역 표시 (핵심교양, 교양인 경우만) -->
                   {#if (l.category === '핵심교양' || l.category === '교양') && l.area}
                     <div class="flex items-center gap-2">
-                      <span class="font-medium">교양영역:</span>
-                      <span class="text-xs">{l.area}</span>
+                      <span class="font-semibold">교양영역:</span>
+                      <span class="font-medium">{l.area}</span>
                     </div>
                   {/if}
                 </div>
@@ -671,12 +684,12 @@
             <h3 class="font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">기본 정보</h3>
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span class="font-medium text-gray-700">학수번호:</span>
-                <span class="ml-2 font-mono text-gray-900">{selectedLecture.courseId}-{selectedLecture.classId}</span>
+                <span class="font-medium text-gray-700">수업번호:</span>
+                <span class="ml-2 text-gray-900">{selectedLecture.courseId}-{selectedLecture.classId}</span>
               </div>
               <div>
-                <span class="font-medium text-gray-700">과목코드:</span>
-                <span class="ml-2 font-mono text-gray-900">{selectedLecture.courseId}</span>
+                <span class="font-medium text-gray-700">학수번호:</span>
+                <span class="ml-2 text-gray-900">{selectedLecture.courseId}</span>
               </div>
               <div>
                 <span class="font-medium text-gray-700">이수구분:</span>
@@ -782,6 +795,12 @@
       </div>
     </div>
   </div>
+{/if}
+
+
+
+{#if showLoginModal}
+  <LoginModal bind:isOpen={showLoginModal} />
 {/if}
 
 

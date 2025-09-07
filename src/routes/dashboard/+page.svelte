@@ -629,8 +629,10 @@
                     </button>
                   {:else}
                     <button
-                      class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+                      class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors {aiRecPopup.semester === '2026-1' || aiRecPopup.semester === '2026-2' ? 'opacity-50 cursor-not-allowed' : ''}"
                       onclick={() => handleAddToCart(course)}
+                      disabled={aiRecPopup.semester === '2026-1' || aiRecPopup.semester === '2026-2'}
+                      title={aiRecPopup.semester === '2026-1' || aiRecPopup.semester === '2026-2' ? '현재 학기는 2025-2학기입니다.' : '장바구니에 담기'}
                     >
                       👉 담기
                     </button>
@@ -973,7 +975,7 @@
                     <!-- 전공 전체 진행도 -->
                     <div class="bg-blue-50 rounded-lg p-4">
                       <div class="flex justify-between text-sm font-medium text-blue-900 mb-2">
-                        <span>{major.name} 전체 진행도</span>
+                        <span>{major.name} (제{major.id}전공) 이수율</span>
                         <span>{Math.round((major.requirements.total.completed / major.requirements.total.required) * 100)}%</span>
                       </div>
                       <div class="w-full bg-blue-200 rounded-full h-3">
@@ -1666,10 +1668,12 @@
                           </button>
                         {:else}
                           <button
-                            class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+                            class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors {currentSemester === '2026-1' || currentSemester === '2026-2' ? 'opacity-50 cursor-not-allowed' : ''}"
                             onclick={() => handleAddToCart(course)}
+                            disabled={currentSemester === '2026-1' || currentSemester === '2026-2'}
+                            title={currentSemester === '2026-1' || currentSemester === '2026-2' ? '해당 학기는 담기 기능이 비활성화되었습니다.' : '장바구니에 담기'}
                           >
-                          👉 담기
+                            👉 담기
                           </button>
                         {/if}
                       </div>

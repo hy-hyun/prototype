@@ -232,8 +232,8 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
 
       // Firebase 데이터 구조에 맞춰 매핑
       const mappedLecture = {
-        courseId: data.courseNumber || data.subjectCode || data.courseId || '',
-        classId: data.class || data.classNumber || '01',
+        courseId: data.subjectCode || data.courseId || doc.id,
+        classId: data.courseNumber || data.class || data.classNumber || '01',
         title: data.subjectName || data.courseName || data.title || '',
         category: data.category || data.courseType || '교양',
         dept: data.offeringDepartment || data.department || '',
@@ -255,7 +255,9 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
       // 처음 5개 강의의 매핑 결과 로깅 - 장소 정보 포함
       if (index < 5) {
         console.log(`\n📚 === 강의 ${index + 1} 최종 매핑 결과 ===`);
-        console.log(`  강의명: "${mappedLecture.title}"`);
+        console.log(`  강의명: "${mappedLecture.title}" (원본: "${data.subjectName || data.courseName || data.title}")`);
+        console.log(`  학수번호: "${mappedLecture.courseId}" (원본: "${data.subjectCode || data.courseId || doc.id}")`);
+        console.log(`  분반: "${mappedLecture.classId}" (원본: "${data.courseNumber || data.class || data.classNumber}")`);
         console.log(`  원본 스케줄 데이터:`, data.schedule || data.timeTable || data.classTime || data.meetingTimes);
         console.log(`  매핑된 스케줄:`, mappedLecture.schedule);
         
@@ -812,12 +814,19 @@ export const metrics = derived([cart, applications, userDocument], ([$cart, $app
 });
 
 export async function addToCart(item: CartItem) {
+  const user = get(currentUser);
+  if (!user) {
+    console.error('❌ addToCart: 사용자가 로그인하지 않았습니다.');
+    return;
+  }
+
   let newCart: CartItem[] = [];
-  
+  const originalCart = get(cart);
+
+  // 1. 먼저 로컬 상태를 낙관적으로 업데이트
   cart.update((c) => {
     const exists = c.find((x) => x.courseId === item.courseId && x.classId === item.classId);
     if (!exists) {
-      // 같은 method의 아이템들 중 가장 큰 order 값을 찾아서 +1
       const sameMethodItems = c.filter(x => x.method === item.method);
       const maxOrder = sameMethodItems.length > 0 
         ? Math.max(...sameMethodItems.map(x => x.order || 0))
@@ -829,27 +838,46 @@ export async function addToCart(item: CartItem) {
     return [...c];
   });
 
-  // 🔥 Firestore에 자동 동기화
+  // 2. Firestore에 동기화
   try {
-    await syncUserCart(newCart);
+    console.log('🔥 addToCart: Firestore 동기화 시작...', { userId: user.id, cart: newCart });
+    await updateUserCart(user.id, newCart);
+    console.log('✅ addToCart: Firestore 동기화 성공.');
   } catch (error) {
-    console.error('❌ 장바구니 Firestore 동기화 실패:', error);
+    console.error('❌ addToCart: Firestore 동기화 실패. 롤백 실행.', error);
+    // 3. 실패 시 롤백
+    cart.set(originalCart);
+    // 사용자에게 에러 알림
+    showToast("장바구니 추가에 실패했습니다. 다시 시도해주세요.", "error");
   }
 }
 
 export async function removeFromCart(courseId: string, classId: string) {
+  const user = get(currentUser);
+  if (!user) {
+    console.error('❌ removeFromCart: 사용자가 로그인하지 않았습니다.');
+    return;
+  }
+
   let newCart: CartItem[] = [];
-  
+  const originalCart = get(cart);
+
+  // 1. 로컬 상태 낙관적 업데이트
   cart.update((c) => {
     newCart = c.filter((x) => !(x.courseId === courseId && x.classId === classId));
     return newCart;
   });
 
-  // 🔥 Firestore에 자동 동기화
+  // 2. Firestore에 동기화
   try {
-    await syncUserCart(newCart);
+    console.log('🔥 removeFromCart: Firestore 동기화 시작...', { userId: user.id, cart: newCart });
+    await updateUserCart(user.id, newCart);
+    console.log('✅ removeFromCart: Firestore 동기화 성공.');
   } catch (error) {
-    console.error('❌ 장바구니 Firestore 동기화 실패:', error);
+    console.error('❌ removeFromCart: Firestore 동기화 실패. 롤백 실행.', error);
+    // 3. 실패 시 롤백
+    cart.set(originalCart);
+    showToast("장바구니 삭제에 실패했습니다. 다시 시도해주세요.", "error");
   }
 }
 

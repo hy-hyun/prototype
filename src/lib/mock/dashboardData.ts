@@ -33,8 +33,8 @@ export const dashboardData = {
 	],
 	generalEducation: {
 		required: {
-			completed: 17,
-			required: 21,
+			completed: 16,
+			required: 19,
 			name: '교양 필수',
 			bySemester: {
 				'1-1': {

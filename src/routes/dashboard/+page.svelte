@@ -895,31 +895,32 @@
                      {#if expandedCards.teachingMajor}
                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
                          {#each userData.teachingCourses.major.categories.basic.courses as course}
-                           <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                             <div class="flex items-center gap-2">
-                                  <div
-                                    class="w-2 h-2 rounded-full {course.status === 'completed'
-                                      ? 'bg-green-500'
-                                      : course.status === 'in_progress'
-                                      ? 'bg-yellow-500'
-                                      : 'bg-gray-400'}"
-                                  ></div>
-                               <span class="text-xs text-gray-700">{course.title}</span>
+                           <div class="flex items-center justify-between p-2 bg-gray-50 rounded gap-2">
+                             <div class="flex items-center gap-2 min-w-0 flex-1">
+                               <div
+                                 class="w-2 h-2 rounded-full flex-shrink-0 {course.status === 'completed'
+                                   ? 'bg-green-500'
+                                   : course.status === 'in_progress'
+                                   ? 'bg-yellow-500'
+                                   : 'bg-gray-400'}"
+                               ></div>
+                               <span class="text-xs text-gray-700 truncate" title={course.title}>{course.title}</span>
+                               <span class="text-[11px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-md text-center flex-shrink-0">{course.fieldId}</span>
                              </div>
-                             <div class="flex items-center gap-2">
+                             <div class="flex items-center gap-2 flex-shrink-0">
                                <span class="text-xs text-gray-600">{course.credits}학점</span>
-                                  <span
-                                    class="text-xs px-2 py-1 rounded {course.status === 'completed'
-                                      ? 'bg-green-100 text-green-700'
-                                      : course.status === 'in_progress'
-                                      ? 'bg-yellow-100 text-yellow-700'
-                                      : 'bg-gray-100 text-gray-600'}"
-                                  >
-                                    {course.status === 'completed'
-                                      ? '완료'
-                                      : course.status === 'in_progress'
-                                      ? '수강중'
-                                      : '미이수'}
+                               <span
+                                 class="text-xs px-2 py-1 rounded whitespace-nowrap {course.status === 'completed'
+                                   ? 'bg-green-100 text-green-700'
+                                   : course.status === 'in_progress'
+                                   ? 'bg-yellow-100 text-yellow-700'
+                                   : 'bg-gray-100 text-gray-600'}"
+                               >
+                                 {course.status === 'completed'
+                                   ? '완료'
+                                   : course.status === 'in_progress'
+                                   ? '수강중'
+                                   : '미이수'}
                                </span>
                              </div>
                            </div>
@@ -958,31 +959,32 @@
                      {#if expandedCards.teachingSubject}
                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
                          {#each userData.teachingCourses.major.categories.subjectEducation.courses as course}
-                           <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                             <div class="flex items-center gap-2">
-                                  <div
-                                    class="w-2 h-2 rounded-full {course.status === 'completed'
-                                      ? 'bg-green-500'
-                                      : course.status === 'in_progress'
-                                      ? 'bg-yellow-500'
-                                      : 'bg-gray-400'}"
-                                  ></div>
-                               <span class="text-xs text-gray-700">{course.title}</span>
+                           <div class="flex items-center justify-between p-2 bg-gray-50 rounded gap-2">
+                             <div class="flex items-center gap-2 min-w-0 flex-1">
+                               <div
+                                 class="w-2 h-2 rounded-full flex-shrink-0 {course.status === 'completed'
+                                   ? 'bg-green-500'
+                                   : course.status === 'in_progress'
+                                   ? 'bg-yellow-500'
+                                   : 'bg-gray-400'}"
+                               ></div>
+                               <span class="text-xs text-gray-700 truncate" title={course.title}>{course.title}</span>
+                               <span class="text-[11px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-md text-center flex-shrink-0">{course.fieldId}</span>
                              </div>
-                             <div class="flex items-center gap-2">
+                             <div class="flex items-center gap-2 flex-shrink-0">
                                <span class="text-xs text-gray-600">{course.credits}학점</span>
-                                  <span
-                                    class="text-xs px-2 py-1 rounded {course.status === 'completed'
-                                      ? 'bg-green-100 text-green-700'
-                                      : course.status === 'in_progress'
-                                      ? 'bg-yellow-100 text-yellow-700'
-                                      : 'bg-gray-100 text-gray-600'}"
-                                  >
-                                    {course.status === 'completed'
-                                      ? '완료'
-                                      : course.status === 'in_progress'
-                                      ? '수강중'
-                                      : '미이수'}
+                               <span
+                                 class="text-xs px-2 py-1 rounded whitespace-nowrap {course.status === 'completed'
+                                   ? 'bg-green-100 text-green-700'
+                                   : course.status === 'in_progress'
+                                   ? 'bg-yellow-100 text-yellow-700'
+                                   : 'bg-gray-100 text-gray-600'}"
+                               >
+                                 {course.status === 'completed'
+                                   ? '완료'
+                                   : course.status === 'in_progress'
+                                   ? '수강중'
+                                   : '미이수'}
                                </span>
                              </div>
                            </div>
@@ -1059,31 +1061,32 @@
                      {#if expandedCards.teachingProfession}
                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
                          {#each userData.teachingCourses.profession.categories.theory.courses as course}
-                           <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                             <div class="flex items-center gap-2">
-                                  <div
-                                    class="w-2 h-2 rounded-full {course.status === 'completed'
-                                      ? 'bg-green-500'
-                                      : course.status === 'in_progress'
-                                      ? 'bg-yellow-500'
-                                      : 'bg-gray-400'}"
-                                  ></div>
-                               <span class="text-xs text-gray-700">{course.title}</span>
+                           <div class="flex items-center justify-between p-2 bg-gray-50 rounded gap-2">
+                             <div class="flex items-center gap-2 min-w-0 flex-1">
+                               <div
+                                 class="w-2 h-2 rounded-full flex-shrink-0 {course.status === 'completed'
+                                   ? 'bg-green-500'
+                                   : course.status === 'in_progress'
+                                   ? 'bg-yellow-500'
+                                   : 'bg-gray-400'}"
+                               ></div>
+                               <span class="text-xs text-gray-700 truncate" title={course.title}>{course.title}</span>
+                               <span class="text-[11px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-md text-center flex-shrink-0">{course.fieldId}</span>
                              </div>
-                             <div class="flex items-center gap-2">
+                             <div class="flex items-center gap-2 flex-shrink-0">
                                <span class="text-xs text-gray-600">{course.credits}학점</span>
-                                  <span
-                                    class="text-xs px-2 py-1 rounded {course.status === 'completed'
-                                      ? 'bg-green-100 text-green-700'
-                                      : course.status === 'in_progress'
-                                      ? 'bg-yellow-100 text-yellow-700'
-                                      : 'bg-gray-100 text-gray-600'}"
-                                  >
-                                    {course.status === 'completed'
-                                      ? '완료'
-                                      : course.status === 'in_progress'
-                                      ? '수강중'
-                                      : '미이수'}
+                               <span
+                                 class="text-xs px-2 py-1 rounded whitespace-nowrap {course.status === 'completed'
+                                   ? 'bg-green-100 text-green-700'
+                                   : course.status === 'in_progress'
+                                   ? 'bg-yellow-100 text-yellow-700'
+                                   : 'bg-gray-100 text-gray-600'}"
+                               >
+                                 {course.status === 'completed'
+                                   ? '완료'
+                                   : course.status === 'in_progress'
+                                   ? '수강중'
+                                   : '미이수'}
                                </span>
                              </div>
                            </div>
@@ -1122,31 +1125,32 @@
                      {#if expandedCards.teachingAptitude}
                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
                          {#each userData.teachingCourses.profession.categories.aptitude.courses as course}
-                           <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                             <div class="flex items-center gap-2">
-                                  <div
-                                    class="w-2 h-2 rounded-full {course.status === 'completed'
-                                      ? 'bg-green-500'
-                                      : course.status === 'in_progress'
-                                      ? 'bg-yellow-500'
-                                      : 'bg-gray-400'}"
-                                  ></div>
-                               <span class="text-xs text-gray-700">{course.title}</span>
+                           <div class="flex items-center justify-between p-2 bg-gray-50 rounded gap-2">
+                             <div class="flex items-center gap-2 min-w-0 flex-1">
+                               <div
+                                 class="w-2 h-2 rounded-full flex-shrink-0 {course.status === 'completed'
+                                   ? 'bg-green-500'
+                                   : course.status === 'in_progress'
+                                   ? 'bg-yellow-500'
+                                   : 'bg-gray-400'}"
+                               ></div>
+                               <span class="text-xs text-gray-700 truncate" title={course.title}>{course.title}</span>
+                               <span class="text-[11px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-md text-center flex-shrink-0">{course.fieldId}</span>
                              </div>
-                             <div class="flex items-center gap-2">
+                             <div class="flex items-center gap-2 flex-shrink-0">
                                <span class="text-xs text-gray-600">{course.credits}학점</span>
-                                  <span
-                                    class="text-xs px-2 py-1 rounded {course.status === 'completed'
-                                      ? 'bg-green-100 text-green-700'
-                                      : course.status === 'in_progress'
-                                      ? 'bg-yellow-100 text-yellow-700'
-                                      : 'bg-gray-100 text-gray-600'}"
-                                  >
-                                    {course.status === 'completed'
-                                      ? '완료'
-                                      : course.status === 'in_progress'
-                                      ? '수강중'
-                                      : '미이수'}
+                               <span
+                                 class="text-xs px-2 py-1 rounded whitespace-nowrap {course.status === 'completed'
+                                   ? 'bg-green-100 text-green-700'
+                                   : course.status === 'in_progress'
+                                   ? 'bg-yellow-100 text-yellow-700'
+                                   : 'bg-gray-100 text-gray-600'}"
+                               >
+                                 {course.status === 'completed'
+                                   ? '완료'
+                                   : course.status === 'in_progress'
+                                   ? '수강중'
+                                   : '미이수'}
                                </span>
                              </div>
                            </div>
@@ -1185,31 +1189,32 @@
                      {#if expandedCards.teachingPractice}
                        <div class="p-3 pt-0 space-y-2 animate-fade-in">
                          {#each userData.teachingCourses.profession.categories.practice.courses as course}
-                           <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                             <div class="flex items-center gap-2">
-                                  <div
-                                    class="w-2 h-2 rounded-full {course.status === 'completed'
-                                      ? 'bg-green-500'
-                                      : course.status === 'in_progress'
-                                      ? 'bg-yellow-500'
-                                      : 'bg-gray-400'}"
-                                  ></div>
-                               <span class="text-xs text-gray-700">{course.title}</span>
+                           <div class="flex items-center justify-between p-2 bg-gray-50 rounded gap-2">
+                             <div class="flex items-center gap-2 min-w-0 flex-1">
+                               <div
+                                 class="w-2 h-2 rounded-full flex-shrink-0 {course.status === 'completed'
+                                   ? 'bg-green-500'
+                                   : course.status === 'in_progress'
+                                   ? 'bg-yellow-500'
+                                   : 'bg-gray-400'}"
+                               ></div>
+                               <span class="text-xs text-gray-700 truncate" title={course.title}>{course.title}</span>
+                               <span class="text-[11px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-md text-center flex-shrink-0">{course.fieldId}</span>
                              </div>
-                             <div class="flex items-center gap-2">
+                             <div class="flex items-center gap-2 flex-shrink-0">
                                <span class="text-xs text-gray-600">{course.credits}학점</span>
-                                  <span
-                                    class="text-xs px-2 py-1 rounded {course.status === 'completed'
-                                      ? 'bg-green-100 text-green-700'
-                                      : course.status === 'in_progress'
-                                      ? 'bg-yellow-100 text-yellow-700'
-                                      : 'bg-gray-100 text-gray-600'}"
-                                  >
-                                    {course.status === 'completed'
-                                      ? '완료'
-                                      : course.status === 'in_progress'
-                                      ? '수강중'
-                                      : '미이수'}
+                               <span
+                                 class="text-xs px-2 py-1 rounded whitespace-nowrap {course.status === 'completed'
+                                   ? 'bg-green-100 text-green-700'
+                                   : course.status === 'in_progress'
+                                   ? 'bg-yellow-100 text-yellow-700'
+                                   : 'bg-gray-100 text-gray-600'}"
+                               >
+                                 {course.status === 'completed'
+                                   ? '완료'
+                                   : course.status === 'in_progress'
+                                   ? '수강중'
+                                   : '미이수'}
                                </span>
                              </div>
                            </div>
@@ -1355,8 +1360,10 @@
            </div>
        </div>
     </div>
+    
   </div>
 </div>
+
 
 <style>
   /* 그래프 애니메이션 */

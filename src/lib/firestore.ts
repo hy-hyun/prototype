@@ -298,7 +298,7 @@ export async function migrateKimMinwooData(): Promise<void> {
         currentSemester: dashboardData.userInfo.currentSemester,
         totalCredits: dashboardData.userInfo.totalCredits,
         requiredCredits: dashboardData.userInfo.requiredCredits,
-        email: `${kimMinwooId}@hanyang.ac.kr`,
+        email: `mw111402@hanyang.ac.kr`,
         createdAt: now,
         lastLoginAt: now,
       },

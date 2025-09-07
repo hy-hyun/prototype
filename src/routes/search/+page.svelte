@@ -5,7 +5,7 @@
   import Loading from "$lib/components/Loading.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
   import { Input } from "$lib/components/ui/input";
-  import { STATIC_FILTER_OPTIONS } from "$lib/mock/data";
+  import { STATIC_FILTER_OPTIONS, collegeToDepartmentMapping } from "$lib/mock/data";
   // Svelte 5 룬모드 상태 변수들
   let keyword = $state("");
   let filters = $state({ 
@@ -35,6 +35,20 @@
   
   // 총 페이지 수 계산
   let totalPages = $derived(Math.ceil(results.length / itemsPerPage));
+
+  // 선택된 단과대학에 따라 학과 목록을 필터링하는 파생 상태
+  let availableDepts = $derived.by(() => {
+    const selectedCollege = filters.college;
+    if (!selectedCollege) {
+      return $filterOptions.departments; // 단과대학 미선택 시 전체 학과 표시
+    }
+    
+    // 선택된 단과대학에 매핑된 학과 목록을 가져옵니다.
+    const mappedDepts = collegeToDepartmentMapping[selectedCollege] || [];
+    
+    // 실제 존재하는 학과 목록($filterOptions.departments)을 기준으로 필터링
+    return $filterOptions.departments.filter(d => mappedDepts.includes(d.value));
+  });
 
   function search() {
     const searchTerm = keyword.trim().toLowerCase();
@@ -69,7 +83,7 @@
       // 2. 필터 조건들 검사
       const gradeMatch = !filters.grade || course.courseLevel?.startsWith(filters.grade + "00");
       const deptMatch = !filters.dept || course.dept === filters.dept;
-      const collegeMatch = !filters.college; // 단과대학 필터는 현재 비활성화 상태이므로 항상 true
+      const collegeMatch = true; // TODO: 단과대학 필터 기능 활성화 필요
       const categoryMatch = !filters.category || course.category === filters.category;
       // 교양영역 필터는 이수구분이 '교양' 또는 '핵심교양'인 경우에만 적용
       const liberalArtsAreaMatch = !filters.liberalArtsArea || 
@@ -293,12 +307,15 @@
       <div>
         <p class="text-xs text-gray-500 mb-2">단과대학</p>
         <select 
-          class="border rounded p-2 w-full cursor-not-allowed opacity-50" 
+          class="border rounded p-2 bg-white w-full" 
           bind:value={filters.college} 
-          disabled
-          title="단과대학 필터는 준비 중입니다"
+          onchange={() => {
+            filters.dept = ''; // 단과대학 변경 시 학과 선택 초기화
+            performRealTimeSearch();
+          }}
+          title="단과대학 필터는 검색 결과에 영향을 주지 않습니다."
         >
-          <option value="">준비 중</option>
+          <option value="">전체 대학</option>
           {#each STATIC_FILTER_OPTIONS.colleges as college}
             <option value={college.value}>{college.label}</option>
           {/each}
@@ -309,7 +326,7 @@
         <p class="text-xs text-gray-500 mb-2">학과</p>
         <select class="border rounded p-2 bg-white w-full" bind:value={filters.dept} onchange={() => performRealTimeSearch()}>
           <option value="">전체 학과</option>
-          {#each $filterOptions.departments as dept}
+          {#each availableDepts as dept}
             <option value={dept.value}>{dept.label}</option>
           {/each}
         </select>

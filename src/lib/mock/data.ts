@@ -175,14 +175,24 @@ export const STATIC_FILTER_OPTIONS = {
     { value: "4", label: "4학년" }
   ],
   colleges: [
-    { value: "engineering", label: "공과대학" },
+    { value: "nursing", label: "간호대학" },
     { value: "business", label: "경영대학" },
-    { value: "humanities", label: "인문대학" },
+    { value: "economics", label: "경제금융대학" },
+    { value: "engineering", label: "공과대학" },
+    { value: "international", label: "국제대학" },
+    { value: "education", label: "사범대학" },
     { value: "social", label: "사회과학대학" },
-    { value: "natural", label: "자연과학대학" },
-    { value: "arts", label: "예술대학" },
+    { value: "industry", label: "산업융합학부" },
+    { value: "human_ecology", label: "생활과학대학" },
+    { value: "arts_physical", label: "예술·체육대학" },
+    { value: "convergent_majors", label: "융합전공대학" },
+    { value: "music", label: "음악대학" },
     { value: "medicine", label: "의과대학" },
-    { value: "education", label: "사범대학" }
+    { value: "humanities", label: "인문과학대학" },
+    { value: "natural", label: "자연과학대학" },
+    { value: "policy", label: "정책과학대학" },
+    { value: "intercollege", label: "한양인터칼리지" },
+    { value: "etc", label: "기타" }
   ],
   courseLevels: [
     { value: "100", label: "100단위" },
@@ -196,6 +206,18 @@ export const STATIC_FILTER_OPTIONS = {
     { value: "3", label: "3학점" },
     { value: "4", label: "4학점" }
   ]
+};
+
+export const collegeToDepartmentMapping: Record<string, string[]> = {
+  business: ['파이낸스경영학과', '정책학과', '경영학부'],
+  engineering: ['화학과', '정보시스템학과', '전기공학전공', '공학교육혁신센터', '스포츠사이언스전공'],
+  education: ['응용미술교육과', '영어교육과', '수학교육과', '국어교육과', '교직과', '교원양성지원센터', '교육공학과', '교육대학원 행정팀', '교육학과'],
+  convergent_majors: ['빅데이터융합전공'],
+  humanities: ['국어국문학과', '독어독문학과', '영어영문학과', '사학과', '미래인문학교육인증센터'],
+  international: ['국제학부', '국제대학원 행정팀', '글로벌문화통상학부'],
+  social: ['미디어커뮤니케이션학과', '관광학부'],
+  arts_physical: ['작곡과', '성악과', '무용학과', '연극영화학과'],
+  etc: ['창의융합교육팀', '창의융합교육원', '한양리더십센터', '생명과학과', '의학과', '의예과', '법학전문대학원']
 };
 
 

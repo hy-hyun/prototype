@@ -549,8 +549,8 @@
 <Tabs bind:value={view} class="w-full">
   <div class="flex justify-between items-center mb-3">
     <TabsList>
-      <TabsTrigger value="cart">장바구니</TabsTrigger>
-      <TabsTrigger value="applications">신청내역</TabsTrigger>
+      <TabsTrigger value="cart">🛒 장바구니</TabsTrigger>
+      <TabsTrigger value="applications">📋 신청내역</TabsTrigger>
     </TabsList>
     <div class="text-sm text-neutral-600 dark:text-neutral-400">
       기본 수업 학점 {$metrics.basicCredits} / 최대 학점 {$metrics.maxCredits} / 신청 과목 수 {$metrics.enrolledCourses} / 
@@ -607,7 +607,7 @@
           class:dark:text-white={cartView === 'results'}
           onclick={() => cartView = 'results'}
         >
-          베팅결과
+          결과 열람
         </button>
       </div>
     </div>

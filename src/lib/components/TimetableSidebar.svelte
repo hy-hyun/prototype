@@ -55,8 +55,8 @@
   <div class="p-6 border-b border-gray-100">
     <div class="flex items-center justify-between">
       <h3 class="font-semibold text-gray-800 flex items-center gap-2 text-lg">
-        <span class="text-blue-500">🛒</span>
-        장바구니
+        <span class="text-blue-500">🧾</span>
+        강의 목록
       </h3>
       <span class="text-sm text-gray-500 bg-blue-50 px-2 py-1 rounded-full">장바구니 {cartCourses.length}개</span>
     </div>
@@ -126,7 +126,7 @@
       {#if courses.length === 0}
         <div class="text-center text-gray-500 py-12">
           <div class="text-3xl mb-3">📚</div>
-          <div class="text-base">선택한 요일에 강의가 없습니다</div>
+          <div class="text-base">해당하는 강의가 없습니다</div>
         </div>
       {:else}
         {#each courses as course (course.courseId + course.classId)}

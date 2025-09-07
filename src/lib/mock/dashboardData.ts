@@ -98,27 +98,139 @@ export const dashboardData = {
 		general: { completed: 42, required: 50, name: '일반교양' },
 	},
 	learningJourney: [
-		{ semester: '2021-1', credits: 19, cumulative: 19, milestone: '신입학', isFuture: false },
-		{ semester: '2021-2', credits: 18, cumulative: 37, milestone: null, isFuture: false },
-		{ semester: '2022-1', credits: 20, cumulative: 57, milestone: null, isFuture: false },
-		{ semester: '2022-2', credits: 19, cumulative: 76, milestone: '제2전공', isFuture: false },
-		{ semester: '2022-겨울', credits: 3, cumulative: 79, milestone: null, isFuture: false },
+		{ semester: '2021-1', credits: 19, cumulative: 19, milestone: '신입학', isFuture: false,
+			courses: [
+				{ classification: '교양필수', courseId: 'CUL0005', title: '말과글', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '교양필수', courseId: 'CUL0011', title: '창의적컴퓨팅', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '교양필수', courseId: 'GEN5029', title: '커리어개발 I:취.창업진로로드맵', credits: 1, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '교양필수', courseId: 'SYH0001', title: '사랑의실천1(한양나눔)', credits: 2, gradePoints: 0.0, grade: 'P' },
+				{ classification: '핵심교양', courseId: 'GEN1078', title: '문화론특강', credits: 2, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '핵심교양', courseId: 'GEN5019', title: '매경-한양CEO특강', credits: 2, gradePoints: 0.0, grade: 'P' },
+				{ classification: '전공핵심', courseId: 'DET1005', title: '첨단미디어학습환경설계', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '전공기초(필수)', courseId: 'DET1003', title: '첨단매체와스마트러닝', credits: 3, gradePoints: 4.5, grade: 'A+' },
+			]
+		},
+		{ semester: '2021-2', credits: 18, cumulative: 37, milestone: null, isFuture: false,
+			courses: [
+				{ classification: '교양필수', courseId: 'CED1004', title: '세계시민교육론', credits: 2, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '교양필수', courseId: 'GEN4091', title: '과학기술의철학적이해', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '교직선택', courseId: 'EDU2003', title: '교육사회학', credits: 2, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '교직선택', courseId: 'EDU2014', title: '교육철학및교육사', credits: 2, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '핵심교양', courseId: 'CUL1122', title: '창의적프로그래밍', credits: 2, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '핵심교양', courseId: 'CUL4034', title: '교양테니스1', credits: 2, gradePoints: 0.0, grade: 'P' },
+				{ classification: '핵심교양', courseId: 'ECO1006', title: '미시경제원론', credits: 2, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '전공기초(필수)', courseId: 'DET1004', title: '교육공학이론과실제', credits: 3, gradePoints: 4.5, grade: 'A+' },
+			]
+		},
+		{ semester: '2022-1', credits: 20, cumulative: 57, milestone: null, isFuture: false, courses: [
+				{ classification: '교직선택', courseId: 'EDU3020', title: '교육행정및경영', credits: 2, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '교직선택', courseId: 'EDU2061', title: '생활지도및상담', credits: 2, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '핵심교양', courseId: 'CUL6078', title: '미디어로세상읽기', credits: 2, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '핵심교양', courseId: 'CUL5036', title: '교양배드민턴', credits: 2, gradePoints: 0.0, grade: 'P' },
+				{ classification: '전공핵심', courseId: 'DET2029', title: '소통미디어교육론', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '전공핵심', courseId: 'DET4022', title: '교수체제개발', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '전공심화', courseId: 'EDU4037', title: '교육공학데이터분석', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '전공심화', courseId: 'DET3039', title: 'GBL설계와적용', credits: 3, gradePoints: 4.5, grade: 'A+' },
+			]
+		},
+		{ semester: '2022-2', credits: 19, cumulative: 76, milestone: '제2전공', isFuture: false, courses: [
+				{ classification: '교양필수', courseId: 'SYH0002', title: '사랑의실천2(스마트커뮤니케이션)', credits: 2, gradePoints: 0.0, grade: 'P' },
+				{ classification: '교직선택', courseId: 'EDU3079', title: '교육평가론', credits: 2, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '핵심교양', courseId: 'GEN5014', title: '기초스페인어', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '전공핵심', courseId: 'DET3035', title: '학습동기와게임', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '전공심화', courseId: 'DET3038', title: 'LMS와학습분석학', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '전공기초(필수)', courseId: 'DET2014', title: '교수설계', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '전공기초(필수)', courseId: 'DET3014', title: '오프러닝과적응적기술의활용', credits: 3, gradePoints: 4.5, grade: 'A+' },
+			]
+		},
+		{ semester: '2022-겨울', credits: 3, cumulative: 79, milestone: null, isFuture: false, courses: [
+				{ classification: '교양필수', courseId: 'GEN6032', title: '전문학술영어', credits: 3, gradePoints: 4.5, grade: 'A+' },
+			]
+		},
 		{
 			semester: '2025-1',
 			credits: 23,
 			cumulative: 102,
 			milestone: '정규 복학',
 			isFuture: false,
+			courses: [
+				{ classification: '제2전공', courseId: 'BIG2003', title: '자료구조와알고리즘', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '제2전공', courseId: 'BIG2007', title: '사회데이터조사방법론', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '제2전공', courseId: 'BIG2002', title: '기초확률및통계', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '교직필수', courseId: 'EDU3041', title: '교육봉사활동1', credits: 2, gradePoints: 0.0, grade: 'P' },
+				{ classification: '교직선택', courseId: 'EDU4019', title: '교육방법및공학', credits: 2, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '핵심교양', courseId: 'GEN4079', title: '사회봉사', credits: 1, gradePoints: 0.0, grade: 'P' },
+				{ classification: '전공핵심', courseId: 'DET2028', title: '뉴미디어학습컨텐츠개발', credits: 3, gradePoints: 4.5, grade: 'A+' },
+				{ classification: '전공기초(필수)', courseId: 'DET4012', title: '디지털변혁시대의HRD방법론', credits: 3, gradePoints: 4.5, grade: 'A+' },
+			]
 		},
 		{ semester: '2025-2', credits: 21, cumulative: 123, milestone: '21학점 이수 예상', isFuture: true },
 		{ semester: '2026-1', credits: 15, cumulative: 138, milestone: '15학점 이수 예상', isFuture: true },
 		{ semester: '2026-2', credits: 16, cumulative: 154, milestone: '16학점 이수 예상', isFuture: true },
 	],
-	recommendedCourses: [
-		{ id: '1', title: '교육공학사례연구', dept: '교육공학과', credits: 3, reason: '400단위 전공 3학점 추천' },
-		{ id: '2', title: '교육공학연구방법과통계', dept: '교육공학과', credits: 3, reason: '빅데이터융합전공 학점 인정' },
-		{ id: '3', title: '4차산업혁명시대의인재경영론', dept: '교육공학과', credits: 3, reason: '미이수한 필수과목' },
-	],
+	// 학기별 기본 추천 과목
+	baseRecommendationsBySemester: {
+		'2025-2': [
+			{
+				id: 'DET2038',
+				title: '4차산업혁명시대의인재경영론',
+				dept: '교육공학과',
+				credits: 3,
+				reason: '미이수한 필수과목'
+			},
+			{
+				id: 'DET3028',
+				title: '이러닝개발',
+				dept: '교육공학과',
+				credits: 3,
+				reason: '3학년 2학기 필수과목'
+			},
+			{
+				id: 'GEN5100',
+				title: '커리어개발Ⅱ:취.창업진로포트폴리오',
+				dept: '교육공학과',
+				credits: 1,
+				reason: '3학년 2학기 필수과목'
+			},
+			{
+				id: 'SYH0003',
+				title: '사랑의실천3(기업가정신)',
+				dept: '한양리더십센터',
+				credits: 2,
+				reason: '3학년 2학기 필수과목'
+			},
+			{
+				id: 'CED2012',
+				title: '교육학교과교육론',
+				dept: '교육학과',
+				credits: 3,
+				reason: '미이수한 교직이수 과목'
+			},
+			{
+				id: 'DET4029',
+				title: '교육공학사례연구',
+				dept: '교육공학과',
+				credits: 3,
+				reason: '400단위 전공'
+			},
+			{
+				id: 'BIG4001',
+				title: '응용회귀분석',
+				dept: '빅데이터융합전공',
+				credits: 3,
+				reason: '제2전공'
+			},
+			{
+				id: 'AIX0005',
+				title: 'AI+X:머신러닝',
+				dept: '창의융합교육원',
+				credits: 3,
+				reason: '전공 인정 교과목 (제2전공)'
+			}
+		],
+		'2026-1': [],
+		'2026-2': [],
+	},
 	basicCourses: [
 		{
 			id: '1',

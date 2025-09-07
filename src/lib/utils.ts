@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { browser } from '$app/environment';
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -37,6 +38,7 @@ export class LocalStorageCache {
    * @param expiry 만료 시간 (밀리초, 기본값: 30분)
    */
   static set<T>(key: string, data: T, expiry: number = this.DEFAULT_EXPIRY): void {
+    if (!browser) return;
     try {
       const cacheItem: CacheItem<T> = {
         data,
@@ -57,6 +59,7 @@ export class LocalStorageCache {
    * @returns 캐시된 데이터 또는 null (만료되었거나 없는 경우)
    */
   static get<T>(key: string): T | null {
+    if (!browser) return null;
     try {
       const cached = localStorage.getItem(key);
       if (!cached) return null;
@@ -85,6 +88,7 @@ export class LocalStorageCache {
    * @param key 캐시 키
    */
   static remove(key: string): void {
+    if (!browser) return;
     try {
       localStorage.removeItem(key);
     } catch (error) {
@@ -98,6 +102,7 @@ export class LocalStorageCache {
    * 모든 캐시를 삭제합니다 (hy-path 관련만)
    */
   static clear(): void {
+    if (!browser) return;
     try {
       const keys = Object.keys(localStorage);
       const hyPathKeys = keys.filter(key => key.startsWith('hy-path-'));
@@ -116,6 +121,7 @@ export class LocalStorageCache {
    * @returns 캐시 정보 또는 null
    */
   static getInfo(key: string): { timestamp: Date; expiry: Date; isExpired: boolean } | null {
+    if (!browser) return null;
     try {
       const cached = localStorage.getItem(key);
       if (!cached) return null;
@@ -135,6 +141,7 @@ export class LocalStorageCache {
    * 만료된 캐시를 자동으로 정리합니다
    */
   static cleanupExpired(): void {
+    if (!browser) return;
     try {
       const keys = Object.keys(localStorage);
       const hyPathKeys = keys.filter(key => key.startsWith('hy-path-'));
@@ -158,6 +165,7 @@ export class LocalStorageCache {
    * 캐시 크기를 확인합니다 (대략적인 바이트 수)
    */
   static getCacheSize(): number {
+    if (!browser) return 0;
     try {
       const keys = Object.keys(localStorage);
       const hyPathKeys = keys.filter(key => key.startsWith('hy-path-'));
@@ -180,6 +188,9 @@ export class LocalStorageCache {
     totalSize: number; 
     sizeFormatted: string;
   } {
+    if (!browser) {
+      return { totalItems: 0, expiredItems: 0, totalSize: 0, sizeFormatted: '0 B' };
+    }
     try {
       const keys = Object.keys(localStorage);
       const hyPathKeys = keys.filter(key => key.startsWith('hy-path-'));

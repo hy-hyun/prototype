@@ -680,7 +680,7 @@
   <div class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900 mb-2">대시보드</h1>
     <p class="text-lg text-gray-600">{userName}님, 안녕하세요! 📚</p>
-    <p class="text-sm text-gray-500">{currentSemester} 학기</p>
+    <p class="text-sm text-gray-500">{currentSemester}학기</p>
   </div>
 
   <!-- 메인 그리드 레이아웃 -->

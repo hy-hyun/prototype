@@ -231,8 +231,8 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
 
       // Firebase 데이터 구조에 맞춰 매핑
       const mappedLecture = {
-        courseId: data.subjectCode || data.courseId || doc.id,
-        classId: data.courseNumber || data.class || data.classNumber || '01',
+        courseId: data.subjectCode || data.courseId || doc.id,        // 학수번호 (예: DET3014)
+        classId: data.courseNumber || data.class || '1',              // 수업번호가 실제 classId (예: 11453)
         title: data.subjectName || data.courseName || data.title || '',
         category: data.category || data.courseType || '교양',
         dept: data.offeringDepartment || data.department || '',
@@ -250,6 +250,26 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
         method: (data.registrationMethod === '베팅' ? 'BID' : 'FCFS') as 'FCFS' | 'BID',
         courseLevel: data.courseLevel ? data.courseLevel.toString() : undefined
       };
+      
+      // 🚨 긴급 디버깅: 처음 3개 강의의 매핑 결과를 상세히 로깅
+      if (index < 3) {
+        console.log(`\n🚨 === 긴급 디버깅: 강의 ${index + 1} 매핑 결과 ===`);
+        console.log(`원본 Firebase 데이터:`, {
+          subjectName: data.subjectName,
+          courseNumber: data.courseNumber,
+          subjectCode: data.subjectCode,
+          creditHours: data.creditHours,
+          schedule: data.schedule
+        });
+        console.log(`매핑된 Lecture 객체:`, {
+          courseId: mappedLecture.courseId,
+          classId: mappedLecture.classId,
+          title: mappedLecture.title,
+          credits: mappedLecture.credits,
+          schedule: mappedLecture.schedule
+        });
+        console.log(`=================================\n`);
+      }
       
       // 처음 5개 강의의 매핑 결과 로깅 - 장소 정보 포함
       if (index < 5) {

@@ -224,6 +224,17 @@ export type TeachingCourses = {
   };
 };
 
+// 🔥 베팅 포인트 데이터 타입
+export type BettingPointsData = {
+  [courseKey: string]: {
+    currentActual: number;  // 현재 실제 베팅 점수
+    currentBet: number;     // 현재 베팅 점수
+    lastYear25th: number;   // 전년도 하위 25%
+    lastYear75th: number;   // 전년도 하위 75%
+    lastYearMin: number;    // 전년도 최저 점수
+  };
+};
+
 // 🔥 Firestore 사용자 문서 타입
 export type UserDocument = {
   profile: UserInfo & {

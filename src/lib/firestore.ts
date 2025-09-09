@@ -10,7 +10,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { UserDocument, CartItem, Application, Lecture } from './types'; // Lecture 타입 추가
+import type { UserDocument, CartItem, Application, Lecture, BettingPointsData } from './types'; // BettingPointsData 타입 추가
 import { dashboardData } from './mock/dashboardData';
 
 // 🔥 사용자 문서 Firestore 관리 함수들
@@ -129,7 +129,7 @@ export async function createUserDocument(studentId: string): Promise<UserDocumen
             isFuture: false
           }
         ],
-        recommendedCourses: (dashboardData.baseRecommendationsBySemester[dashboardData.userInfo.currentSemester] || []).map(course => ({
+        recommendedCourses: ((dashboardData.baseRecommendationsBySemester as any)[dashboardData.userInfo.currentSemester] || []).map((course: any) => ({
           id: course.id,
           title: course.title,
           dept: course.dept,
@@ -314,7 +314,7 @@ export async function migrateKimMinwooData(): Promise<void> {
         majors: dashboardData.majors,
         generalEducation: dashboardData.generalEducation,
         learningJourney: dashboardData.learningJourney,
-        recommendedCourses: (dashboardData.baseRecommendationsBySemester[dashboardData.userInfo.currentSemester] || []).map(course => ({
+        recommendedCourses: ((dashboardData.baseRecommendationsBySemester as any)[dashboardData.userInfo.currentSemester] || []).map((course: any) => ({
           id: course.id,
           title: course.title,
           dept: course.dept,
@@ -476,6 +476,75 @@ export async function updateUserTimetable(studentId: string, timetableCourses: s
     console.log('✅ 시간표 과목 Firestore 업데이트 완료');
   } catch (error) {
     console.error('❌ 시간표 과목 Firestore 업데이트 실패:', error);
+    throw error;
+  }
+}
+
+/**
+ * 베팅 포인트 데이터 조회 (과목명 기반)
+ */
+export async function getBettingPointsData(): Promise<BettingPointsData> {
+  try {
+    console.log('🎯 베팅 포인트 데이터 조회 시작...');
+    
+    // courses 컬렉션에서 베팅 정보가 포함된 문서들을 조회
+    const coursesRef = collection(db, 'courses');
+    const querySnapshot = await getDocs(coursesRef);
+    
+    console.log(`📊 Firebase courses 컬렉션 쿼리 결과: ${querySnapshot.size}개 문서 발견`);
+    
+    const bettingPointsData: BettingPointsData = {};
+    let bettingCourseCount = 0;
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      
+      // bettingPoints 필드가 있는 문서만 처리
+      if (data.bettingPoints && typeof data.bettingPoints === 'object') {
+        const bettingInfo = data.bettingPoints;
+        
+        // courseId와 classId 생성 (실제 데이터 구조에 맞춰)
+        const courseId = data.subjectCode || data.courseId || doc.id;  // 학수번호 (예: DET3014)
+        const classId = data.courseNumber || data.class || '1';        // 수업번호가 실제 classId (예: 11453)
+        const courseKey = `${courseId}-${classId}`;
+        
+        console.log(`🔍 베팅 과목 발견 - 키: "${courseKey}" (${data.subjectName || data.courseName || data.title})`);
+        console.log(`  원본 데이터:`, {
+          subjectCode: data.subjectCode,
+          courseNumber: data.courseNumber,
+          class: data.class,
+          bettingPoints: bettingInfo
+        });
+        
+        // 베팅 정보 필수 필드 검증
+        if (bettingInfo.hasOwnProperty('currentActual') && 
+            bettingInfo.hasOwnProperty('lastYear25th') && 
+            bettingInfo.hasOwnProperty('lastYear75th') && 
+            bettingInfo.hasOwnProperty('lastYearMin')) {
+          
+          bettingPointsData[courseKey] = {
+            currentActual: Number(bettingInfo.currentActual) || 0,
+            currentBet: Number(bettingInfo.currentBet) || 0,
+            lastYear25th: Number(bettingInfo.lastYear25th) || 0,
+            lastYear75th: Number(bettingInfo.lastYear75th) || 0,
+            lastYearMin: Number(bettingInfo.lastYearMin) || 0
+          };
+          
+          bettingCourseCount++;
+          console.log(`✅ 베팅 데이터 추가: ${courseKey}`, bettingPointsData[courseKey]);
+        } else {
+          console.warn(`[베팅 데이터 경고] 과목 '${courseKey}' 베팅 정보 필수 필드 누락.`, bettingInfo);
+        }
+      }
+    });
+    
+    console.log(`\n📈 최종 결과: ${bettingCourseCount}개 베팅 과목에서 ${Object.keys(bettingPointsData).length}개의 베팅 포인트 데이터를 가져왔습니다.`);
+    console.log(`🔑 베팅 데이터 키 목록: [${Object.keys(bettingPointsData).join(', ')}]`);
+    
+    return bettingPointsData;
+    
+  } catch (error) {
+    console.error('❌ 베팅 포인트 데이터 조회 실패:', error);
     throw error;
   }
 }

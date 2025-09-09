@@ -2,10 +2,11 @@
   import { cart, applications, metrics, isLoggedIn, userDataLoading, currentUser, timetableCourses, isUserDataLoaded } from "$lib/stores";
   import { courses, loadCourses } from "$lib/stores";
   import { applyFcfs, applyBid, removeFromCart as removeFromCartStore, syncUserCart } from "$lib/stores";
-  import { getUserDocument } from "$lib/firestore";
+  import { getUserDocument, getBettingPointsData } from "$lib/firestore";
   import Skeleton from "$lib/components/Skeleton.svelte";
   import { showToast } from "$lib/toast";
   import LoginModal from "$lib/components/LoginModal.svelte";
+  import type { BettingPointsData } from "$lib/types";
   import { Tabs, TabsList, TabsTrigger, TabsContent } from "$lib/components/ui/tabs";
   import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "$lib/components/ui/accordion";
   import { dndzone, SOURCES, TRIGGERS } from 'svelte-dnd-action';
@@ -21,11 +22,38 @@
   
   // 드래그앤드롭 중인 임시 아이템들 상태
   let draggedItems = $state<any[]>([]);
+  
+  // 베팅 포인트 데이터 상태
+  let bettingPointsData = $state<BettingPointsData>({});
+  let bettingDataLoading = $state(false);
+  let bettingDataLoaded = $state(false);
 
   // 데이터 로딩
   $effect(() => {
     if ($courses.length === 0) {
       loadCourses();
+    }
+  });
+
+  // 베팅 포인트 데이터 로딩 (한 번만 실행)
+  $effect(() => {
+    // 아직 로딩하지 않았고, 현재 로딩 중이 아닐 때만 실행
+    if (!bettingDataLoaded && !bettingDataLoading) {
+      (async () => {
+        try {
+          bettingDataLoading = true;
+          console.log('🎯 베팅 포인트 데이터 로딩 시작...');
+          const data = await getBettingPointsData();
+          bettingPointsData = data;
+          bettingDataLoaded = true; // 로딩 완료 플래그 설정
+          console.log('✅ 베팅 포인트 데이터 로딩 완료:', Object.keys(data).length, '개');
+        } catch (error) {
+          console.error('❌ 베팅 포인트 데이터 로딩 실패:', error);
+          bettingDataLoaded = true; // 실패해도 재시도 방지
+        } finally {
+          bettingDataLoading = false;
+        }
+      })();
     }
   });
 
@@ -258,29 +286,35 @@
       .reduce((sum, x) => sum + (x.bidAmount ?? 0), 0);
   }
 
-  // 더미: 전년도 당첨 베팅 최저/중위값 생성기(항목별 결정적 난수)
-  function hashString(input: string): number {
-    let hash = 0;
-    for (let i = 0; i < input.length; i++) {
-      hash = (hash * 31 + input.charCodeAt(i)) | 0;
-    }
-    return Math.abs(hash);
-  }
-
-  function seededInt(seed: string, min: number, max: number): number {
-    const base = hashString(seed) % 10000; // 0..9999
-    const r = base / 10000; // 0..1
-    return Math.floor(min + r * (max - min + 1));
-  }
-
-  function getBidStats(courseId: string, classId: string): { minWin: number; q25: number; q75: number } {
+  // Firebase 베팅 데이터 기반 통계 조회
+  function getBidStats(courseId: string, classId: string): { minWin: number; q25: number; q75: number; hasData: boolean } {
     const key = `${courseId}-${classId}`;
-    const minWin = seededInt(key + ":min", 15, 25); // 5-15에서 15-25로 10p 상승
-    const q25Base = seededInt(key + ":q25", 18, 30); // 8-20에서 18-30으로 10p 상승
-    const q75Base = seededInt(key + ":q75", 25, 45); // 15-35에서 25-45로 10p 상승
-    const q25 = Math.max(minWin, q25Base);
-    const q75 = Math.max(q25 + 5, q75Base); // q75는 q25보다 최소 5p 높게
-    return { minWin, q25, q75 };
+    const data = bettingPointsData[key];
+    
+    console.log(`🔍 베팅 통계 요청: ${key}`, { 
+      데이터존재: !!data, 
+      전체키목록: Object.keys(bettingPointsData),
+      요청된데이터: data 
+    });
+    
+    if (data) {
+      // Firebase 데이터 사용
+      return {
+        minWin: data.lastYearMin,
+        q25: data.lastYear25th,
+        q75: data.lastYear75th,
+        hasData: true
+      };
+    } else {
+      // Firebase에 데이터가 없는 경우 기본값 반환
+      console.warn(`베팅 데이터 없음: ${key}, 기본값 사용`);
+      return {
+        minWin: 20,
+        q25: 25,
+        q75: 35,
+        hasData: false
+      };
+    }
   }
 
   function handleBidInput(e: Event, item: { courseId: string; classId: string }) {
@@ -513,16 +547,27 @@
     applications.update(apps => {
       return apps.map(app => {
         if (app.method === 'BID' && app.bidResult === 'WAITING') {
-          // 전년도 최저값 계산 (기존 로직과 동일)
           const key = `${app.courseId}-${app.classId}`;
-          const minWin = seededInt(key + ":min", 15, 25);
+          const data = bettingPointsData[key];
           
-          // 베팅 결과 결정: 최저값-1까지 당첨, 최저값-2부터 탈락
+          // 베팅 결과 결정: currentBet >= currentActual이면 당첨
           let bidResult: "WON" | "LOST";
-          if ((app.bidAmount || 0) >= minWin - 1) {
-            bidResult = "WON";
+          if (data && data.currentActual !== undefined) {
+            // Firebase 데이터가 있는 경우: currentBet >= currentActual이면 당첨
+            if ((app.bidAmount || 0) >= data.currentActual) {
+              bidResult = "WON";
+            } else {
+              bidResult = "LOST";
+            }
           } else {
-            bidResult = "LOST";
+            // Firebase 데이터가 없는 경우 기본 로직 (전년도 최저값 기준)
+            console.warn(`베팅 결과 처리 - 데이터 없음: ${key}, 기본 로직 사용`);
+            const stats = getBidStats(app.courseId, app.classId);
+            if ((app.bidAmount || 0) >= stats.minWin) {
+              bidResult = "WON";
+            } else {
+              bidResult = "LOST";
+            }
           }
           
           return {
@@ -538,8 +583,15 @@
     // 결과 요약 메시지 생성
     const wonCount = waitingBets.filter(bet => {
       const key = `${bet.courseId}-${bet.classId}`;
-      const minWin = seededInt(key + ":min", 15, 25);
-      return (bet.bidAmount || 0) >= minWin - 1;
+      const data = bettingPointsData[key];
+      
+      if (data && data.currentActual !== undefined) {
+        return (bet.bidAmount || 0) >= data.currentActual;
+      } else {
+        // 기본 로직
+        const stats = getBidStats(bet.courseId, bet.classId);
+        return (bet.bidAmount || 0) >= stats.minWin;
+      }
     }).length;
     
     const lostCount = waitingBets.length - wonCount;
@@ -646,10 +698,14 @@
         <div class="text-base text-neutral-600">베팅 결과</div>
         <button 
           class="border border-green-500 bg-green-500 text-white hover:bg-green-600 rounded px-3 py-1 text-base disabled:opacity-50" 
-          disabled={bettingResults.filter(r => r.bidResult === 'WAITING').length === 0}
+          disabled={bettingResults.filter(r => r.bidResult === 'WAITING').length === 0 || bettingDataLoading}
           onclick={processBettingResults}
         >
-          베팅 결과 보기
+          {#if bettingDataLoading}
+            베팅 데이터 로딩 중...
+          {:else}
+            베팅 결과 보기
+          {/if}
         </button>
       </div>
       {#if bettingResults.length === 0}
@@ -797,11 +853,29 @@
                         
                         <div class="flex items-center gap-2">
                           <div class="relative group text-xs text-neutral-500 whitespace-nowrap">
-                            전년도 정보: 최저 {getBidStats(item.courseId, item.classId).minWin}p · 하위 25-75% {getBidStats(item.courseId, item.classId).q25}~{getBidStats(item.courseId, item.classId).q75}p
+                            {#if bettingDataLoading}
+                              전년도 정보 로딩 중...
+                            {:else}
+                              {@const bidStats = getBidStats(item.courseId, item.classId)}
+                              {#if bidStats.hasData}
+                                <strong>전년도 정보:</strong> 최저 {bidStats.minWin}p · <strong>예상 범위:</strong> {bidStats.q25}~{bidStats.q75}p
+                              {:else}
+                                전년도 정보 없음
+                              {/if}
+                            {/if}
                             <button type="button" class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full border border-neutral-300 text-neutral-500 bg-white select-none cursor-help" aria-label="설명">i</button>
                             <div role="tooltip" class="absolute z-10 left-1/2 -translate-x-1/2 mt-1 w-64 p-3 text-xs leading-relaxed bg-neutral-800 text-white rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-                              <div>전년도 베팅 당첨 통계입니다.</div>
-                              <div>최저: 최소 당첨 포인트 / 하위 25-75%: 중간 50% 구간 범위</div>
+                              {#if !bettingDataLoading}
+                                {@const bidStats = getBidStats(item.courseId, item.classId)}
+                                {#if bidStats.hasData}
+                                  <div>전년도 베팅 당첨 통계입니다.</div>
+                                  <div>최저: 최소 당첨 포인트 / 하위 25-75%: 중간 50% 구간 범위</div>
+                                {:else}
+                                  <div>해당 과목의 전년도 베팅 데이터가 없습니다.</div>
+                                {/if}
+                              {:else}
+                                <div>베팅 데이터를 로딩 중입니다...</div>
+                              {/if}
                             </div>
                           </div>
                           <input class="border rounded px-2 py-1 w-24 text-base" type="number" min="1" max="100" step="1" placeholder="최대 100p" value={item.bidAmount ?? ''} oninput={(e) => handleBidInput(e, item)} />
@@ -896,11 +970,29 @@
             {#if item.method === 'BID'}
               <div class="flex items-center gap-2">
                 <div class="relative group text-xs text-neutral-500 whitespace-nowrap">
-                  전년도 정보: 최저 {getBidStats(item.courseId, item.classId).minWin}p · 하위 25-75% {getBidStats(item.courseId, item.classId).q25}~{getBidStats(item.courseId, item.classId).q75}p
+                  {#if bettingDataLoading}
+                    전년도 정보 로딩 중...
+                  {:else}
+                    {@const bidStats = getBidStats(item.courseId, item.classId)}
+                    {#if bidStats.hasData}
+                    <strong>전년도 정보:</strong> 최저 {bidStats.minWin}p · <strong>예상 범위:</strong> {bidStats.q25}~{bidStats.q75}p
+                    {:else}
+                      전년도 정보 없음
+                    {/if}
+                  {/if}
                   <button type="button" class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full border border-neutral-300 text-neutral-500 bg-white select-none cursor-help" aria-label="설명">i</button>
                   <div role="tooltip" class="absolute z-10 left-1/2 -translate-x-1/2 mt-1 w-64 p-3 text-xs leading-relaxed bg-neutral-800 text-white rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-                    <div>전년도 베팅 당첨 통계입니다.</div>
-                    <div>최저: 최소 당첨 포인트 / 하위 25-75%: 중간 50% 구간 범위</div>
+                    {#if !bettingDataLoading}
+                      {@const bidStats = getBidStats(item.courseId, item.classId)}
+                      {#if bidStats.hasData}
+                        <div>전년도 베팅 당첨 통계입니다.</div>
+                        <div>최저: 최소 당첨 포인트 / 하위 25-75%: 중간 50% 구간 범위</div>
+                      {:else}
+                        <div>해당 과목의 전년도 베팅 데이터가 없습니다.</div>
+                      {/if}
+                    {:else}
+                      <div>베팅 데이터를 로딩 중입니다...</div>
+                    {/if}
                   </div>
                 </div>
                 <input class="border rounded px-2 py-1 w-24 text-base" type="number" min="1" max="100" step="1" placeholder="최대 100p" value={item.bidAmount ?? ''} oninput={(e) => handleBidInput(e, item)} />

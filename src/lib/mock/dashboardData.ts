@@ -176,7 +176,7 @@ export const dashboardData = {
 				title: '4차산업혁명시대의인재경영론',
 				dept: '교육공학과',
 				credits: 3,
-				reason: '미이수한 필수과목'
+				reason: '미이수 과목, 교직 영역 이수'
 			},
 			{
 				id: 'DET3028',

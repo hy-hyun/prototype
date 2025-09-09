@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { cart, applications, metrics, isLoggedIn, userDataLoading, currentUser, timetableCourses } from "$lib/stores";
+  import { cart, applications, metrics, isLoggedIn, userDataLoading, currentUser, timetableCourses, isUserDataLoaded } from "$lib/stores";
   import { courses, loadCourses } from "$lib/stores";
   import { applyFcfs, applyBid, removeFromCart as removeFromCartStore, syncUserCart } from "$lib/stores";
   import { getUserDocument } from "$lib/firestore";
@@ -31,19 +31,23 @@
 
   // 🔥 로그인 상태에 따른 Firestore 데이터 로딩
   $effect(() => {
-    if ($isLoggedIn && $currentUser) {
-      console.log('🔥 수강신청: 로그인 사용자 데이터 로딩', $currentUser.id);
+    // currentUser가 변경될 때만 이 효과를 실행합니다.
+    const user = $currentUser;
+    // 로그인 상태이고, 사용자 데이터가 아직 로드되지 않았을 때만 실행
+    if ($isLoggedIn && user && !$isUserDataLoaded) {
+      console.log('🔥 수강신청: 로그인 사용자 데이터 로딩 (페이지 진입)', user.id);
       
       // async 함수를 IIFE로 처리
       (async () => {
         try {
           userDataLoading.set(true); // 로딩 시작
-          const userData = await getUserDocument($currentUser.id);
+          const userData = await getUserDocument(user.id);
           if (userData && userData.enrollment) {
             // 장바구니, 신청내역, 시간표 동기화
             cart.set(userData.enrollment.cart || []);
             applications.set(userData.enrollment.applications || []);
             timetableCourses.set(userData.enrollment.timetableCourses || []);
+            isUserDataLoaded.set(true); // 데이터 로딩 완료!
             console.log('✅ 수강신청: Firestore 데이터 로딩 완료', {
               cart: userData.enrollment.cart?.length || 0,
               applications: userData.enrollment.applications?.length || 0,
@@ -56,11 +60,10 @@
           userDataLoading.set(false); // 로딩 종료
         }
       })();
-    } else {
-      // 로딩이 완료되었지만, 로그인 정보가 없는 경우 비로그인으로 간주
-      if ($userDataLoading === false && !$currentUser) {
-         console.log('🔒 수강신청: 로그인 필요 (현재 비로그인 상태)');
-      }
+    } else if (!$isLoggedIn && $isUserDataLoaded) {
+      // 로그아웃 시 데이터 초기화 (stores.ts에서 이미 처리하지만 방어적으로 추가)
+      isUserDataLoaded.set(false);
+      console.log('🔒 수강신청: 로그아웃 상태 감지. 데이터 로딩 상태 초기화.');
     }
   });
 

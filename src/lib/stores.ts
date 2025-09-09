@@ -19,6 +19,7 @@ export const loadingText = writable('로딩 중...');
 export const coursesLoading = writable(false);
 export const coursesError = writable<string | null>(null);
 export const userDataLoading = writable(false);
+export const isUserDataLoaded = writable(false); // 🔥 사용자 데이터 로딩 완료 상태
 
 // 찜한 과목 상태 관리
 export const favoriteCourses = writable<string[]>([]);
@@ -51,11 +52,9 @@ export const globalLoading = derived(
   ([$coursesLoading, $userDataLoading]) => $coursesLoading || $userDataLoading
 );
 
-let isUserDataLoaded = false; // 사용자 데이터 로딩 상태 플래그
-
 // 사용자 데이터는 로컬 캐시만 사용 (Firebase 읽기/쓰기 금지)
 export async function loadUserData(userId: string) {
-  if (isUserDataLoaded) return; // 이미 로드되었으면 중복 실행 방지
+  if (get(isUserDataLoaded)) return; // 이미 로드되었으면 중복 실행 방지
   
   // 캐시에서만 확인 (Firebase 접근 금지)
   const cacheKey = CACHE_KEYS.USER_DATA(userId);
@@ -72,7 +71,7 @@ export async function loadUserData(userId: string) {
     timetableCourses.set([]);
   }
   
-  isUserDataLoaded = true;
+  isUserDataLoaded.set(true);
 }
 
 // 사용자 데이터는 로컬 캐시에만 저장 (Firebase 쓰기 금지)
@@ -767,23 +766,23 @@ export const toastMessages = writable<ToastMessage[]>([]);
 let currentUid: string | null = null;
 currentUser.subscribe($user => {
   currentUid = $user ? $user.id : null;
-  isUserDataLoaded = false; // 사용자가 바뀌면 데이터 로딩 플래그 초기화
+  isUserDataLoaded.set(false); // 사용자가 바뀌면 데이터 로딩 플래그 초기화
 });
 
 cart.subscribe($cart => {
-  if (currentUid && isUserDataLoaded) { // 데이터가 완전히 로드된 후에만 저장 로직 작동
+  if (currentUid && get(isUserDataLoaded)) { // 데이터가 완전히 로드된 후에만 저장 로직 작동
     saveUserData(currentUid, { cart: $cart });
   }
 });
 
 applications.subscribe($applications => {
-  if (currentUid && isUserDataLoaded) {
+  if (currentUid && get(isUserDataLoaded)) {
     saveUserData(currentUid, { applications: $applications });
   }
 });
 
 timetableCourses.subscribe($timetableCourses => {
-  if (currentUid && isUserDataLoaded) {
+  if (currentUid && get(isUserDataLoaded)) {
     saveUserData(currentUid, { timetableCourses: $timetableCourses });
   }
 });
@@ -1034,6 +1033,7 @@ export async function loginUser(studentId: string): Promise<boolean> {
       name: userData.profile.name
     });
     isLoggedIn.set(true);
+    isUserDataLoaded.set(true); // 🔥 데이터 로딩 완료
 
     // 사용자의 장바구니/신청내역을 전역 상태에 로딩
     cart.set(userData.enrollment.cart || []);
@@ -1065,6 +1065,7 @@ export function logoutUser(): void {
   applications.set([]);
   timetableCourses.set([]);
   favoriteCourses.set([]);
+  isUserDataLoaded.set(false); // 🔥 데이터 로딩 상태 초기화
   
   // 캐시 정리 (선택적)
   // clearAllCache();

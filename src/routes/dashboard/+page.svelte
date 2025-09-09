@@ -147,6 +147,11 @@
 	let journeyPart2 = $derived(learningJourney.slice(journeyMidpoint));
   const finalCumulativeCredits = $derived(learningJourney.at(-1)?.cumulative ?? 0);
    
+  // 추천 강의 필터링: 기본 수업에 포함된 강의 제외
+  const filteredRecommendedCourses = $derived((recommendedCoursesBySemester[currentSemester] || []).filter(c => 
+    !basicCourses.some(bc => bc.title === c.title)
+  ));
+
   // 장바구니 상태
   let showRemoveConfirm = $state(false);
   let courseToRemove = $state<CartItem | null>(null);
@@ -862,11 +867,7 @@
                  </div>
                  <div class="flex items-center gap-1">
                    <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
-                   <span>예상 학기</span>
-                 </div>
-                 <div class="flex items-center gap-1">
-                   <span class="w-2 h-2 bg-blue-300 rounded-full"></span>
-                   <span>현재 학기</span>
+                   <span>이수 예정 학기</span>
                  </div>
                </div>
              </div>
@@ -1645,7 +1646,7 @@
         </h2>
         
         <div class="space-y-2">
-          {#each (recommendedCoursesBySemester[currentSemester] || []).slice(0, 3) as course}
+          {#each filteredRecommendedCourses.slice(0, 3) as course}
                     <div class="border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
                       <h3 class="font-medium text-gray-900 text-sm mb-1 truncate">{course.title}</h3>
                       <p class="text-xs text-gray-600 mb-2 truncate">{course.dept}</p>

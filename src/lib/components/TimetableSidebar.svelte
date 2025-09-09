@@ -148,6 +148,13 @@
         </div>
       {:else}
         {#each paginatedCourses as course (course.courseId + course.classId)}
+          {@const locationInfo = (course.schedule && course.schedule.length > 0)
+              ? course.schedule
+                  .map((s: any) => `${s.building || ''} ${s.room || ''}`.trim())
+                  .filter((v, i, a) => a.indexOf(v) === i && v !== '')
+                  .join(', ')
+              : ''
+          }
           <div class="mb-4 p-4 bg-gray-100 rounded-xl border hover:bg-gray-150 transition-all duration-200 hover:shadow-md {
             course.isInCart ? 'bg-green-50 border-green-200 shadow-sm' : 'border-gray-200'
           }">
@@ -182,15 +189,23 @@
               <div class="flex items-center gap-1">
                 <span class="flex-shrink-0">🕐</span>
                 <span class="truncate">
-                  {course.schedule?.map((s: any) => 
-                    `${["일","월","화","수","목","금","토"][s.day % 7]} ${formatTime(s.start)}-${formatTime(s.end)}`
-                  ).join(", ")}
+                  {#if course.schedule && course.schedule.length > 0}
+                    {course.schedule.map((s: any) => 
+                      `${["일","월","화","수","목","금","토"][s.day % 7]} ${formatTime(s.start)}-${formatTime(s.end)}`
+                    ).join(", ")}
+                  {:else}
+                    <span class="text-gray-500">시간 정보 없음</span>
+                  {/if}
                 </span>
               </div>
               <div class="flex items-center gap-1">
                 <span class="flex-shrink-0">🏠</span>
                 <span class="truncate">
-                  {course.schedule?.map((s: any) => `${s.building || ''} ${s.room || ''}`).filter((v: any, i: any, a: any) => a.indexOf(v) === i && v.trim() !== '').join(', ')}
+                  {#if locationInfo}
+                    {locationInfo}
+                  {:else}
+                    <span class="text-gray-500">강의실 정보 없음</span>
+                  {/if}
                 </span>
               </div>
             </div>

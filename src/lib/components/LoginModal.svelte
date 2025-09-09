@@ -51,21 +51,26 @@
     password = "";
     rememberMe = false;
   }
+
+  function handleOverlayClick(e: MouseEvent) {
+    if (e.currentTarget === e.target) {
+      handleClose();
+    }
+  }
 </script>
 
 {#if isOpen}
-  <div 
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" 
-    role="dialog" 
-    aria-modal="true" 
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    role="dialog"
+    aria-modal="true"
     tabindex="-1"
-    onclick={handleClose} 
+    onclick={handleOverlayClick}
     onkeydown={(e) => e.key === 'Escape' && handleClose()}
   >
-    <div 
-      class="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-md mx-4" 
-      role="document" 
-      onclick={(e) => e.stopPropagation()}
+    <div
+      class="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-md mx-4"
+      role="document"
     >
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-semibold">로그인</h2>

@@ -335,7 +335,35 @@
     return { dayTabs, cartCourses, filteredCourses: finalFilteredCourses };
   });
 
-  // 5. 헤더에 필요한 데이터 가공
+  // 5. 시간 정보가 없는 과목들 별도 처리
+  const noTimeSlotCourses = $derived.by(() => {
+    const timetableCourseKeys = new Set([
+      ...$applications.map(app => `${app.courseId}-${app.classId}`),
+      ...$timetableCourses
+    ]);
+
+    const noTimeSlotItems: Lecture[] = [];
+    
+    for (const key of timetableCourseKeys) {
+      const [courseId, classId] = key.split('-');
+      const lecture = $courses.find(l => l.courseId === courseId && l.classId === classId);
+      
+      if (lecture) {
+        // 시간 정보가 없는 과목 조건: schedule이 비어있거나, 모든 schedule에 시간 정보가 없는 경우
+        const hasTimeInfo = Array.isArray(lecture.schedule) && 
+          lecture.schedule.length > 0 && 
+          lecture.schedule.some(s => typeof s.start === 'number' && typeof s.end === 'number');
+        
+        if (!hasTimeInfo) {
+          noTimeSlotItems.push(lecture);
+        }
+      }
+    }
+    
+    return noTimeSlotItems;
+  });
+
+  // 6. 헤더에 필요한 데이터 가공
   const headerData = $derived.by(() => {
     const timetableCourseKeys = new Set([
       ...$applications.map(app => `${app.courseId}-${app.classId}`),
@@ -537,8 +565,10 @@
         consecutiveWarnings={conflictAnalysis.consecutiveWarnings}
         distanceWarnings={distanceWarnings()}
         displayedDays={displayedDays}
+        noTimeSlotCourses={noTimeSlotCourses}
         on:remove={(e) => handleRemoveFromGrid(e)}
         on:suggest={handleSuggestFromGrid}
+        on:removeNoTimeSlot={(e) => handleRemoveFromTimetable(e)}
       />
       <TimetableFooter
         on:download={handleDownload}
@@ -657,8 +687,10 @@
       consecutiveWarnings={conflictAnalysis.consecutiveWarnings}
       distanceWarnings={distanceWarnings()}
       displayedDays={displayedDays}
+      noTimeSlotCourses={noTimeSlotCourses}
       on:remove={handleRemoveFromGrid}
       on:suggest={handleSuggestFromGrid}
+      on:removeNoTimeSlot={(e) => handleRemoveFromTimetable(e)}
     />
     <TimetableFooter
       on:download={handleDownload}

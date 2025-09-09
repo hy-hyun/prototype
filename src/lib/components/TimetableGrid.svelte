@@ -16,13 +16,15 @@
     displayedDays = ["월", "화", "수", "목", "금"],
     conflictPairs = [],
     consecutiveWarnings = [],
-    distanceWarnings = []
+    distanceWarnings = [],
+    noTimeSlotCourses = []
   } = $props<{
     blocks: TimetableBlock[];
     displayedDays: string[];
     conflictPairs: Array<[TimetableBlock, TimetableBlock]>;
     consecutiveWarnings: Array<{ from: TimetableBlock; to: TimetableBlock; travelTime: number; isImpossible: boolean; }>;
     distanceWarnings: DistanceWarningResult[];
+    noTimeSlotCourses: Lecture[];
   }>();
 
   // 시간 슬롯을 9시~21시까지 30분 간격으로 확장 (24개 슬롯)
@@ -40,6 +42,7 @@
   const dispatch = createEventDispatcher<{
     remove: { courseId: string; classId: string };
     suggest: { block: TimetableBlock };
+    removeNoTimeSlot: Lecture;
   }>();
 
   function removeBlock(blockId: string) {
@@ -49,6 +52,10 @@
   
   function suggestAlternatives(conflictBlock: TimetableBlock) {
     dispatch('suggest', { block: conflictBlock });
+  }
+  
+  function removeNoTimeSlotCourse(course: Lecture) {
+    dispatch('removeNoTimeSlot', course);
   }
 
   function formatTime(slot: number): string {
@@ -143,7 +150,47 @@
     <!-- 연강 경고 블록들 -->
     
   </div>
-  
+    <!-- 시간 정보가 없는 과목들 섹션 -->
+    {#if noTimeSlotCourses.length > 0}
+    <div class="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+      <h3 class="text-base font-semibold text-amber-800 mb-3 flex items-center gap-2">
+        <span class="text-lg">📝</span>
+        시간 미지정 과목
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {#each noTimeSlotCourses as course}
+          <div class="no-time-slot-card">
+            <div class="flex items-start justify-between mb-2">
+              <div class="flex-1 min-w-0">
+                <div class="course-title font-semibold text-gray-800 text-sm mb-1 line-clamp-2">
+                  {course.title}
+                </div>
+                <div class="course-id text-xs text-amber-700 font-medium mb-1">
+                  {course.courseId} · {course.classId}
+                </div>
+                <div class="course-instructor text-xs text-gray-600 mb-1">
+                  {course.instructor}
+                </div>
+                <div class="course-credits text-xs text-amber-600 font-medium">
+                  {(course.credits.lecture || 0) + (course.credits.lab || 0)}학점
+                  {#if course.credits.lecture && course.credits.lab}
+                    (이론 {course.credits.lecture}, 실습 {course.credits.lab})
+                  {/if}
+                </div>
+              </div>
+              <button 
+                class="remove-no-time-btn"
+                onclick={() => removeNoTimeSlotCourse(course)}
+                title="과목 제거"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
   <!-- 이동거리 경고 섹션 -->
   {#if distanceWarnings.length > 0}
     <div class="mt-4 p-4 bg-gray-50 rounded-lg">
@@ -340,5 +387,65 @@
   .distance-warning:hover {
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* 시간 미지정 과목 카드 스타일 */
+  .no-time-slot-card {
+    background: white;
+    border: 1px solid #fbbf24;
+    border-radius: 8px;
+    padding: 12px;
+    position: relative;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.1);
+  }
+  
+  .no-time-slot-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.15);
+  }
+  
+  .course-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .course-category {
+    background: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: 500;
+  }
+  
+  .remove-no-time-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+    z-index: 1;
+  }
+  
+  .remove-no-time-btn:hover {
+    opacity: 1;
+    background-color: #dc2626;
+    transform: scale(1.1);
   }
 </style>

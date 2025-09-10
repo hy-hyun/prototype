@@ -558,11 +558,10 @@
       on:download={handleDownload}
       on:share={handleShare}
     />
-    <main class="flex-1 overflow-hidden px-4 py-2">
+    <main class="flex-1 overflow-y-auto px-4 py-2">
       <TimetableGrid
         blocks={processedTimetable.blocks}
         conflictPairs={conflictAnalysis.conflictPairs}
-        consecutiveWarnings={conflictAnalysis.consecutiveWarnings}
         distanceWarnings={distanceWarnings()}
         displayedDays={displayedDays}
         noTimeSlotCourses={noTimeSlotCourses}
@@ -684,7 +683,6 @@
     <TimetableGrid
       blocks={processedTimetable.blocks}
       conflictPairs={conflictAnalysis.conflictPairs}
-      consecutiveWarnings={conflictAnalysis.consecutiveWarnings}
       distanceWarnings={distanceWarnings()}
       displayedDays={displayedDays}
       noTimeSlotCourses={noTimeSlotCourses}

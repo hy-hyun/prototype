@@ -15,14 +15,12 @@
     blocks = [],
     displayedDays = ["월", "화", "수", "목", "금"],
     conflictPairs = [],
-    consecutiveWarnings = [],
     distanceWarnings = [],
     noTimeSlotCourses = []
   } = $props<{
     blocks: TimetableBlock[];
     displayedDays: string[];
     conflictPairs: Array<[TimetableBlock, TimetableBlock]>;
-    consecutiveWarnings: Array<{ from: TimetableBlock; to: TimetableBlock; travelTime: number; isImpossible: boolean; }>;
     distanceWarnings: DistanceWarningResult[];
     noTimeSlotCourses: Lecture[];
   }>();

@@ -248,7 +248,9 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
         limit: data.restrictions || data.prerequisites || '',
         keywords: data.keywords || [],
         method: (data.registrationMethod === '베팅' ? 'BID' : 'FCFS') as 'FCFS' | 'BID',
-        courseLevel: data.courseLevel ? data.courseLevel.toString() : undefined
+        courseLevel: data.courseLevel ? data.courseLevel.toString() : undefined,
+        enrolledByYear: data.enrolledByYear,
+        enrollmentCapByYear: data.enrollmentCapByYear
       };
       
       // 🚨 긴급 디버깅: 처음 3개 강의의 매핑 결과를 상세히 로깅

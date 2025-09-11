@@ -1,5 +1,6 @@
 <script lang="ts">
   import { loginUser, userDataLoading } from "$lib/stores";
+  import { migrateKimMinwooData } from "$lib/firestore";
   import { showToast } from "$lib/toast";
   
   let { isOpen = $bindable(false) } = $props();
@@ -8,6 +9,19 @@
   let rememberMe = $state(false);
   let isLoading = $state(false);
   
+  async function handleMigration() {
+    try {
+      isLoading = true;
+      await migrateKimMinwooData();
+      showToast("김민우 학생 데이터로 Firestore를 업데이트했습니다. 다시 로그인해주세요.", "success");
+    } catch (error) {
+      console.error("데이터 마이그레이션 실패:", error);
+      showToast("데이터 업데이트에 실패했습니다.", "error");
+    } finally {
+      isLoading = false;
+    }
+  }
+
   async function handleLogin() {
     if (!studentId.trim()) {
       showToast("학번을 입력해주세요", "error");
@@ -142,6 +156,21 @@
           </button>
         </div>
       </form>
+
+      <!-- 개발용 데이터 마이그레이션 버튼 -->
+      <div class="mt-4 pt-4 border-t border-gray-200">
+        <p class="text-xs text-gray-500 mb-2">
+          [개발용] '김민우' 학생(3학년) 데이터가 아니거나 학년 정보가 올바르지 않은 경우, 아래 버튼을 눌러 Firestore 데이터를 덮어쓴 후 다시 로그인해주세요.
+        </p>
+        <button 
+          type="button"
+          onclick={handleMigration}
+          disabled={isLoading || $userDataLoading}
+          class="w-full bg-yellow-500 text-white py-2 px-4 rounded-md text-sm hover:bg-yellow-600 disabled:opacity-50"
+        >
+          '2021075178' 데이터 덮어쓰기
+        </button>
+      </div>
     </div>
   </div>
 {/if}

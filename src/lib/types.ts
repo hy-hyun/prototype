@@ -18,6 +18,8 @@ export type Lecture = {
   method?: "FCFS" | "BID";
   courseType?: string;
   courseLevel?: string; // 100, 200, 300 등 레벨 단위 문자열
+  enrolledByYear?: { [key: string]: number }; // 학년별 담은 인원
+  enrollmentCapByYear?: { [key: string]: number }; // 학년별 정원
 };
 
 export type Notice = { id: string; title: string; content: string; pinned?: boolean; createdAt: string; author?: string; views?: number, category?: string };
@@ -90,6 +92,7 @@ export type UserInfo = {
   name: string;
   studentId: string;
   currentSemester: string;
+  userGrade?: number; // 학년 정보 추가
   totalCredits: number;
   requiredCredits: number;
 };

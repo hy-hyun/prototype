@@ -63,6 +63,7 @@ export async function createUserDocument(studentId: string): Promise<UserDocumen
         name: `학생${studentId.slice(-4)}`, // 마지막 4자리로 이름 생성
         studentId: studentId,
         currentSemester: dashboardData.userInfo.currentSemester,
+        userGrade: dashboardData.userInfo.userGrade, // 학년 정보 추가
         totalCredits: 0, // 신규 사용자는 0학점부터 시작
         requiredCredits: dashboardData.userInfo.requiredCredits,
         email: `${studentId}@hanyang.ac.kr`,
@@ -74,6 +75,7 @@ export async function createUserDocument(studentId: string): Promise<UserDocumen
           name: `학생${studentId.slice(-4)}`,
           studentId: studentId,
           currentSemester: dashboardData.userInfo.currentSemester,
+          userGrade: dashboardData.userInfo.userGrade, // 학년 정보 추가
           totalCredits: 0,
           requiredCredits: dashboardData.userInfo.requiredCredits,
         },
@@ -297,6 +299,7 @@ export async function migrateKimMinwooData(): Promise<void> {
         name: dashboardData.userInfo.name,
         studentId: kimMinwooId,
         currentSemester: dashboardData.userInfo.currentSemester,
+        userGrade: dashboardData.userInfo.userGrade, // 학년 정보 추가
         totalCredits: dashboardData.userInfo.totalCredits,
         requiredCredits: dashboardData.userInfo.requiredCredits,
         email: `mw111402@hanyang.ac.kr`,
@@ -308,6 +311,7 @@ export async function migrateKimMinwooData(): Promise<void> {
           name: dashboardData.userInfo.name,
           studentId: kimMinwooId,
           currentSemester: dashboardData.userInfo.currentSemester,
+          userGrade: dashboardData.userInfo.userGrade, // 학년 정보 추가
           totalCredits: dashboardData.userInfo.totalCredits,
           requiredCredits: dashboardData.userInfo.requiredCredits,
         },

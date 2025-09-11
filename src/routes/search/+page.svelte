@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Lecture } from "$lib/types";
-  import { courses, addToCart, removeFromCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading, coursesError, refreshCourseData, cart, isLoggedIn, currentUser } from "$lib/stores";
+  import { courses, addToCart, removeFromCart, applyFcfs, applyBid, loadCourses, filterOptions, coursesLoading, coursesError, refreshCourseData, cart, isLoggedIn, currentUser, userDocument } from "$lib/stores";
   import { showToast } from "$lib/toast";
   import Loading from "$lib/components/Loading.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
@@ -24,6 +24,55 @@
   let selectedLecture = $state<Lecture | null>(null);
   let showDetail = $state(false);
   
+  let resultsWithEnrollment = $derived.by(() => {
+    // 중간 변수 없이 스토어에서 직접 학년 정보를 가져옵니다.
+    const grade = $userDocument?.dashboard?.userInfo?.userGrade ?? null;
+
+    return results.map(lecture => {
+      const { enrolledByYear, enrollmentCapByYear, capacity: totalCapacityFromLecture } = lecture;
+      let enrollmentInfo;
+
+      // 1. 학년별 정보 표시 (로그인 & 1-4학년)
+      if (grade && grade >= 1 && grade <= 4) {
+        const yearKey = `year${grade}`;
+        const capacity = enrollmentCapByYear?.[yearKey];
+        const enrolled = enrolledByYear?.[yearKey] ?? 0;
+        let competition = 'N/A';
+        if (typeof capacity === 'number' && capacity > 0) {
+          competition = `${(enrolled / capacity).toFixed(2)}:1`;
+        }
+        enrollmentInfo = {
+          capacity: typeof capacity === 'number' ? `${capacity}명` : 'N/A',
+          enrolled: `${enrolled}명`,
+          competition,
+          label: `${grade}학년`
+        };
+      } 
+      // 2. 전체 정보 표시 (비로그인 or 5학년 이상)
+      else {
+        let totalCapacity: number | undefined;
+        if (enrollmentCapByYear) {
+          totalCapacity = Object.values(enrollmentCapByYear).reduce((a, b) => a + b, 0);
+        } else {
+          totalCapacity = totalCapacityFromLecture;
+        }
+        const totalEnrolled = enrolledByYear ? Object.values(enrolledByYear).reduce((a, b) => a + b, 0) : 0;
+        let competition = 'N/A';
+        if (typeof totalCapacity === 'number' && totalCapacity > 0) {
+          competition = `${(totalEnrolled / totalCapacity).toFixed(2)}:1`;
+        }
+        enrollmentInfo = {
+          capacity: typeof totalCapacity === 'number' ? `${totalCapacity}명` : 'N/A',
+          enrolled: `${totalEnrolled}명`,
+          competition,
+          label: '전체'
+        };
+      }
+
+      return { ...lecture, enrollmentInfo };
+    });
+  });
+
   // 페이지네이션 상태
   let currentPage = $state(1);
   const itemsPerPage = 10;
@@ -32,11 +81,11 @@
   let paginatedResults = $derived.by(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return results.slice(startIndex, endIndex);
+    return resultsWithEnrollment.slice(startIndex, endIndex);
   });
   
   // 총 페이지 수 계산
-  let totalPages = $derived(Math.ceil(results.length / itemsPerPage));
+  let totalPages = $derived(Math.ceil(resultsWithEnrollment.length / itemsPerPage));
 
   // 선택된 단과대학에 따라 학과 목록을 필터링하는 파생 상태
   let availableDepts = $derived.by(() => {
@@ -496,54 +545,55 @@
             </div>
             
             <!-- 상세 정보 -->
-            <div class="space-y-2 text-base text-gray-600">
-              <!-- 1행: 정원, 과목코드 (항상 표시) -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div class="flex items-center gap-2">
-                  <span class="font-semibold">정원:</span>
-                  <span class="font-medium">{l.capacity}명</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="font-semibold">학수번호:</span>
-                  <span class="font-medium">{l.courseId}</span>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2 text-base text-gray-600 pt-2 mt-2 border-t border-gray-100">
+              <!-- 1열 -->
+              <div class="flex items-center gap-2">
+                <span class="font-semibold">학수번호:</span>
+                <span class="font-medium">{l.courseId}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-semibold">{l.enrollmentInfo.label} 정원:</span>
+                <span class="font-medium text-blue-600">{l.enrollmentInfo.capacity}</span>
+              </div>
+              <div class="flex items-center gap-2">              
+                <span class="font-semibold">수업시간:</span>
+               <span class="text-medium">{formatTime(l.schedule)}</span>
+             </div>
+               
+               <!-- 2열 -->
+               <div class="flex items-center gap-2">
+                <span class="font-semibold">수업번호:</span>
+                <span class="font-medium">{l.classId}</span>
+               </div>
+              <div class="flex items-center gap-2">
+                 <span class="font-semibold">{l.enrollmentInfo.label} 신청:</span>
+                 <span class="font-medium text-green-600">{l.enrollmentInfo.enrolled}</span>
+               </div>
+              <div class="flex items-center gap-2">
+                <span class="font-semibold">강의실:</span>
+                <span class="font-medium">{formatLocation(l.schedule)}</span>
               </div>
               
-              <!-- 2행: 수업시간, 강의실 (항상 표시) -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+              <!-- 3열 -->
+              {#if l.courseLevel}
                 <div class="flex items-center gap-2">
-                  <span class="font-semibold">수업시간:</span>
-                  <span class="text-medium">{formatTime(l.schedule)}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="font-semibold">강의실:</span>
-                  <span class="font-medium">{formatLocation(l.schedule)}</span>
-                </div>
-              </div>
-              
-              <!-- 3행: 단위(조건부), 교양영역(조건부) -->
-              {#if ((l.category === '핵심교양' || l.category === '교양') && l.area) || l.courseLevel}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <!-- 단위 표시 (courseLevel이 있는 경우만) -->
-                  {#if l.courseLevel}
-                    <div class="flex items-center gap-2">
-                      <span class="font-semibold">단위:</span>
-                      <span class="font-medium">{Math.floor(parseInt(l.courseLevel) / 100) * 100}단위</span>
-                    </div>
-                  {:else}
-                    <div></div> <!-- 빈 공간 유지 -->
-                  {/if}
-                  
-                  <!-- 교양영역 표시 (핵심교양, 교양인 경우만) -->
-                  {#if (l.category === '핵심교양' || l.category === '교양') && l.area}
-                    <div class="flex items-center gap-2">
-                      <span class="font-semibold">교양영역:</span>
-                      <span class="font-medium">{l.area}</span>
-                    </div>
-                  {/if}
+                  <span class="font-semibold">단위:</span>
+                  <span class="font-medium">{Math.floor(parseInt(l.courseLevel) / 100) * 100}단위</span>
                 </div>
               {/if}
-            </div>
+               <div class="flex items-center gap-2">
+                 <span class="font-semibold">경쟁률:</span>
+                 <span class="font-medium text-red-600">{l.enrollmentInfo.competition}</span>
+               </div>
+               
+               {#if (l.category === '핵심교양' || l.category === '교양') && l.area}
+                 <div class="flex items-center gap-2">
+                   <span class="font-semibold">교양영역:</span>
+                   <span class="font-medium">{l.area}</span>
+                 </div>
+               {/if}
+             </div>
             
             <!-- 키워드 태그 -->
             {#if l.keywords && l.keywords.length > 0}

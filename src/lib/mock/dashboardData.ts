@@ -2,6 +2,7 @@ export const dashboardData = {
 	userInfo: {
 		name: '김민우',
 		currentSemester: '2025-2',
+		userGrade: 3,
 		totalCredits: 102,
 		requiredCredits: 126, // 
 	},

@@ -29,8 +29,9 @@ export type Lecture = {
   enrolledByYear?: { [key: string]: number }; // 학년별 담은 인원
   enrollmentCapByYear?: { [key: string]: number }; // 학년별 정원
   weeklyPlan?: WeeklyPlan[]; // 주차별 강의 계획
-  coreCompetencyReason?: string; // 핵심역량 사유
+  courseOverview?: string; // 강의 개요
   courseGoals?: string; // 강의 목표
+  overall?: string; // 전체 개요
 };
 
 export type Notice = { id: string; title: string; content: string; pinned?: boolean; createdAt: string; author?: string; views?: number, category?: string };

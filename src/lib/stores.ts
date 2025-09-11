@@ -251,8 +251,10 @@ export async function loadCourses(limitCount: number = 1000, forceRefresh: boole
         courseLevel: data.courseLevel ? data.courseLevel.toString() : undefined,
         enrolledByYear: data.enrolledByYear,
         enrollmentCapByYear: data.enrollmentCapByYear,
-        coreCompetencyReason: data.coreCompetencyReason || undefined, // 핵심역량 사유
-        courseGoals: data.courseGoals || undefined // 강의 목표
+        courseOverview: data.courseOverview || undefined, // 강의 개요
+        courseGoals: data.courseGoals || undefined, // 강의 목표
+        overall: data.courseOverview || undefined, // 전체 개요 (courseOverview 사용)
+        weeklyPlan: data.weeklyPlan || data.weeks || data.weeklySchedule || undefined // 주차별 강의 계획
       };
       
       // 🚨 긴급 디버깅: 처음 3개 강의의 매핑 결과를 상세히 로깅

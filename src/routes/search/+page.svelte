@@ -725,7 +725,7 @@
               </div>
             {/if}
             <h2 class="text-3xl font-bold text-blue-900 mb-2">{selectedLecture.title}</h2>
-            <div class="flex items-center gap-4 text-blue-700">
+            <div class="flex items-center gap-4 text-blue-700 mb-4">
               <div class="flex items-center gap-2">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-6a1 1 0 00-1-1H9a1 1 0 00-1 1v6a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd"></path>
@@ -739,9 +739,25 @@
                 <span class="font-medium">{selectedLecture.instructor}</span>
               </div>
             </div>
-            {#if selectedLecture.coreCompetencyReason}
-              <div class="mt-2 text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
-                <span class="font-medium">핵심역량:</span> {selectedLecture.coreCompetencyReason}
+            
+            {#if selectedLecture.courseGoals}
+              <div class="mb-4 text-sm text-blue-700 bg-blue-50 px-4 py-3 rounded-lg border-l-4 border-blue-400">
+                <div class="flex items-start gap-2">
+                  <svg class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                  </svg>
+                  <div>
+                    <p class="leading-relaxed">
+                      {#if typeof selectedLecture.courseGoals === 'string'}
+                        {selectedLecture.courseGoals}
+                      {:else if selectedLecture.courseGoals && selectedLecture.courseGoals.overall}
+                        {selectedLecture.courseGoals.overall}
+                      {:else}
+                        {JSON.stringify(selectedLecture.courseGoals, null, 2)}
+                      {/if}
+                    </p>
+                  </div>
+                </div>
               </div>
             {/if}
           </div>
@@ -925,59 +941,38 @@
                 </svg>
                 주차별 강의계획서
               </h3>
-              {#if selectedLecture.courseGoals}
-                <div class="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                  <div class="flex items-start gap-2">
-                    <svg class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                    </svg>
-                    <div>
-                      <span class="font-semibold text-blue-800 text-sm">강의 목표:</span>
-                      <p class="text-sm text-blue-700 mt-1 leading-relaxed">{selectedLecture.courseGoals}</p>
+              {#if selectedLecture.weeklyPlan && selectedLecture.weeklyPlan.length > 0}
+                <div class="bg-white rounded-lg border border-blue-200">
+                  <div class="px-4 py-3 border-b border-blue-200">
+                    <div class="flex items-center gap-3">
+                      <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                      </svg>
+                      <span class="font-medium text-blue-900">주차별 강의 계획</span>
+                    </div>
+                  </div>
+                  <div class="p-4">
+                    <div class="max-h-48 overflow-y-auto space-y-2">
+                      {#each selectedLecture.weeklyPlan as plan, index}
+                        <div class="bg-blue-50 p-2 rounded border border-blue-200 hover:bg-blue-100 transition-colors">
+                          <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium min-w-[3rem] text-center">
+                              {plan.week || index + 1}주차
+                            </span>
+                            <span class="text-sm text-blue-900 font-medium truncate">
+                              {plan.title || plan.subject || plan.topic || `주차 ${plan.week || index + 1} 강의`}
+                            </span>
+                          </div>
+                          {#if plan.content || plan.description || plan.overview}
+                            <div class="mt-1 text-xs text-blue-700 truncate">
+                              {plan.content || plan.description || plan.overview}
+                            </div>
+                          {/if}
+                        </div>
+                      {/each}
                     </div>
                   </div>
                 </div>
-              {/if}
-              {#if selectedLecture.weeklyPlan && selectedLecture.weeklyPlan.length > 0}
-                <Accordion.Root class="space-y-2">
-                  {#each selectedLecture.weeklyPlan as plan}
-                    <Accordion.Item value="week-{plan.week}" class="border border-blue-200 rounded-lg">
-                      <Accordion.Trigger class="px-4 py-3 text-left hover:bg-blue-50 transition-colors">
-                        <div class="flex items-center justify-between w-full">
-                          <div class="flex items-center gap-3">
-                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                              {plan.week}주차
-                            </span>
-                            <span class="font-medium text-blue-900">{plan.title}</span>
-                          </div>
-                          <svg class="w-4 h-4 text-blue-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                          </svg>
-                        </div>
-                      </Accordion.Trigger>
-                      <Accordion.Content class="px-4 pb-4">
-                        <div class="space-y-3 text-sm text-blue-700">
-                          <div>
-                            <span class="font-semibold text-blue-800">강의 내용:</span>
-                            <p class="mt-1 leading-relaxed">{plan.content}</p>
-                          </div>
-                          {#if plan.assignments}
-                            <div>
-                              <span class="font-semibold text-blue-800">과제:</span>
-                              <p class="mt-1 leading-relaxed">{plan.assignments}</p>
-                            </div>
-                          {/if}
-                          {#if plan.readings}
-                            <div>
-                              <span class="font-semibold text-blue-800">참고자료:</span>
-                              <p class="mt-1 leading-relaxed">{plan.readings}</p>
-                            </div>
-                          {/if}
-                        </div>
-                      </Accordion.Content>
-                    </Accordion.Item>
-                  {/each}
-                </Accordion.Root>
               {:else}
                 <div class="bg-blue-50 p-4 rounded-lg text-center text-blue-600">
                   <svg class="w-8 h-8 mx-auto mb-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

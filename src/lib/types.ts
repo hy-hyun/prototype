@@ -1,6 +1,14 @@
 export type Credit = { lecture: number; lab: number };
 export type Meeting = { day: number; start: number; end: number; building?: string; room?: string };
 
+export type WeeklyPlan = {
+  week: number;
+  title: string;
+  content: string;
+  assignments?: string;
+  readings?: string;
+};
+
 export type Lecture = {
   courseId: string;      // 학수번호
   classId: string;       // 수업번호
@@ -20,6 +28,9 @@ export type Lecture = {
   courseLevel?: string; // 100, 200, 300 등 레벨 단위 문자열
   enrolledByYear?: { [key: string]: number }; // 학년별 담은 인원
   enrollmentCapByYear?: { [key: string]: number }; // 학년별 정원
+  weeklyPlan?: WeeklyPlan[]; // 주차별 강의 계획
+  coreCompetencyReason?: string; // 핵심역량 사유
+  courseGoals?: string; // 강의 목표
 };
 
 export type Notice = { id: string; title: string; content: string; pinned?: boolean; createdAt: string; author?: string; views?: number, category?: string };

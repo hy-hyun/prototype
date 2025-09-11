@@ -7,6 +7,7 @@
   import { Input } from "$lib/components/ui/input";
   import { STATIC_FILTER_OPTIONS, collegeToDepartmentMapping } from "$lib/mock/data";
   import LoginModal from "$lib/components/LoginModal.svelte";
+  import * as Accordion from "$lib/components/ui/accordion";
   // Svelte 5 룬모드 상태 변수들
   let keyword = $state("");
   let showLoginModal = $state(false);
@@ -708,16 +709,44 @@
 <!-- 강의 상세 모달 -->
 {#if showDetail && selectedLecture}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-      <div class="p-6">
+    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div class="p-8">
         <!-- 모달 헤더 -->
-        <div class="flex justify-between items-start mb-4">
-          <div>
-            <h2 class="text-xl font-bold text-gray-900">{selectedLecture.title}</h2>
-            <p class="text-gray-600">{selectedLecture.dept} • {selectedLecture.instructor}</p>
+        <div class="flex justify-between items-start mb-8">
+          <div class="flex-1">
+            <!-- 키워드 표시 -->
+            {#if selectedLecture.keywords && selectedLecture.keywords.length > 0}
+              <div class="flex gap-2 flex-wrap mb-3">
+                {#each selectedLecture.keywords as keyword}
+                  <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                    #{keyword}
+                  </span>
+                {/each}
+              </div>
+            {/if}
+            <h2 class="text-3xl font-bold text-blue-900 mb-2">{selectedLecture.title}</h2>
+            <div class="flex items-center gap-4 text-blue-700">
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-6a1 1 0 00-1-1H9a1 1 0 00-1 1v6a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="font-medium">{selectedLecture.dept}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="font-medium">{selectedLecture.instructor}</span>
+              </div>
+            </div>
+            {#if selectedLecture.coreCompetencyReason}
+              <div class="mt-2 text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+                <span class="font-medium">핵심역량:</span> {selectedLecture.coreCompetencyReason}
+              </div>
+            {/if}
           </div>
           <button 
-            class="text-gray-400 hover:text-gray-600"
+            class="text-blue-400 hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-blue-100"
             onclick={() => showDetail = false}
             aria-label="모달 닫기"
           >
@@ -727,106 +756,244 @@
           </button>
         </div>
         
-        <!-- 모달 내용 -->
-        <div class="space-y-6">
-          <!-- 기본 정보 섹션 -->
-          <div>
-            <h3 class="font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">기본 정보</h3>
-            <div class="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span class="font-medium text-gray-700">수업번호:</span>
-                <span class="ml-2 text-gray-900">{selectedLecture.courseId}-{selectedLecture.classId}</span>
-              </div>
-              <div>
-                <span class="font-medium text-gray-700">학수번호:</span>
-                <span class="ml-2 text-gray-900">{selectedLecture.courseId}</span>
-              </div>
-              <div>
-                <span class="font-medium text-gray-700">이수구분:</span>
-                <span class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm font-medium">{selectedLecture.category}</span>
-              </div>
-              <!-- 교양영역 표시 (핵심교양, 교양인 경우) -->
-              {#if (selectedLecture.category === '핵심교양' || selectedLecture.category === '교양') && selectedLecture.area}
-                <div>
-                  <span class="font-medium text-gray-700">교양영역:</span>
-                  <span class="ml-2 px-2 py-1 bg-green-100 text-green-700 rounded text-sm font-medium">{selectedLecture.area}</span>
+        <!-- 모달 내용 - 2열 레이아웃 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- 왼쪽 열 -->
+          <div class="space-y-6">
+            <!-- 기본 정보 -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-blue-100">
+              <h3 class="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm8 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2z" clip-rule="evenodd"></path>
+                </svg>
+                기본 정보
+              </h3>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-blue-700 font-medium">이수구분</span>
+                  <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">{selectedLecture.category}</span>
                 </div>
-              {/if}
-              <!-- 모든 강의에 대해 단위 표시 (courseLevel이 있는 경우) -->
-              {#if selectedLecture.courseLevel}
-                <div>
-                  <span class="font-medium text-gray-700">단위:</span>
-                  <span class="ml-2">{Math.floor(parseInt(selectedLecture.courseLevel) / 100) * 100}단위</span>
+                <div class="flex items-center justify-between">
+                  <span class="text-blue-700 font-medium">학과</span>
+                  <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="text-blue-900 font-medium">{selectedLecture.dept}</span>
+                  </div>
                 </div>
-              {/if}
-              <div>
-                <span class="font-medium text-gray-700">학점:</span>
-                <span class="ml-2 px-2 py-1 bg-purple-100 text-purple-700 rounded text-sm font-medium">{selectedLecture.credits.lecture}학점</span>
+                <div class="flex items-center justify-between">
+                  <span class="text-blue-700 font-medium">학수번호</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-blue-900 font-medium">{selectedLecture.courseId}</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-blue-700 font-medium">수업번호</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-blue-900 font-medium">{selectedLecture.classId}</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-blue-700 font-medium">학점</span>
+                  <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">{selectedLecture.credits.lecture}학점</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-blue-700 font-medium">수강정원</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-blue-900 font-medium">{selectedLecture.capacity}명</span>
+                  </div>
+                </div>
+                {#if selectedLecture.courseLevel}
+                  <div class="flex items-center justify-between">
+                    <span class="text-blue-700 font-medium">단위</span>
+                    <div class="flex items-center gap-2">
+                      <span class="text-blue-900 font-medium">{Math.floor(parseInt(selectedLecture.courseLevel) / 100) * 100}단위</span>
+                    </div>
+                  </div>
+                {/if}
+                {#if (selectedLecture.category === '핵심교양' || selectedLecture.category === '교양') && selectedLecture.area}
+                  <div class="flex items-center justify-between">
+                    <span class="text-blue-700 font-medium">교양영역</span>
+                    <div class="flex items-center gap-2">
+                      <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">{selectedLecture.area}</span>
+                    </div>
+                  </div>
+                {/if}
               </div>
-              <div>
-                <span class="font-medium text-gray-700">수강정원:</span>
-                <span class="ml-2">{selectedLecture.capacity}명</span>
+            </div>
+
+            <!-- 수업시간 및 강의실 -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-blue-100">
+              <h3 class="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                </svg>
+                수업시간 및 강의실
+              </h3>
+              <div class="space-y-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                  <div class="flex items-center gap-2 mb-2">
+                    <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="font-medium text-blue-800">수업시간</span>
+                  </div>
+                  <p class="text-blue-700">{formatTime(selectedLecture.schedule)}</p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                  <div class="flex items-center gap-2 mb-2">
+                    <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="font-medium text-blue-800">강의실</span>
+                  </div>
+                  <p class="text-blue-700">{formatLocation(selectedLecture.schedule)}</p>
+                </div>
               </div>
             </div>
           </div>
-          
-          <!-- 강의시간 섹션 -->
-          <div>
-            <h3 class="font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">수업시간 및 강의실</h3>
-            <div class="space-y-3">
-              <div class="bg-gray-50 p-3 rounded">
-                <div class="flex items-center gap-2 mb-2">
-                  <span class="font-medium text-gray-700">수업시간:</span>
+
+          <!-- 오른쪽 열 -->
+          <div class="space-y-6">
+            <!-- 강의 정보 -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-blue-100">
+              <h3 class="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm8 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2z" clip-rule="evenodd"></path>
+                </svg>
+                강의 정보
+              </h3>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-blue-700 font-medium">교수</span>
+                  <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="text-blue-900 font-medium">{selectedLecture.instructor}</span>
+                  </div>
                 </div>
-                <p class="text-sm text-gray-600">{formatTime(selectedLecture.schedule)}</p>
-              </div>
-              <div class="bg-gray-50 p-3 rounded">
-                <div class="flex items-center gap-2 mb-2">
-                  <span class="font-medium text-gray-700">강의실:</span>
+                <div class="flex items-center justify-between">
+                  <span class="text-blue-700 font-medium">신청방법</span>
+                  <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">
+                      {(selectedLecture.method ?? "FCFS") === "FCFS" ? "선착순" : "베팅"}
+                    </span>
+                  </div>
                 </div>
-                <p class="text-sm text-gray-600">{formatLocation(selectedLecture.schedule)}</p>
+                <div class="flex items-center justify-between">
+                  <span class="text-blue-700 font-medium">경쟁률</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-blue-900 font-medium">{selectedLecture.enrollmentInfo?.competition || 'N/A'}</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-blue-700 font-medium">신청인원</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-blue-900 font-medium">{selectedLecture.enrollmentInfo?.enrolled || 'N/A'}</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-blue-700 font-medium">정원</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-blue-900 font-medium">{selectedLecture.enrollmentInfo?.capacity || 'N/A'}</span>
+                  </div>
+                </div>
+                {#if selectedLecture.building}
+                  <div class="flex items-center justify-between">
+                    <span class="text-blue-700 font-medium">건물</span>
+                    <div class="flex items-center gap-2">
+                      <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                      </svg>
+                      <span class="text-blue-900 font-medium">{selectedLecture.building}</span>
+                    </div>
+                  </div>
+                {/if}
               </div>
             </div>
-          </div>
-          
-          <!-- 키워드 섹션 -->
-          {#if selectedLecture.keywords && selectedLecture.keywords.length > 0}
-            <div>
-              <h3 class="font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">키워드</h3>
-              <div class="flex gap-2 flex-wrap">
-                {#each selectedLecture.keywords as keyword}
-                  <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                    #{keyword}
-                  </span>
-                {/each}
-              </div>
-            </div>
-          {/if}
-          
-          <!-- 강의계획서 섹션 -->
-          <div>
-            <h3 class="font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">강의계획서</h3>
-            <div class="bg-gray-50 p-4 rounded-lg text-sm text-gray-600 space-y-3">
-              <div>
-                <span class="font-semibold text-gray-700">강의목표:</span>
-                <span class="ml-2">본 강의는 {selectedLecture.title}의 기초 개념을 학습하고 실무 능력을 기르는 것을 목표로 합니다.</span>
-              </div>
-              <div>
-                <span class="font-semibold text-gray-700">평가방법:</span>
-                <span class="ml-2">중간고사 30%, 기말고사 30%, 과제 20%, 출석 20%</span>
-              </div>
-              <div>
-                <span class="font-semibold text-gray-700">교재:</span>
-                <span class="ml-2">강의 중 별도 공지</span>
-              </div>
+
+
+            <!-- 주차별 강의계획서 섹션 -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-blue-100">
+              <h3 class="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                </svg>
+                주차별 강의계획서
+              </h3>
+              {#if selectedLecture.courseGoals}
+                <div class="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                  <div class="flex items-start gap-2">
+                    <svg class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                      <span class="font-semibold text-blue-800 text-sm">강의 목표:</span>
+                      <p class="text-sm text-blue-700 mt-1 leading-relaxed">{selectedLecture.courseGoals}</p>
+                    </div>
+                  </div>
+                </div>
+              {/if}
+              {#if selectedLecture.weeklyPlan && selectedLecture.weeklyPlan.length > 0}
+                <Accordion.Root class="space-y-2">
+                  {#each selectedLecture.weeklyPlan as plan}
+                    <Accordion.Item value="week-{plan.week}" class="border border-blue-200 rounded-lg">
+                      <Accordion.Trigger class="px-4 py-3 text-left hover:bg-blue-50 transition-colors">
+                        <div class="flex items-center justify-between w-full">
+                          <div class="flex items-center gap-3">
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                              {plan.week}주차
+                            </span>
+                            <span class="font-medium text-blue-900">{plan.title}</span>
+                          </div>
+                          <svg class="w-4 h-4 text-blue-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                          </svg>
+                        </div>
+                      </Accordion.Trigger>
+                      <Accordion.Content class="px-4 pb-4">
+                        <div class="space-y-3 text-sm text-blue-700">
+                          <div>
+                            <span class="font-semibold text-blue-800">강의 내용:</span>
+                            <p class="mt-1 leading-relaxed">{plan.content}</p>
+                          </div>
+                          {#if plan.assignments}
+                            <div>
+                              <span class="font-semibold text-blue-800">과제:</span>
+                              <p class="mt-1 leading-relaxed">{plan.assignments}</p>
+                            </div>
+                          {/if}
+                          {#if plan.readings}
+                            <div>
+                              <span class="font-semibold text-blue-800">참고자료:</span>
+                              <p class="mt-1 leading-relaxed">{plan.readings}</p>
+                            </div>
+                          {/if}
+                        </div>
+                      </Accordion.Content>
+                    </Accordion.Item>
+                  {/each}
+                </Accordion.Root>
+              {:else}
+                <div class="bg-blue-50 p-4 rounded-lg text-center text-blue-600">
+                  <svg class="w-8 h-8 mx-auto mb-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                  <p class="text-sm">주차별 강의 계획이 등록되지 않았습니다.</p>
+                </div>
+              {/if}
             </div>
           </div>
         </div>
         
         <!-- 모달 푸터 -->
-        <div class="flex gap-3 mt-6 pt-4 border-t">
+        <div class="flex gap-4 mt-8 pt-6 border-t border-blue-200">
           <button 
-            class="flex-1 border border-blue-500 text-blue-500 hover:bg-blue-50 rounded py-2 transition-colors {
+            class="flex-1 border-2 border-blue-500 text-blue-500 hover:bg-blue-50 rounded-xl py-3 transition-all duration-200 font-medium {
               selectedLecture && isInCart(selectedLecture.courseId, selectedLecture.classId) ? 'bg-pink-100 border-pink-400 text-pink-500 hover:bg-pink-200' : ''
             }"
             onclick={() => selectedLecture && onToggleCart(selectedLecture)}
@@ -834,7 +1001,7 @@
             {selectedLecture && isInCart(selectedLecture.courseId, selectedLecture.classId) ? '🛒 장바구니 해제' : '🛒 장바구니 담기'}
           </button>
           <button 
-            class="flex-1 rounded py-2 transition-colors {selectedLecture && isBettingCourse(selectedLecture) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}"
+            class="flex-1 rounded-xl py-3 transition-all duration-200 font-medium {selectedLecture && isBettingCourse(selectedLecture) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl'}"
             onclick={() => selectedLecture && !isBettingCourse(selectedLecture) && onApply(selectedLecture)}
             disabled={selectedLecture && isBettingCourse(selectedLecture)}
             title={selectedLecture && isBettingCourse(selectedLecture) ? '베팅 과목은 수강신청 페이지에서 신청하세요' : ''}

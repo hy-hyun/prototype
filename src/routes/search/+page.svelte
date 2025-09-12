@@ -215,7 +215,7 @@
   function onApply(l: Lecture) {
     if ((l.method ?? "FCFS") === "FCFS") applyFcfs(l.courseId, l.classId);
     else applyBid(l.courseId, l.classId, 10);
-    showToast("신청을 진행했습니다", "info");
+    showToast("완료되었습니다. 신청 결과는 수강신청 페이지의 신청 내역에서 확인하세요.", "info");
   }
 
   function showLectureDetail(lecture: Lecture) {
@@ -567,7 +567,7 @@
                 <span class="font-medium">{l.classId}</span>
                </div>
               <div class="flex items-center gap-2">
-                 <span class="font-semibold">{l.enrollmentInfo.label} 신청:</span>
+                 <span class="font-semibold">{l.enrollmentInfo.label} 담은 인원:</span>
                  <span class="font-medium text-green-600">{l.enrollmentInfo.enrolled}</span>
                </div>
               <div class="flex items-center gap-2">
@@ -584,7 +584,7 @@
                 </div>
               {/if}
                <div class="flex items-center gap-2">
-                 <span class="font-semibold">경쟁률:</span>
+                 <span class="font-semibold">예상 경쟁률:</span>
                  <span class="font-medium text-red-600">{l.enrollmentInfo.competition}</span>
                </div>
                
@@ -901,21 +901,21 @@
                   </div>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-blue-700 font-medium">경쟁률</span>
+                  <span class="text-blue-700 font-medium">예상 경쟁률</span>
                   <div class="flex items-center gap-2">
                     <span class="text-blue-900 font-medium">{selectedLecture.enrollmentInfo?.competition || 'N/A'}</span>
                   </div>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-blue-700 font-medium">신청인원</span>
+                  <span class="text-blue-700 font-medium">{selectedLecture.enrollmentInfo.label} 정원</span>
                   <div class="flex items-center gap-2">
-                    <span class="text-blue-900 font-medium">{selectedLecture.enrollmentInfo?.enrolled || 'N/A'}</span>
+                    <span class="text-blue-900 font-medium">{selectedLecture.enrollmentInfo?.capacity || 'N/A'}</span>
                   </div>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-blue-700 font-medium">정원</span>
+                  <span class="text-blue-700 font-medium">{selectedLecture.enrollmentInfo.label} 담은 인원</span>
                   <div class="flex items-center gap-2">
-                    <span class="text-blue-900 font-medium">{selectedLecture.enrollmentInfo?.capacity || 'N/A'}</span>
+                    <span class="text-blue-900 font-medium">{selectedLecture.enrollmentInfo?.enrolled || 'N/A'}</span>
                   </div>
                 </div>
                 {#if selectedLecture.building}

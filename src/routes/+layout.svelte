@@ -49,7 +49,7 @@
     { href: "/search", label: "강의검색", icon: SearchIcon },
     { href: "/enroll", label: "수강신청", icon: ClipboardList },
     { href: "/timetable", label: "시간표", icon: CalendarDays },
-    { href: "/dashboard", label: "대시보드", icon: LayoutDashboard }
+    { href: "/dashboard", label: "마이페이지", icon: LayoutDashboard }
   ];
 
   function handleLogout() {

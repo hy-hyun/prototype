@@ -193,6 +193,63 @@
   :global(.hide-arrow > svg) {
     display: none;
   }
+  
+  /* 공지사항 내용의 테이블 스타일링 */
+  :global(.max-w-none table) {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  :global(.max-w-none table th),
+  :global(.max-w-none table td) {
+    border: 1px solid #ddd;
+    padding: 8px 10px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  
+  :global(.max-w-none table th) {
+    background-color: #003366;
+    color: white;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  
+  :global(.max-w-none table td) {
+    font-size: 0.9em;
+  }
+  
+  /* 구분, 학수번호, 과목명, 이수구분 열은 줄내림 방지 */
+  :global(.max-w-none table td:nth-child(1)),
+  :global(.max-w-none table td:nth-child(2)),
+  :global(.max-w-none table td:nth-child(3)),
+  :global(.max-w-none table td:nth-child(4)),
+  :global(.max-w-none table th:nth-child(1)),
+  :global(.max-w-none table th:nth-child(2)),
+  :global(.max-w-none table th:nth-child(3)),
+  :global(.max-w-none table th:nth-child(4)) {
+    white-space: nowrap;
+  }
+  
+  /* 마지막 열(전공인정 학부/전공)은 줄바꿈 허용 */
+  :global(.max-w-none table td:last-child) {
+    text-align: left;
+    word-wrap: break-word;
+    white-space: normal;
+  }
+  
+  /* 반응형 대응 */
+  @media (max-width: 768px) {
+    :global(.max-w-none table) {
+      font-size: 0.8em;
+    }
+    
+    :global(.max-w-none table th),
+    :global(.max-w-none table td) {
+      padding: 6px 8px;
+    }
+  }
 </style>
 
 

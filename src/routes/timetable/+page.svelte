@@ -495,19 +495,178 @@
 
   async function handleDownload() {
     if (!browser) return;
+    
+    // 다운로드 버튼 비활성화 (중복 클릭 방지)
+    const downloadBtn = document.querySelector('[data-download-btn]') as HTMLButtonElement;
+    if (downloadBtn) {
+      downloadBtn.disabled = true;
+      // SVG 아이콘을 유지하면서 텍스트만 변경
+      const svgIcon = downloadBtn.querySelector('svg');
+      if (svgIcon) {
+        downloadBtn.innerHTML = svgIcon.outerHTML + ' 저장 중...';
+      } else {
+        downloadBtn.textContent = '저장 중...';
+      }
+    }
+    
     try {
-      const { default: html2canvas } = await import('html2canvas');
-      const timetableElement = document.querySelector('[data-timetable-grid]') as HTMLElement;
-      if (!timetableElement) { alert("시간표를 찾을 수 없습니다."); return; }
-      const canvas = await html2canvas(timetableElement, { scale: 2, backgroundColor: '#ffffff' });
+      console.log('html2canvas 모듈 로딩 시작...');
+      
+      // html2canvas를 동적으로 import
+      let html2canvas;
+      try {
+        const module = await import('html2canvas');
+        html2canvas = module.default;
+        console.log('html2canvas 모듈 로딩 완료');
+      } catch (importError) {
+        console.error('html2canvas import 실패:', importError);
+        throw new Error('html2canvas 라이브러리를 로드할 수 없습니다. 페이지를 새로고침해주세요.');
+      }
+      
+      // 시간표 요소 찾기 (여러 방법 시도)
+      let timetableElement = document.querySelector('[data-timetable-grid]') as HTMLElement;
+      
+      if (!timetableElement) {
+        // 대안 1: 클래스로 찾기
+        timetableElement = document.querySelector('.timetable-grid') as HTMLElement;
+      }
+      
+      if (!timetableElement) {
+        // 대안 2: 부모 요소 찾기
+        timetableElement = document.querySelector('.p-6.bg-white.flex.flex-col') as HTMLElement;
+      }
+      
+      if (!timetableElement) {
+        console.error('시간표 요소를 찾을 수 없습니다.');
+        alert("시간표를 찾을 수 없습니다. 페이지를 새로고침 후 다시 시도해주세요.");
+        return;
+      }
+      
+      console.log('시간표 요소 발견:', timetableElement);
+      
+      // oklch 색상 문제를 해결하는 캔버스 옵션
+      const canvasOptions = {
+        scale: 1,
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        onclone: (clonedDoc: Document) => {
+          // 클론된 문서에서 oklch 색상을 기본 색상으로 대체
+          const style = clonedDoc.createElement('style');
+          style.textContent = `
+            * {
+              color: rgb(17, 24, 39) !important;
+              background-color: rgb(255, 255, 255) !important;
+              border-color: rgb(209, 213, 219) !important;
+            }
+            .bg-blue-100 { background-color: rgb(219, 234, 254) !important; }
+            .bg-green-100 { background-color: rgb(220, 252, 231) !important; }
+            .bg-yellow-100 { background-color: rgb(254, 243, 199) !important; }
+            .bg-purple-100 { background-color: rgb(233, 213, 255) !important; }
+            .bg-pink-100 { background-color: rgb(252, 231, 243) !important; }
+            .bg-indigo-100 { background-color: rgb(224, 231, 255) !important; }
+            .bg-red-100 { background-color: rgb(254, 226, 226) !important; }
+            .bg-orange-100 { background-color: rgb(255, 237, 213) !important; }
+            .text-blue-600 { color: rgb(37, 99, 235) !important; }
+            .text-green-600 { color: rgb(22, 163, 74) !important; }
+            .text-yellow-600 { color: rgb(202, 138, 4) !important; }
+            .text-purple-600 { color: rgb(147, 51, 234) !important; }
+            .text-pink-600 { color: rgb(219, 39, 119) !important; }
+            .text-indigo-600 { color: rgb(79, 70, 229) !important; }
+            .text-red-600 { color: rgb(220, 38, 38) !important; }
+            .text-orange-600 { color: rgb(234, 88, 12) !important; }
+          `;
+          clonedDoc.head.appendChild(style);
+        }
+      };
+      
+      console.log('캔버스 생성 시작...');
+      
+      // html2canvas 실행
+      const canvas = await html2canvas(timetableElement, canvasOptions);
+      
+      if (!canvas) {
+        throw new Error('캔버스 생성에 실패했습니다.');
+      }
+      
+      console.log('캔버스 생성 완료:', canvas.width, 'x', canvas.height);
+      
+      // 다운로드 링크 생성
       const link = document.createElement('a');
-      link.download = `시간표_${selectedSemester}.png`;
-      link.href = canvas.toDataURL('image/png');
+      const fileName = `시간표_${selectedSemester}_${new Date().toISOString().split('T')[0]}.png`;
+      
+      try {
+        const dataURL = canvas.toDataURL('image/png', 0.9);
+        if (!dataURL || dataURL === 'data:,') {
+          throw new Error('이미지 데이터 생성에 실패했습니다.');
+        }
+        
+        link.download = fileName;
+        link.href = dataURL;
+        
+        // 링크 클릭하여 다운로드 시작
+        document.body.appendChild(link);
       link.click();
-      link.remove(); // 메모리 누수 방지
+        document.body.removeChild(link);
+        
+        console.log('PNG 다운로드 성공:', fileName);
+      } catch (dataError) {
+        console.error('이미지 데이터 생성 실패:', dataError);
+        throw new Error('이미지 데이터를 생성할 수 없습니다.');
+      }
+      
+      // 성공 메시지 (선택사항)
+      // toast.success('시간표가 성공적으로 다운로드되었습니다.');
+      
     } catch (error) {
       console.error("PNG 다운로드 실패:", error);
-      alert("PNG 다운로드에 실패했습니다.");
+      console.error("에러 타입:", typeof error);
+      console.error("에러 메시지:", error?.message || '메시지 없음');
+      console.error("에러 스택:", error?.stack || '스택 없음');
+      
+      // 구체적인 에러 메시지 제공
+      let errorMessage = "PNG 다운로드에 실패했습니다.";
+      
+      if (error instanceof Error) {
+        const message = error.message;
+        console.log("에러 메시지 분석:", message);
+        
+        if (message.includes('SecurityError') || message.includes('security')) {
+          errorMessage = "브라우저 보안 정책으로 인해 다운로드가 차단되었습니다. 다른 브라우저를 시도해보세요.";
+        } else if (message.includes('OutOfMemoryError') || message.includes('memory') || message.includes('Memory')) {
+          errorMessage = "메모리 부족으로 다운로드가 실패했습니다. 시간표 크기를 줄여보세요.";
+        } else if (message.includes('html2canvas') || message.includes('import')) {
+          errorMessage = "화면 캡처 라이브러리 로딩에 실패했습니다. 인터넷 연결을 확인해주세요.";
+        } else if (message.includes('oklch')) {
+          errorMessage = "색상 처리 중 오류가 발생했습니다. 페이지를 새로고침 후 다시 시도해주세요.";
+        } else if (message.includes('canvas') || message.includes('Canvas')) {
+          errorMessage = "캔버스 생성 중 오류가 발생했습니다. 브라우저를 새로고침해주세요.";
+        } else if (message.trim() === '') {
+          errorMessage = "알 수 없는 오류가 발생했습니다. 브라우저 콘솔을 확인해주세요.";
+        } else {
+          errorMessage = `다운로드 실패: ${message}`;
+        }
+      } else if (typeof error === 'string') {
+        errorMessage = `다운로드 실패: ${error}`;
+      } else {
+        errorMessage = "알 수 없는 오류가 발생했습니다. 브라우저 콘솔을 확인해주세요.";
+      }
+      
+      console.log("최종 에러 메시지:", errorMessage);
+      alert(errorMessage);
+    } finally {
+      // 버튼 상태 복원
+      if (downloadBtn) {
+        downloadBtn.disabled = false;
+        // SVG 아이콘을 유지하면서 텍스트만 변경
+        const svgIcon = downloadBtn.querySelector('svg');
+        if (svgIcon) {
+          downloadBtn.innerHTML = svgIcon.outerHTML + ' 저장';
+        } else {
+          downloadBtn.textContent = '저장';
+        }
+      }
     }
   }
 

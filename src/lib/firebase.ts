@@ -3,15 +3,15 @@ import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
 
-// Firebase 설정 검증
+// Firebase 설정 (환경변수에서 로드)
 const firebaseConfig = {
-  apiKey: "AIzaSyBVDytX4ZTbBt1y8STt9vVdfF7_cmw7Gk0",
-  authDomain: "gen-lang-client-0705810476.firebaseapp.com", 
-  projectId: "gen-lang-client-0705810476",
-  storageBucket: "gen-lang-client-0705810476.firebasestorage.app",
-  messagingSenderId: "1012745348076",
-  appId: "1:1012745348076:web:dd2d93317dca103b3496c9",
-  measurementId: "G-SJY7VH7L2Z"
+  apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+  authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+  measurementId: import.meta.env.PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 // 설정 검증
@@ -21,7 +21,6 @@ console.log('- Project ID:', firebaseConfig.projectId);
 console.log('- Auth Domain:', firebaseConfig.authDomain);
 
 // Firebase 앱 초기화
-console.log('🔥 Firebase 설정:', firebaseConfig);
 export const app = initializeApp(firebaseConfig);
 console.log('🔥 Firebase 앱 초기화 완료');
 
